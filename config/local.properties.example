@@ -1,0 +1,14 @@
+# Copy this file to config/local.properties and fill in your own values.
+# local.properties is gitignored. Never commit real credentials.
+
+db.url=jdbc:sqlserver://localhost:1433;databaseName=Aqarat;encrypt=true;trustServerCertificate=true
+db.user=sa
+db.password=CHANGE_ME
+
+# HikariCP
+db.pool.size=10
+db.pool.timeoutMs=30000
+
+# Where uploaded photos and payment proofs are written
+storage.images=uploads/images
+storage.proofs=uploads/proofs

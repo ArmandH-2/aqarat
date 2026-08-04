@@ -1,0 +1,31 @@
+# Build output
+target/
+*.class
+*.jar
+
+# Local configuration - contains the database password
+config/local.properties
+
+# Uploaded files created at runtime
+uploads/
+proofs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
