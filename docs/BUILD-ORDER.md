@@ -30,7 +30,7 @@ conversation, not a migration.
 
 ---
 
-## Phase 0 — Standing it up (day 1, both)
+## Phase 0 — Standing it up (day 1, both) — **DONE**
 
 Nobody writes application code until this works.
 
