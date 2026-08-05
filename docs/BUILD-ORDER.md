@@ -150,7 +150,7 @@ moves a property to `RESERVED` and lapses correctly once its expiry passes.
 
 ---
 
-## Phase 5 — Contracts and payments (days 9–12)
+## Phase 5 — Contracts and payments (days 9–12) — **DONE**
 
 The longest phase. Do not start it late.
 

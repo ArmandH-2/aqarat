@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.MyContractsController"
+      styleClass="content" spacing="24">
+    <Label text="My contracts" styleClass="page-title"/>
+    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
+        <ListView fx:id="contractList" VBox.vgrow="ALWAYS"/>
+    </VBox>
+</VBox>
