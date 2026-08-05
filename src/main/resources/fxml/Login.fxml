@@ -6,6 +6,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -16,7 +18,11 @@
         <padding>
             <Insets top="24" right="24" bottom="24" left="24"/>
         </padding>
-        <Label text="Aqarat" styleClass="page-title"/>
+        <ImageView fitWidth="150" preserveRatio="true">
+            <image>
+                <Image url="@../images/lockup.png"/>
+            </image>
+        </ImageView>
         <Label text="Sign in to continue" styleClass="label-soft"/>
 
         <VBox spacing="4">
