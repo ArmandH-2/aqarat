@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.ReportsController"
+      styleClass="content" spacing="24">
+    <Label text="Reports" styleClass="page-title"/>
+    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
+        <HBox spacing="12">
+            <Button fx:id="revenueTabButton" text="Revenue and commission"
+                    styleClass="button, button-primary" onAction="#handleRevenueTab"/>
+            <Button fx:id="overdueTabButton" text="Overdue payments"
+                    styleClass="button, button-secondary" onAction="#handleOverdueTab"/>
+            <Button fx:id="marketTabButton" text="Time on market"
+                    styleClass="button, button-secondary" onAction="#handleMarketTab"/>
+        </HBox>
+
+        <VBox fx:id="revenueBox" spacing="16" VBox.vgrow="ALWAYS">
+            <VBox styleClass="card" spacing="12">
+                <Label text="Period" styleClass="section-title"/>
+                <HBox spacing="12">
+                    <VBox spacing="4">
+                        <Label text="From" styleClass="label-soft"/>
+                        <DatePicker fx:id="revenueFromPicker"/>
+                    </VBox>
+                    <VBox spacing="4">
+                        <Label text="To" styleClass="label-soft"/>
+                        <DatePicker fx:id="revenueToPicker"/>
+                    </VBox>
+                    <Button text="Run" styleClass="button, button-primary" onAction="#handleRunRevenue">
+                        <HBox.margin>
+                            <Insets top="20"/>
+                        </HBox.margin>
+                    </Button>
+                </HBox>
+            </VBox>
+            <TableView fx:id="revenueTable" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <VBox fx:id="overdueBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
+            <TableView fx:id="overdueTable" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <VBox fx:id="marketBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
+            <TableView fx:id="marketTable" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </VBox>
+</VBox>

@@ -175,10 +175,13 @@ contract to a confirmed payment, and the audit log shows every step.
 
 ---
 
-## Phase 6 — Admin and reports (days 12–13)
+## Phase 6 — Admin and reports (days 12–13) — **DONE**
 
 ### Track A
 - `Users` panel, `Reference` panel (districts, types, settings).
+- `Listings` panel. It is in `docs/DESIGN.md` section 9 but was in no track here,
+  so it was built in this phase — all listings across every status, filtered,
+  with an agent's take-down.
 
 ### Track B
 - `service/ReportService`, `Reports` panel — revenue and commission by period, overdue
