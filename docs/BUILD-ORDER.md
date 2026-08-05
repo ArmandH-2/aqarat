@@ -101,7 +101,7 @@ a new one that lands in `PENDING_REVIEW`.
 
 ---
 
-## Phase 3 — Valuation and review (days 6–8)
+## Phase 3 — Valuation and review (days 6–8) — **DONE**
 
 This phase contains the two things the project is actually judged on. Spend the time.
 

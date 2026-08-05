@@ -26,32 +26,31 @@ public class PropertyDao {
     // Every filter is optional, so each one is guarded with "? IS NULL OR ..."
     // and bound twice: once for the null check, once for the comparison. This
     // keeps the statement a single PreparedStatement for any combination of
-    // filters, with nothing concatenated into the SQL text.
+    // filters, with nothing concatenated into the SQL text. search and count
+    // share this clause so the two can never disagree about what matches.
+    private static final String FILTER_CLAUSE = """
+        FROM property
+        WHERE status IN (%s)
+          AND (? IS NULL OR district_id = ?)
+          AND (? IS NULL OR property_type_id = ?)
+          AND (? IS NULL OR deal_type = ?)
+          AND (? IS NULL OR asking_price >= ?)
+          AND (? IS NULL OR asking_price <= ?)
+          AND (? IS NULL OR bedrooms = ?)
+          AND (? IS NULL OR area_sqm >= ?)
+          AND (? IS NULL OR area_sqm <= ?)
+          AND (? IS NULL OR title LIKE ?)
+          AND (? IS NULL OR agent_id = ?)
+          AND (? IS NULL OR agent_id IS NULL)
+        """;
+
     public List<Property> search(Connection connection, List<PropertyStatus> statuses,
             PropertySearch filters, int offset, int pageSize) throws SQLException {
-        String statusPlaceholders = String.join(", ", Collections.nCopies(statuses.size(), "?"));
-        String sql = ("""
-            SELECT %s
-            FROM property
-            WHERE status IN (%s)
-              AND (? IS NULL OR district_id = ?)
-              AND (? IS NULL OR property_type_id = ?)
-              AND (? IS NULL OR deal_type = ?)
-              AND (? IS NULL OR asking_price >= ?)
-              AND (? IS NULL OR asking_price <= ?)
-              AND (? IS NULL OR bedrooms = ?)
-              AND (? IS NULL OR area_sqm >= ?)
-              AND (? IS NULL OR area_sqm <= ?)
-              AND (? IS NULL OR title LIKE ?)
-            ORDER BY created_at DESC
-            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-            """).formatted(COLUMNS, statusPlaceholders);
+        String sql = "SELECT " + COLUMNS + "\n" + filterClause(statuses)
+            + "ORDER BY created_at DESC\nOFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            int index = 1;
-            for (PropertyStatus status : statuses) {
-                statement.setString(index++, status.name());
-            }
+            int index = bindStatuses(statement, statuses);
             index = bindFilters(statement, filters, index);
             statement.setInt(index++, offset);
             statement.setInt(index, pageSize);
@@ -64,6 +63,35 @@ public class PropertyDao {
                 return results;
             }
         }
+    }
+
+    // A dashboard wants the size of a queue, not the queue itself. Counting in
+    // SQL keeps a four-figure tile from reading four thousand rows.
+    public int count(Connection connection, List<PropertyStatus> statuses, PropertySearch filters)
+            throws SQLException {
+        String sql = "SELECT COUNT(*)\n" + filterClause(statuses);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = bindStatuses(statement, statuses);
+            bindFilters(statement, filters, index);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private String filterClause(List<PropertyStatus> statuses) {
+        return FILTER_CLAUSE.formatted(
+            String.join(", ", Collections.nCopies(statuses.size(), "?")));
+    }
+
+    private int bindStatuses(PreparedStatement statement, List<PropertyStatus> statuses)
+            throws SQLException {
+        int index = 1;
+        for (PropertyStatus status : statuses) {
+            statement.setString(index++, status.name());
+        }
+        return index;
     }
 
     private int bindFilters(PreparedStatement statement, PropertySearch filters, int index)
@@ -89,7 +117,22 @@ public class PropertyDao {
             filters.getTitleContains() == null ? null : "%" + filters.getTitleContains() + "%";
         statement.setString(index++, filters.getTitleContains());
         statement.setString(index++, titlePattern);
+        statement.setObject(index++, filters.getAgentId());
+        statement.setObject(index++, filters.getAgentId());
+        // Only the null check is bound here: the condition it guards needs no
+        // value of its own, since "unassigned" is agent_id IS NULL.
+        statement.setObject(index++, filters.getUnassignedOnly());
         return index;
+    }
+
+    public void updateAgent(Connection connection, int propertyId, Integer agentId)
+            throws SQLException {
+        String sql = "UPDATE property SET agent_id = ? WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, agentId);
+            statement.setInt(2, propertyId);
+            statement.executeUpdate();
+        }
     }
 
     public Property findById(Connection connection, int id) throws SQLException {

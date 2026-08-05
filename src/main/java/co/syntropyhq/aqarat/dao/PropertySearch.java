@@ -17,8 +17,26 @@ public class PropertySearch {
     private BigDecimal minArea;
     private BigDecimal maxArea;
     private String titleContains;
+    private Integer agentId;
+    private Boolean unassignedOnly;
 
     public PropertySearch() {
+    }
+
+    public Integer getAgentId() {
+        return agentId;
+    }
+
+    public void setAgentId(Integer agentId) {
+        this.agentId = agentId;
+    }
+
+    public Boolean getUnassignedOnly() {
+        return unassignedOnly;
+    }
+
+    public void setUnassignedOnly(Boolean unassignedOnly) {
+        this.unassignedOnly = unassignedOnly;
     }
 
     public Integer getDistrictId() {
