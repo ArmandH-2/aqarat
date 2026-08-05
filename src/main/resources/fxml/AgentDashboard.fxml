@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.AgentDashboardController"
+      styleClass="content" spacing="24">
+    <Label text="Dashboard" styleClass="page-title"/>
+    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+    <VBox fx:id="contentBox" spacing="24">
+        <HBox spacing="16">
+            <VBox fx:id="queueCard" styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label fx:id="queueCountLabel" styleClass="page-title" text="0"/>
+                <Label text="Waiting in your queue" styleClass="label-soft"/>
+            </VBox>
+            <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label fx:id="unassignedCountLabel" styleClass="page-title" text="0"/>
+                <Label text="Unassigned submissions" styleClass="label-soft"/>
+            </VBox>
+            <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label fx:id="activeListingsCountLabel" styleClass="page-title" text="0"/>
+                <Label text="Your active listings" styleClass="label-soft"/>
+            </VBox>
+        </HBox>
+    </VBox>
+</VBox>
