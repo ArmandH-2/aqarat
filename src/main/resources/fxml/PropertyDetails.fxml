@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.PropertyDetailsController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="24">
+        <padding>
+            <Insets top="0" right="4" bottom="24" left="0"/>
+        </padding>
+
+        <HBox spacing="12">
+            <Button text="Back" styleClass="button, button-secondary" onAction="#handleBack"/>
+        </HBox>
+
+        <HBox spacing="12">
+            <Label fx:id="titleLabel" styleClass="page-title"/>
+            <Label fx:id="statusPill" styleClass="pill"/>
+        </HBox>
+
+        <VBox styleClass="card" spacing="12">
+            <Label text="Photos" styleClass="section-title"/>
+            <HBox fx:id="galleryBox" spacing="12"/>
+        </VBox>
+
+        <VBox styleClass="card" spacing="12">
+            <Label text="Price" styleClass="section-title"/>
+            <Label fx:id="priceValue" styleClass="page-title"/>
+        </VBox>
+
+        <VBox styleClass="card" spacing="12">
+            <Label text="Details" styleClass="section-title"/>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="District" styleClass="label-soft"/>
+                    <Label fx:id="districtValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Property type" styleClass="label-soft"/>
+                    <Label fx:id="typeValue"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Deal type" styleClass="label-soft"/>
+                    <Label fx:id="dealTypeValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Area" styleClass="label-soft"/>
+                    <Label fx:id="areaValue"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Bedrooms" styleClass="label-soft"/>
+                    <Label fx:id="bedroomsValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Bathrooms" styleClass="label-soft"/>
+                    <Label fx:id="bathroomsValue"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Floor" styleClass="label-soft"/>
+                    <Label fx:id="floorValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Year built" styleClass="label-soft"/>
+                    <Label fx:id="yearBuiltValue"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Parking" styleClass="label-soft"/>
+                    <Label fx:id="parkingValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Elevator" styleClass="label-soft"/>
+                    <Label fx:id="elevatorValue"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="24">
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Balcony" styleClass="label-soft"/>
+                    <Label fx:id="balconyValue"/>
+                </VBox>
+                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label text="Furnished" styleClass="label-soft"/>
+                    <Label fx:id="furnishedValue"/>
+                </VBox>
+            </HBox>
+
+            <VBox spacing="4">
+                <Label text="Address" styleClass="label-soft"/>
+                <Label fx:id="addressValue" wrapText="true"/>
+            </VBox>
+        </VBox>
+
+        <VBox styleClass="card" spacing="12">
+            <Label text="Description" styleClass="section-title"/>
+            <Label fx:id="descriptionValue" wrapText="true"/>
+        </VBox>
+    </VBox>
+</ScrollPane>
