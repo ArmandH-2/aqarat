@@ -131,7 +131,7 @@ wrong with the features, not with the model.
 
 ---
 
-## Phase 4 — Viewings and reservations (days 8–9)
+## Phase 4 — Viewings and reservations (days 8–9) — **DONE**
 
 ### Track A
 - `dao/ViewingDao`, `service/ViewingService` — request, confirm, cancel, record outcome.

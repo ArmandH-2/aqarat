@@ -5,6 +5,9 @@ import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
+import co.syntropyhq.aqarat.dao.ReservationDao;
+import co.syntropyhq.aqarat.dao.SystemSettingDao;
+import co.syntropyhq.aqarat.dao.ViewingDao;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.Property;
@@ -13,26 +16,40 @@ import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.service.ReservationService;
+import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Router;
+import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.model.PropertyPhoto;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 
-// Role-varying actions (reserve, request a viewing, approve, reject) belong
-// to later phases and are not built here - this phase only reads and
-// displays a listing, so there is nothing yet for a role check to gate.
+// A client sees "Request a viewing" and "Reserve" only on an AVAILABLE
+// listing (DESIGN.md section 5) - a guest, an agent, or any other status
+// gets neither. Approve/reject belong to the review screens, not here.
 public class PropertyDetailsController implements NeedsId {
 
     // property_photo.file_path is stored relative to the upload folder, so
@@ -75,16 +92,39 @@ public class PropertyDetailsController implements NeedsId {
     private Label addressValue;
     @FXML
     private HBox galleryBox;
+    @FXML
+    private VBox actionsBox;
+    @FXML
+    private DatePicker viewingDatePicker;
+    @FXML
+    private ComboBox<String> viewingTimeCombo;
+    @FXML
+    private Label viewingError;
+    @FXML
+    private TextField depositField;
+    @FXML
+    private Label depositError;
+
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final PropertyService propertyService =
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
+    private final ViewingService viewingService =
+        new ViewingService(new ViewingDao(), new AuditService(new AuditDao()));
+    private final ReservationService reservationService = new ReservationService(
+        new ReservationDao(), new SystemSettingDao(), propertyService, new AuditService(new AuditDao()));
+
+    private Property currentProperty;
 
     @FXML
     private void initialize() {
         // Layout only. Router calls receiveId(int) after this method runs,
         // so the data load has to happen there - not here (CLAUDE.md).
+        for (int hour = 9; hour <= 18; hour++) {
+            viewingTimeCombo.getItems().add(String.format("%02d:00", hour));
+        }
     }
 
     @Override
@@ -100,6 +140,7 @@ public class PropertyDetailsController implements NeedsId {
             AlertUtil.showError("This listing no longer exists.");
             return;
         }
+        currentProperty = property;
         renderProperty(property);
     }
 
@@ -112,6 +153,13 @@ public class PropertyDetailsController implements NeedsId {
         renderSpecs(property);
         renderFeatures(property);
         renderGallery(property.getId());
+        updateActionsVisibility(property);
+    }
+
+    private void updateActionsVisibility(Property property) {
+        boolean canAct = SessionManager.isCustomer() && property.getStatus() == PropertyStatus.AVAILABLE;
+        actionsBox.setVisible(canAct);
+        actionsBox.setManaged(canAct);
     }
 
     private void renderGallery(int propertyId) {
@@ -227,6 +275,86 @@ public class PropertyDetailsController implements NeedsId {
                 return "pill-info";
             default:
                 return "pill-neutral";
+        }
+    }
+
+    @FXML
+    private void handleRequestViewing() {
+        FieldError.clear(viewingDatePicker, viewingError);
+        LocalDate date = viewingDatePicker.getValue();
+        String time = viewingTimeCombo.getValue();
+        if (date == null || time == null) {
+            FieldError.show(viewingDatePicker, viewingError, "Choose a date and a time.");
+            return;
+        }
+        LocalDateTime localPick = LocalDateTime.of(date, LocalTime.parse(time, TIME_FORMAT));
+        if (!localPick.isAfter(LocalDateTime.now())) {
+            FieldError.show(viewingDatePicker, viewingError, "Choose a time in the future.");
+            return;
+        }
+        LocalDateTime scheduledAt = Format.toUtc(localPick);
+        try {
+            viewingService.request(
+                currentProperty.getId(), SessionManager.getCurrentUser().getId(), scheduledAt);
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Your viewing request has been sent.");
+        viewingDatePicker.setValue(null);
+        viewingTimeCombo.setValue(null);
+        receiveId(currentProperty.getId());
+    }
+
+    @FXML
+    private void handleReserve() {
+        FieldError.clear(depositField, depositError);
+        BigDecimal deposit = parseDeposit();
+        if (deposit == null) {
+            return;
+        }
+        if (!AlertUtil.confirm("Reserve this property with a deposit of "
+                + Format.paymentAmount(deposit) + "? This takes it off the market.")) {
+            return;
+        }
+        try {
+            reservationService.create(
+                currentProperty.getId(), SessionManager.getCurrentUser().getId(), deposit);
+        } catch (ReservationService.PropertyNotAvailableException e) {
+            AlertUtil.showError("This property is not available to reserve.");
+            return;
+        } catch (ReservationService.DuplicateReservationException e) {
+            AlertUtil.showError("This property already has an active reservation.");
+            return;
+        } catch (PropertyService.InvalidTransitionException e) {
+            AlertUtil.showError(
+                "The property could not be moved to reserved. Ask an agent to look into it.");
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Property reserved. An agent will be in touch about the next steps.");
+        depositField.clear();
+        receiveId(currentProperty.getId());
+    }
+
+    private BigDecimal parseDeposit() {
+        String text = depositField.getText().trim();
+        if (text.isEmpty()) {
+            FieldError.show(depositField, depositError, "Enter a deposit amount.");
+            return null;
+        }
+        try {
+            BigDecimal value = new BigDecimal(text).setScale(2, RoundingMode.HALF_UP);
+            if (value.signum() <= 0) {
+                FieldError.show(depositField, depositError, "Enter an amount greater than zero.");
+                return null;
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            FieldError.show(depositField, depositError, "Enter a valid number.");
+            return null;
         }
     }
 

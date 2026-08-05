@@ -56,6 +56,13 @@ public final class Format {
         return local.format(DATE_TIME_FORMAT);
     }
 
+    /** The way back in: a time the user picked, ready to store as UTC. */
+    public static LocalDateTime toUtc(LocalDateTime localDateTime) {
+        return localDateTime.atZone(ZoneId.systemDefault())
+            .withZoneSameInstant(ZoneOffset.UTC)
+            .toLocalDateTime();
+    }
+
     public static String percentage(BigDecimal value) {
         NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
         format.setMinimumFractionDigits(1);

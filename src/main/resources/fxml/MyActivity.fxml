@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.MyActivityController"
+      styleClass="content" spacing="24">
+    <Label text="My activity" styleClass="page-title"/>
+
+    <Label text="Reservations" styleClass="section-title"/>
+    <ListView fx:id="reservationList" VBox.vgrow="ALWAYS"/>
+
+    <Label text="Viewings" styleClass="section-title"/>
+    <ListView fx:id="viewingList" VBox.vgrow="ALWAYS"/>
+</VBox>
