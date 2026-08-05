@@ -49,7 +49,7 @@ Nobody writes application code until this works.
 
 ---
 
-## Phase 1 — Foundations (days 2–3)
+## Phase 1 — Foundations (days 2–3) — **DONE**
 
 ### Track A
 - `model/` — all thirteen POJOs and all thirteen enums, exactly as listed in
