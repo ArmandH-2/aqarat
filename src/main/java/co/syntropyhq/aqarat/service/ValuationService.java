@@ -117,17 +117,25 @@ public class ValuationService {
         }
     }
 
+    // This method writes one entry per line, but the seeded rows separate
+    // theirs with semicolons and record factor names this version never
+    // produces. Both are read, and an entry whose value is not a number is
+    // skipped rather than failing the whole screen - a valuation saved by an
+    // older version is still worth showing the parts of that make sense.
     private Map<String, BigDecimal> parseBreakdown(String text) {
         Map<String, BigDecimal> factors = new LinkedHashMap<>();
         if (text == null) {
             return factors;
         }
-        for (String line : text.split("\n")) {
-            String trimmed = line.trim();
+        for (String entry : text.split("[\n;]")) {
+            String trimmed = entry.trim();
             int separator = trimmed.indexOf('=');
-            if (separator > 0) {
-                factors.put(trimmed.substring(0, separator),
-                    new BigDecimal(trimmed.substring(separator + 1)));
+            if (separator <= 0) {
+                continue;
+            }
+            String value = trimmed.substring(separator + 1).trim();
+            if (value.matches("-?\\d+(\\.\\d+)?")) {
+                factors.put(trimmed.substring(0, separator), new BigDecimal(value));
             }
         }
         return factors;
@@ -141,7 +149,9 @@ public class ValuationService {
         }
         for (String line : text.split("\n")) {
             String[] fields = line.trim().split(" ");
-            if (fields.length < 3) {
+            // The seeded rows hold the single word "seeded" rather than a list,
+            // so anything not shaped like one of ours is passed over.
+            if (fields.length < 3 || !fields[0].startsWith("id=")) {
                 continue;
             }
             Property property = propertyDao.findById(connection, valueOf(fields[0]).intValue());

@@ -29,3 +29,7 @@ desktop.ini
 
 # Logs
 *.log
+
+# Brand source files. The derived assets the application loads are committed
+# under src/main/resources/images.
+Artifacts/

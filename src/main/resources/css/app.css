@@ -1,21 +1,33 @@
 .root {
-    -c-bg:            #F7F7F5;
+    -c-bg:            #F8F8F6;
     -c-surface:       #FFFFFF;
-    -c-surface-alt:   #F1F1ED;
-    -c-border:        #E3E3DF;
-    -c-border-strong: #CFCFC9;
-    -c-text:          #1A1A18;
-    -c-text-soft:     #6B6B66;
-    -c-text-mute:     #9A9A94;
-    -c-accent:        #1F6F5C;
-    -c-accent-dark:   #185746;
-    -c-accent-soft:   #E6F1ED;
+    -c-surface-alt:   #F1F1EE;
+    -c-border:        #D7D8D5;
+    -c-border-strong: #BFC0BC;
+    -c-text:          #1F2320;
+    -c-text-soft:     #5B5B57;
+    -c-text-mute:     #70706B;
+    -c-accent:        #004225;
+    -c-accent-dark:   #00301B;
+    -c-accent-soft:   #E6EEE9;
+    -c-stone:         #8B8680;
 
-    -fx-font-family: "Segoe UI", "Inter", sans-serif;
+    -c-good:          #26682B;  -c-good-bg:    #E8F3E8;
+    -c-warn:          #8F5800;  -c-warn-bg:    #FDF1DF;
+    -c-bad:           #B3261E;  -c-bad-bg:     #FBEAE9;
+    -c-info:          #255C99;  -c-info-bg:    #E8F0F7;
+    -c-neutral:       #5B5B57;  -c-neutral-bg: #EFEFEB;
+
+    -fx-font-family: "Inter", "Segoe UI", "Arial", sans-serif;
     -fx-font-size: 13px;
     -fx-background-color: -c-bg;
     -fx-text-fill: -c-text;
 }
+
+/* Modena gives every Label its own #333333 fill, which beats the -fx-text-fill
+   inherited from .root. Without this the palette's text colour never applies.
+   It comes first so the rules below still win. */
+.label { -fx-text-fill: -c-text; }
 
 .page-title    { -fx-font-size: 20px; -fx-font-weight: 600; }
 .section-title { -fx-font-size: 15px; -fx-font-weight: 600; }
@@ -31,6 +43,12 @@
 .nav-item.active{ -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
                   -fx-font-weight: 600; }
 
+/* Modena's hyperlink is its own blue and ignores the palette. */
+.hyperlink          { -fx-text-fill: -c-accent; -fx-border-color: transparent;
+                      -fx-padding: 0; -fx-cursor: hand; }
+.hyperlink:visited  { -fx-text-fill: -c-accent; }
+.hyperlink:hover    { -fx-text-fill: -c-accent-dark; -fx-underline: true; }
+
 .content { -fx-padding: 24px; -fx-background-color: -c-bg; }
 
 .card { -fx-background-color: -c-surface; -fx-background-radius: 6px;
@@ -42,8 +60,8 @@
 .button-primary:hover { -fx-background-color: -c-accent-dark; }
 .button-secondary { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
                     -fx-border-color: -c-border-strong; -fx-border-radius: 6px; }
-.button-danger    { -fx-background-color: -c-surface; -fx-text-fill: #B3261E;
-                    -fx-border-color: #B3261E; -fx-border-radius: 6px; }
+.button-danger    { -fx-background-color: -c-surface; -fx-text-fill: -c-bad;
+                    -fx-border-color: -c-bad; -fx-border-radius: 6px; }
 
 .text-field, .text-area, .combo-box, .date-picker {
     -fx-background-color: -c-surface; -fx-background-radius: 4px;
@@ -53,8 +71,8 @@
 .text-field:focused, .combo-box:focused, .date-picker:focused {
     -fx-border-color: -c-accent;
 }
-.field-invalid { -fx-border-color: #B3261E; }
-.field-error   { -fx-font-size: 12px; -fx-text-fill: #B3261E; }
+.field-invalid { -fx-border-color: -c-bad; }
+.field-error   { -fx-font-size: 12px; -fx-text-fill: -c-bad; }
 
 .table-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
               -fx-border-radius: 6px; -fx-background-radius: 6px; }
@@ -68,10 +86,10 @@
 
 .pill        { -fx-background-radius: 4px; -fx-padding: 3 8 3 8; -fx-font-size: 11px;
                -fx-font-weight: 500; }
-.pill-good   { -fx-background-color: #E8F3E8; -fx-text-fill: #2E7D32; }
-.pill-warn   { -fx-background-color: #FDF1DF; -fx-text-fill: #B26A00; }
-.pill-bad    { -fx-background-color: #FBEAE9; -fx-text-fill: #B3261E; }
-.pill-info   { -fx-background-color: #E8F0F7; -fx-text-fill: #2A5D8F; }
-.pill-neutral{ -fx-background-color: #EFEFEB; -fx-text-fill: #5A5A55; }
+.pill-good   { -fx-background-color: -c-good-bg;    -fx-text-fill: -c-good; }
+.pill-warn   { -fx-background-color: -c-warn-bg;    -fx-text-fill: -c-warn; }
+.pill-bad    { -fx-background-color: -c-bad-bg;     -fx-text-fill: -c-bad; }
+.pill-info   { -fx-background-color: -c-info-bg;    -fx-text-fill: -c-info; }
+.pill-neutral{ -fx-background-color: -c-neutral-bg; -fx-text-fill: -c-neutral; }
 
 .empty-state { -fx-text-fill: -c-text-soft; -fx-font-size: 13px; -fx-alignment: center; }
