@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.ReferenceController"
+      styleClass="content" spacing="24">
+    <Label text="Reference data" styleClass="page-title"/>
+    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
+        <HBox spacing="12">
+            <Button fx:id="districtsTabButton" text="Districts" styleClass="button, button-primary"
+                    onAction="#handleDistrictsTab"/>
+            <Button fx:id="typesTabButton" text="Property types" styleClass="button, button-secondary"
+                    onAction="#handleTypesTab"/>
+            <Button fx:id="settingsTabButton" text="Settings" styleClass="button, button-secondary"
+                    onAction="#handleSettingsTab"/>
+        </HBox>
+
+        <VBox fx:id="districtsBox" spacing="16" VBox.vgrow="ALWAYS">
+            <VBox styleClass="card" spacing="12">
+                <Label text="Add district" styleClass="section-title"/>
+                <HBox spacing="12">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Name" styleClass="label-soft"/>
+                        <TextField fx:id="newDistrictNameField"/>
+                        <Label fx:id="newDistrictNameError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Governorate" styleClass="label-soft"/>
+                        <TextField fx:id="newDistrictGovernorateField"/>
+                        <Label fx:id="newDistrictGovernorateError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Avg. price per m²" styleClass="label-soft"/>
+                        <TextField fx:id="newDistrictPriceField"/>
+                        <Label fx:id="newDistrictPriceError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </HBox>
+                <Button text="Add district" styleClass="button, button-primary" onAction="#handleAddDistrict"/>
+            </VBox>
+            <ListView fx:id="districtList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <VBox fx:id="typesBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
+            <VBox styleClass="card" spacing="12">
+                <Label text="Add property type" styleClass="section-title"/>
+                <HBox spacing="12">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Name" styleClass="label-soft"/>
+                        <TextField fx:id="newTypeNameField"/>
+                        <Label fx:id="newTypeNameError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </HBox>
+                <Button text="Add property type" styleClass="button, button-primary" onAction="#handleAddType"/>
+            </VBox>
+            <ListView fx:id="typeList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <VBox fx:id="settingsBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
+            <ListView fx:id="settingList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </VBox>
+</VBox>
