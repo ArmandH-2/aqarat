@@ -59,6 +59,18 @@ public class SystemSettingDao {
         }
     }
 
+    // Settings are edited, never created or removed here - the row set is
+    // fixed by db/schema.sql and db/seed.sql.
+    public void updateValue(Connection connection, String settingKey, String value)
+            throws SQLException {
+        String sql = "UPDATE system_setting SET value = ? WHERE setting_key = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, value);
+            statement.setString(2, settingKey);
+            statement.executeUpdate();
+        }
+    }
+
     private SystemSetting mapRow(ResultSet resultSet) throws SQLException {
         SystemSetting setting = new SystemSetting();
         setting.setSettingKey(resultSet.getString("setting_key"));

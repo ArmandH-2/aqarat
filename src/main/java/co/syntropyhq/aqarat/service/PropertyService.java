@@ -254,9 +254,13 @@ public class PropertyService {
                 // against an available property with no reservation at all
                 // (BUILD-ORDER phase 5). Routing it through RESERVED instead
                 // would record a reservation in the audit log that never existed.
+                // Straight to WITHDRAWN because an agent may unpublish a
+                // listing themselves (DESIGN.md section 5). Only an owner has
+                // to ask first, and that is the WITHDRAWAL_REQUESTED road.
                 return to == PropertyStatus.RESERVED
                     || to == PropertyStatus.UNDER_CONTRACT
-                    || to == PropertyStatus.WITHDRAWAL_REQUESTED;
+                    || to == PropertyStatus.WITHDRAWAL_REQUESTED
+                    || to == PropertyStatus.WITHDRAWN;
             case WITHDRAWAL_REQUESTED:
                 return to == PropertyStatus.WITHDRAWN || to == PropertyStatus.AVAILABLE;
             case RESERVED:
