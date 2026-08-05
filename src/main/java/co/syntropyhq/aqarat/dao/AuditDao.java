@@ -12,6 +12,66 @@ import java.util.List;
 
 public class AuditDao {
 
+    private static final String COLUMNS =
+        "id, user_id, entity_type, entity_id, action, old_value, new_value, created_at";
+
+    // Every filter is optional, so each is guarded with "? IS NULL OR ..."
+    // and bound twice, the same idiom PropertyDao.search uses - one
+    // PreparedStatement covers any combination of filters, with nothing
+    // concatenated into the SQL text. search and count share this clause.
+    private static final String FILTER_CLAUSE = """
+        FROM audit_log
+        WHERE (? IS NULL OR entity_type = ?)
+          AND (? IS NULL OR action = ?)
+          AND (? IS NULL OR user_id = ?)
+          AND (? IS NULL OR created_at >= ?)
+          AND (? IS NULL OR created_at <= ?)
+        """;
+
+    public List<AuditLog> search(Connection connection, AuditSearch filters, int offset, int pageSize)
+            throws SQLException {
+        String sql = "SELECT " + COLUMNS + "\n" + FILTER_CLAUSE
+            + "ORDER BY created_at DESC\nOFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = bindFilters(statement, filters);
+            statement.setInt(index++, offset);
+            statement.setInt(index, pageSize);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<AuditLog> entries = new ArrayList<>();
+                while (resultSet.next()) {
+                    entries.add(mapRow(resultSet));
+                }
+                return entries;
+            }
+        }
+    }
+
+    public int count(Connection connection, AuditSearch filters) throws SQLException {
+        String sql = "SELECT COUNT(*)\n" + FILTER_CLAUSE;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            bindFilters(statement, filters);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private int bindFilters(PreparedStatement statement, AuditSearch filters) throws SQLException {
+        int index = 1;
+        statement.setString(index++, filters.getEntityType());
+        statement.setString(index++, filters.getEntityType());
+        statement.setString(index++, filters.getAction());
+        statement.setString(index++, filters.getAction());
+        statement.setObject(index++, filters.getUserId());
+        statement.setObject(index++, filters.getUserId());
+        statement.setObject(index++, filters.getCreatedFrom());
+        statement.setObject(index++, filters.getCreatedFrom());
+        statement.setObject(index++, filters.getCreatedTo());
+        statement.setObject(index++, filters.getCreatedTo());
+        return index;
+    }
+
     // No convenience overload here: an audit write is almost always one
     // statement inside a larger transaction, and a caller that opened its
     // own connection could commit the audit row without the change it

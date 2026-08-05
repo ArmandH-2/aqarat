@@ -1,8 +1,10 @@
 package co.syntropyhq.aqarat.service;
 
 import co.syntropyhq.aqarat.dao.AuditDao;
+import co.syntropyhq.aqarat.dao.AuditSearch;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.AuditLog;
+import co.syntropyhq.aqarat.util.Db;
 import co.syntropyhq.aqarat.util.SessionManager;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -41,5 +43,20 @@ public class AuditService {
     public List<AuditLog> findByEntity(Connection connection, String entityType, int entityId)
             throws SQLException {
         return auditDao.findByEntity(connection, entityType, entityId);
+    }
+
+    // The AuditLog panel's filtered, paged view (DESIGN.md section 5). A
+    // plain read, so it opens and closes its own connection like any other
+    // find method - there is nothing here for a transaction to protect.
+    public List<AuditLog> search(AuditSearch filters, int offset, int pageSize) throws SQLException {
+        try (Connection connection = Db.get()) {
+            return auditDao.search(connection, filters, offset, pageSize);
+        }
+    }
+
+    public int count(AuditSearch filters) throws SQLException {
+        try (Connection connection = Db.get()) {
+            return auditDao.count(connection, filters);
+        }
     }
 }
