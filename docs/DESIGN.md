@@ -151,6 +151,14 @@ Loops that are part of the design and must be built: a review bouncing back as `
 a rejection with a reason, a viewing cancelled or marked no-show, a reservation lapsing when
 `expires_at` passes, and a lease reaching `end_date` and returning the property to `AVAILABLE`.
 
+**Taking a published listing down.** An owner may withdraw a submission that is still in
+review on their own. Once a listing is live, they ask instead: the property moves to
+`WITHDRAWAL_REQUESTED` and appears in the review queue, and an agent either accepts it —
+`WITHDRAWN` — or declines and it returns to `AVAILABLE`. The listing stays visible and
+reservable while the request is outstanding, because nothing has been decided yet. The owner
+has the right to have it removed; the review exists so the agency sees it happen rather than
+finding out afterwards.
+
 `property.status` is a controlled state machine. Transitions happen only through
 `PropertyService`. No screen writes the status field directly.
 
@@ -263,7 +271,7 @@ constraint, the Java enum constant, and the seed data.
 | `Role` | `ADMIN`, `AGENT`, `CUSTOMER` |
 | `UserStatus` | `ACTIVE`, `INACTIVE` |
 | `DealType` | `SALE`, `RENT` |
-| `PropertyStatus` | `DRAFT`, `PENDING_REVIEW`, `NEEDS_INFO`, `REJECTED`, `AVAILABLE`, `RESERVED`, `UNDER_CONTRACT`, `CLOSED`, `WITHDRAWN` |
+| `PropertyStatus` | `DRAFT`, `PENDING_REVIEW`, `NEEDS_INFO`, `REJECTED`, `AVAILABLE`, `RESERVED`, `UNDER_CONTRACT`, `CLOSED`, `WITHDRAWAL_REQUESTED`, `WITHDRAWN` |
 | `ValuationFlag` | `OK`, `ABOVE_MARKET`, `IMPLAUSIBLE` |
 | `ViewingStatus` | `REQUESTED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW` |
 | `ReservationStatus` | `ACTIVE`, `CONVERTED`, `LAPSED`, `CANCELLED` |

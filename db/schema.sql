@@ -124,9 +124,13 @@ CREATE TABLE dbo.property (
     CONSTRAINT ck_property_area   CHECK (area_sqm > 0),
     CONSTRAINT ck_property_price  CHECK (asking_price > 0),
     CONSTRAINT ck_property_deal   CHECK (deal_type IN ('SALE','RENT')),
+    /* WITHDRAWAL_REQUESTED is the owner asking for a published listing to be
+       taken down. An agent reviews the request before it becomes WITHDRAWN,
+       which is why it needs a status of its own rather than the owner
+       withdrawing the listing directly. */
     CONSTRAINT ck_property_status CHECK (status IN
         ('DRAFT','PENDING_REVIEW','NEEDS_INFO','REJECTED','AVAILABLE',
-         'RESERVED','UNDER_CONTRACT','CLOSED','WITHDRAWN')),
+         'RESERVED','UNDER_CONTRACT','CLOSED','WITHDRAWAL_REQUESTED','WITHDRAWN')),
 
     /* An owner may set a minimum, a maximum, both, or neither - but a
        maximum below the minimum is nonsense, and neither applies to a sale. */
