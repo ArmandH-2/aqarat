@@ -38,15 +38,11 @@ public class ReservationService {
     }
 
     /**
-     * A client reserves an AVAILABLE property with a deposit. This is two
-     * units of work, not one: the reservation row commits first, then
-     * {@link PropertyService#changeStatus} moves the property to RESERVED in
-     * its own connection, because that method owns its own transaction and
-     * this phase does not add a connection-taking overload to it. If the
-     * property move fails after the reservation has committed, the
-     * reservation still stands as the source of truth - the unique index
-     * means nobody else can reserve the same property either - and the
-     * failure is thrown, not swallowed, so the caller can retry it.
+     * A client reserves an AVAILABLE property with a deposit. The reservation
+     * row, the property's move to RESERVED and both audit entries are one
+     * transaction, so the property can never be left on the market holding a
+     * reservation nobody can see. The deposit must be positive and the
+     * property must still be available when the row is written.
      */
     public int create(int propertyId, int clientId, BigDecimal depositAmount)
             throws SQLException, PropertyService.InvalidTransitionException,
@@ -72,13 +68,15 @@ public class ReservationService {
         reservation.setExpiresAt(reservedAt.plusDays(reservationDays()));
         reservation.setStatus(ReservationStatus.ACTIVE);
 
-        int reservationId = insertReservation(reservation);
-        propertyService.changeStatus(propertyId, PropertyStatus.RESERVED);
-        return reservationId;
+        return insertReservation(reservation);
     }
 
+    // The reservation, the property moving to RESERVED and both audit rows are
+    // one transaction: a reservation that exists while its property still
+    // reads AVAILABLE would let the next client reserve it too.
     private int insertReservation(Reservation reservation)
-            throws SQLException, DuplicateReservationException {
+            throws SQLException, DuplicateReservationException,
+            PropertyService.InvalidTransitionException {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
@@ -90,6 +88,8 @@ public class ReservationService {
                 int id = reservationDao.insert(connection, reservation);
                 auditService.record(connection, "reservation", id, "CREATE", null,
                     ReservationStatus.ACTIVE.name());
+                propertyService.changeStatus(
+                    connection, reservation.getPropertyId(), PropertyStatus.RESERVED);
                 connection.commit();
                 return id;
             } catch (SQLException e) {
@@ -99,7 +99,7 @@ public class ReservationService {
                         "This property already has an active reservation.");
                 }
                 throw e;
-            } catch (DuplicateReservationException e) {
+            } catch (DuplicateReservationException | PropertyService.InvalidTransitionException e) {
                 connection.rollback();
                 throw e;
             }
@@ -141,30 +141,36 @@ public class ReservationService {
         return reservations;
     }
 
-    // Persists an expired ACTIVE reservation as LAPSED and returns the
-    // property it held to AVAILABLE. Both are separate units of work for the
-    // same reason create() is: PropertyService owns its own transaction.
+    // Lapsing the reservation and returning its property to the market are one
+    // transaction: a LAPSED reservation on a property still reading RESERVED
+    // would take that property off the market permanently.
     private void lapseIfExpired(Reservation reservation)
             throws SQLException, PropertyService.InvalidTransitionException {
         if (reservation.getStatus() != ReservationStatus.ACTIVE
                 || reservation.getExpiresAt().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
             return;
         }
+        writeStatusAndFreeProperty(reservation, ReservationStatus.LAPSED, "LAPSE");
+    }
+
+    private void writeStatusAndFreeProperty(Reservation reservation, ReservationStatus newStatus,
+            String action) throws SQLException, PropertyService.InvalidTransitionException {
+        ReservationStatus oldStatus = reservation.getStatus();
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
-                reservationDao.updateStatus(connection, reservation.getId(),
-                    ReservationStatus.LAPSED);
-                auditService.record(connection, "reservation", reservation.getId(), "LAPSE",
-                    ReservationStatus.ACTIVE.name(), ReservationStatus.LAPSED.name());
+                reservationDao.updateStatus(connection, reservation.getId(), newStatus);
+                auditService.record(connection, "reservation", reservation.getId(), action,
+                    oldStatus.name(), newStatus.name());
+                propertyService.changeStatus(
+                    connection, reservation.getPropertyId(), PropertyStatus.AVAILABLE);
                 connection.commit();
-            } catch (SQLException e) {
+            } catch (SQLException | PropertyService.InvalidTransitionException e) {
                 connection.rollback();
                 throw e;
             }
         }
-        reservation.setStatus(ReservationStatus.LAPSED);
-        propertyService.changeStatus(reservation.getPropertyId(), PropertyStatus.AVAILABLE);
+        reservation.setStatus(newStatus);
     }
 
     /**
@@ -178,8 +184,7 @@ public class ReservationService {
         Reservation reservation = requireReservation(reservationId);
         lapseIfExpired(reservation);
         requireLegalTransition(reservation.getStatus(), ReservationStatus.CANCELLED);
-        writeStatus(reservation, ReservationStatus.CANCELLED, "CANCEL");
-        propertyService.changeStatus(reservation.getPropertyId(), PropertyStatus.AVAILABLE);
+        writeStatusAndFreeProperty(reservation, ReservationStatus.CANCELLED, "CANCEL");
     }
 
     /**
@@ -194,6 +199,29 @@ public class ReservationService {
         lapseIfExpired(reservation);
         requireLegalTransition(reservation.getStatus(), ReservationStatus.CONVERTED);
         writeStatus(reservation, ReservationStatus.CONVERTED, "CONVERT");
+    }
+
+    /**
+     * Converting as part of activating a contract, on the caller's connection
+     * so the whole activation is one unit. Still refuses a reservation that
+     * has expired or already been used - going straight to the DAO would skip
+     * both of those checks, which is the reason this method exists.
+     */
+    public void convert(Connection connection, int reservationId)
+            throws SQLException, InvalidTransitionException {
+        Reservation reservation = reservationDao.findById(connection, reservationId);
+        if (reservation == null) {
+            throw new IllegalArgumentException("No reservation with id " + reservationId + ".");
+        }
+        if (reservation.getStatus() == ReservationStatus.ACTIVE
+                && !reservation.getExpiresAt().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
+            throw new InvalidTransitionException(
+                "This reservation expired on " + reservation.getExpiresAt() + " and cannot be converted.");
+        }
+        requireLegalTransition(reservation.getStatus(), ReservationStatus.CONVERTED);
+        reservationDao.updateStatus(connection, reservationId, ReservationStatus.CONVERTED);
+        auditService.record(connection, "reservation", reservationId, "CONVERT",
+            reservation.getStatus().name(), ReservationStatus.CONVERTED.name());
     }
 
     private void writeStatus(Reservation reservation, ReservationStatus newStatus, String action)

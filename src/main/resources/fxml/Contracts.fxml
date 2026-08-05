@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.ContractsController"
+      styleClass="content" spacing="24">
+    <Label text="Contracts" styleClass="page-title"/>
+    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
+        <HBox spacing="12">
+            <Button fx:id="contractsTabButton" text="Contracts" styleClass="button, button-primary"
+                    onAction="#handleContractsTab"/>
+            <Button fx:id="draftTabButton" text="New draft" styleClass="button, button-secondary"
+                    onAction="#handleDraftTab"/>
+        </HBox>
+
+        <VBox fx:id="contractsBox" spacing="16" VBox.vgrow="ALWAYS">
+            <ListView fx:id="contractList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <ScrollPane fx:id="draftBox" fitToWidth="true" VBox.vgrow="ALWAYS">
+            <VBox spacing="24">
+                <VBox styleClass="card" spacing="12">
+                    <Label text="Property and client" styleClass="section-title"/>
+
+                    <VBox spacing="4">
+                        <Label text="Property id" styleClass="label-soft"/>
+                        <HBox spacing="8">
+                            <TextField fx:id="propertyIdField" HBox.hgrow="ALWAYS"/>
+                            <Button text="Load property" styleClass="button, button-secondary"
+                                    onAction="#handleLoadProperty"/>
+                        </HBox>
+                        <Label fx:id="propertyError" styleClass="field-error" managed="false" visible="false"/>
+                        <Label fx:id="propertySummaryLabel" styleClass="hint" wrapText="true"/>
+                    </VBox>
+
+                    <VBox spacing="4">
+                        <Label text="Client email" styleClass="label-soft"/>
+                        <HBox spacing="8">
+                            <TextField fx:id="clientEmailField" HBox.hgrow="ALWAYS"/>
+                            <Button text="Find client" styleClass="button, button-secondary"
+                                    onAction="#handleFindClient"/>
+                        </HBox>
+                        <Label fx:id="clientError" styleClass="field-error" managed="false" visible="false"/>
+                        <Label fx:id="clientSummaryLabel" styleClass="hint"/>
+                    </VBox>
+                </VBox>
+
+                <VBox styleClass="card" spacing="12">
+                    <Label text="Terms" styleClass="section-title"/>
+
+                    <VBox spacing="4">
+                        <Label text="Contract type" styleClass="label-soft"/>
+                        <ComboBox fx:id="contractTypeCombo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox fx:id="totalAmountBox" spacing="4">
+                        <Label text="Sale price" styleClass="label-soft"/>
+                        <TextField fx:id="totalAmountField"/>
+                        <Label fx:id="totalAmountError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox fx:id="leaseBox" spacing="12">
+                        <VBox spacing="4">
+                            <Label text="Monthly rent" styleClass="label-soft"/>
+                            <TextField fx:id="monthlyRentField"/>
+                            <Label fx:id="monthlyRentError" styleClass="field-error" managed="false" visible="false"/>
+                        </VBox>
+
+                        <VBox spacing="4">
+                            <Label text="Lease term (months)" styleClass="label-soft"/>
+                            <TextField fx:id="termMonthsField"/>
+                            <Label fx:id="termMonthsError" styleClass="field-error" managed="false" visible="false"/>
+                        </VBox>
+                    </VBox>
+
+                    <VBox spacing="4">
+                        <Label text="Start date" styleClass="label-soft"/>
+                        <DatePicker fx:id="startDatePicker" maxWidth="Infinity"/>
+                        <Label fx:id="startDateError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="4">
+                        <Label text="Payment frequency" styleClass="label-soft"/>
+                        <ComboBox fx:id="paymentFrequencyCombo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox spacing="4">
+                        <Label text="Installment count" styleClass="label-soft"/>
+                        <TextField fx:id="installmentCountField" text="1"/>
+                        <Label fx:id="installmentCountError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </VBox>
+
+                <Button text="Draft contract" styleClass="button, button-primary" maxWidth="Infinity"
+                        onAction="#handleDraft"/>
+            </VBox>
+        </ScrollPane>
+    </VBox>
+</VBox>

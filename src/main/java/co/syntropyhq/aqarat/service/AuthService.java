@@ -60,4 +60,10 @@ public class AuthService {
     public AppUser findById(int id) throws SQLException {
         return userDao.findById(id);
     }
+
+    // Contract drafting looks a client up by the email an agent types in - the
+    // same lookup login() already does, just without a password to check.
+    public AppUser findByEmail(String email) throws SQLException {
+        return userDao.findByEmail(email);
+    }
 }
