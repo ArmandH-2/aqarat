@@ -48,6 +48,12 @@ public class PropertyService {
         }
     }
 
+    public int count(List<PropertyStatus> statuses, PropertySearch filters) throws SQLException {
+        try (Connection connection = Db.get()) {
+            return propertyDao.count(connection, statuses, filters);
+        }
+    }
+
     public Property findById(int id) throws SQLException {
         return propertyDao.findById(id);
     }
@@ -94,6 +100,68 @@ public class PropertyService {
     }
 
     /**
+     * Records an agent's decision on a submission: the new status and the note
+     * explaining it are written together, so a rejection or a request for more
+     * information can never reach the owner without its reason. Pass a null
+     * note for an approval, which needs none.
+     */
+    public void review(int propertyId, PropertyStatus decision, String reviewNote)
+            throws SQLException, InvalidTransitionException {
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                Property property = requireProperty(connection, propertyId);
+                PropertyStatus oldStatus = property.getStatus();
+                requireLegalTransition(oldStatus, decision);
+                property.setStatus(decision);
+                stampTimestamp(property, decision);
+                propertyDao.updateStatus(connection, property);
+                propertyDao.updateReviewNote(connection, propertyId, reviewNote);
+                auditService.record(connection, "property", propertyId, "REVIEW",
+                    oldStatus.name(), decision.name());
+                connection.commit();
+            } catch (SQLException | InvalidTransitionException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Claims an unassigned submission for an agent. DESIGN.md section 6 says
+     * any agent may take a property from the unassigned queue and there is no
+     * approval step, but a submission already claimed by someone else is not
+     * quietly reassigned - that is an admin action.
+     */
+    public void claim(int propertyId, int agentId) throws SQLException, AlreadyClaimedException {
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                Property property = requireProperty(connection, propertyId);
+                if (property.getAgentId() != null && property.getAgentId() != agentId) {
+                    throw new AlreadyClaimedException(
+                        "Another agent has already taken this submission.");
+                }
+                propertyDao.updateAgent(connection, propertyId, agentId);
+                auditService.record(connection, "property", propertyId, "CLAIM",
+                    String.valueOf(property.getAgentId()), String.valueOf(agentId));
+                connection.commit();
+            } catch (SQLException | AlreadyClaimedException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private Property requireProperty(Connection connection, int propertyId) throws SQLException {
+        Property property = propertyDao.findById(connection, propertyId);
+        if (property == null) {
+            throw new IllegalArgumentException("No property with id " + propertyId + ".");
+        }
+        return property;
+    }
+
+    /**
      * Moves a property to a new status. This is the only place
      * property.status is ever written (DESIGN.md section 6) - every screen,
      * in every phase, comes through here rather than writing the column
@@ -105,10 +173,7 @@ public class PropertyService {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
-                Property property = propertyDao.findById(connection, propertyId);
-                if (property == null) {
-                    throw new IllegalArgumentException("No property with id " + propertyId + ".");
-                }
+                Property property = requireProperty(connection, propertyId);
                 PropertyStatus oldStatus = property.getStatus();
                 requireLegalTransition(oldStatus, newStatus);
                 property.setStatus(newStatus);
@@ -178,6 +243,15 @@ public class PropertyService {
     public static class InvalidTransitionException extends Exception {
 
         public InvalidTransitionException(String message) {
+            super(message);
+        }
+    }
+
+    // Two agents opening the same unassigned queue is ordinary, so losing the
+    // race is a message to read, not a failure.
+    public static class AlreadyClaimedException extends Exception {
+
+        public AlreadyClaimedException(String message) {
             super(message);
         }
     }
