@@ -74,6 +74,16 @@ public class LoginController {
         }
     }
 
+    // A guest browses published listings without an account, so the shell
+    // opens with nobody signed in (DESIGN.md section 4).
+    @FXML
+    private void handleBrowseAsGuest() {
+        SessionManager.logout();
+        if (openWindow("/fxml/MainShell.fxml", "Aqarat")) {
+            closeThisWindow();
+        }
+    }
+
     @FXML
     private void handleRegisterLink() {
         if (openWindow("/fxml/Register.fxml", "Aqarat - Register")) {

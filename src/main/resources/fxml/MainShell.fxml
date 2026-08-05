@@ -23,8 +23,8 @@
             <VBox VBox.vgrow="ALWAYS"/>
             <Label fx:id="userNameLabel" styleClass="label-soft"/>
             <Label fx:id="userRoleLabel" styleClass="hint"/>
-            <Button text="Sign out" styleClass="button, button-secondary" maxWidth="Infinity"
-                    onAction="#handleSignOut">
+            <Button fx:id="signOutButton" text="Sign out" styleClass="button, button-secondary"
+                    maxWidth="Infinity" onAction="#handleSignOut">
                 <VBox.margin>
                     <Insets top="8"/>
                 </VBox.margin>

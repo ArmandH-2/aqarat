@@ -37,5 +37,6 @@
                 onAction="#handleSignIn"/>
 
         <Hyperlink text="Don't have an account? Register" onAction="#handleRegisterLink"/>
+        <Hyperlink text="Browse listings without signing in" onAction="#handleBrowseAsGuest"/>
     </VBox>
 </StackPane>

@@ -12,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -38,6 +39,9 @@ public class MainShellController {
         new NavEntry(Panel.REPORTS, "Reports", Role.ADMIN),
     };
 
+    private static final NavEntry GUEST_ENTRY =
+        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings");
+
     @FXML
     private VBox navItems;
     @FXML
@@ -46,12 +50,25 @@ public class MainShellController {
     private Label userNameLabel;
     @FXML
     private Label userRoleLabel;
+    @FXML
+    private Button signOutButton;
 
     @FXML
     private void initialize() {
         Router.setContentPane(contentPane);
 
+        // A guest reaches the shell without signing in, so there is no user to
+        // name and no role to match nav items against - they see the published
+        // listings and nothing else (DESIGN.md section 4).
         AppUser user = SessionManager.getCurrentUser();
+        if (user == null) {
+            userNameLabel.setText("Guest");
+            userRoleLabel.setText("Not signed in");
+            signOutButton.setText("Sign in");
+            navItems.getChildren().add(buildNavLabel(GUEST_ENTRY));
+            return;
+        }
+
         userNameLabel.setText(user.getFullName());
         userRoleLabel.setText(Format.enumLabel(user.getRole()));
 
@@ -103,6 +120,7 @@ public class MainShellController {
         private final String text;
         private final Role[] roles;
 
+        // A guest matches no role, so its one entry is built with none.
         private NavEntry(Panel panel, String text, Role... roles) {
             this.panel = panel;
             this.text = text;
