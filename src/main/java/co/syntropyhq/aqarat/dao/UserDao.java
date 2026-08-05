@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class UserDao {
 
     // No row found is a normal outcome here, not an error, so this returns
-    // null rather than Optional. See CLAUDE.md forbidden patterns.
+    // null rather than throwing.
     public AppUser findByEmail(Connection connection, String email) throws SQLException {
         String sql = """
             SELECT id, email, password_hash, full_name, phone, role, status, created_at
