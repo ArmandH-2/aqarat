@@ -74,7 +74,7 @@ Never invent a colour at the call site. Every status maps to exactly one pill st
 | Status | Style |
 |---|---|
 | `AVAILABLE`, `PAID`, `CONFIRMED`, `COMPLETED`, `OK` | good |
-| `PENDING_REVIEW`, `NEEDS_INFO`, `PARTIALLY_PAID`, `ABOVE_MARKET`, `DECLARED`, `REQUESTED` | warn |
+| `PENDING_REVIEW`, `NEEDS_INFO`, `PARTIALLY_PAID`, `ABOVE_MARKET`, `DECLARED`, `REQUESTED`, `WITHDRAWAL_REQUESTED` | warn |
 | `REJECTED`, `OVERDUE`, `IMPLAUSIBLE`, `TERMINATED`, `NO_SHOW` | bad |
 | `RESERVED`, `UNDER_CONTRACT`, `ACTIVE`, `DRAFT` | info |
 | `CLOSED`, `WITHDRAWN`, `CANCELLED`, `LAPSED`, `EXPIRED`, `INACTIVE` | neutral |

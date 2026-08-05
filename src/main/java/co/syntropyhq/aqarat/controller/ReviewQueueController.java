@@ -159,8 +159,9 @@ public class ReviewQueueController {
 
     private List<PropertyStatus> searchStatuses() {
         return showingUnassigned
-            ? List.of(PropertyStatus.PENDING_REVIEW)
-            : List.of(PropertyStatus.PENDING_REVIEW, PropertyStatus.NEEDS_INFO);
+            ? List.of(PropertyStatus.PENDING_REVIEW, PropertyStatus.WITHDRAWAL_REQUESTED)
+            : List.of(PropertyStatus.PENDING_REVIEW, PropertyStatus.NEEDS_INFO,
+                PropertyStatus.WITHDRAWAL_REQUESTED);
     }
 
     private PropertySearch searchFilters() {
@@ -197,10 +198,20 @@ public class ReviewQueueController {
         switch (status) {
             case PENDING_REVIEW:
             case NEEDS_INFO:
+            case WITHDRAWAL_REQUESTED:
                 return "pill-warn";
             default:
                 return "pill-neutral";
         }
+    }
+
+    // A withdrawal request is not a new submission, so the row says so
+    // instead of reusing submittedAt - that timestamp is stale once the
+    // owner has asked for the listing to come down.
+    private String waitingText(Property property) {
+        return property.getStatus() == PropertyStatus.WITHDRAWAL_REQUESTED
+            ? "Owner has asked to remove this listing"
+            : "Submitted " + Format.dateTime(property.getSubmittedAt());
     }
 
     private String priceText(Property property) {
@@ -238,7 +249,7 @@ public class ReviewQueueController {
             Label meta = new Label(metaLine(property));
             meta.getStyleClass().add("label-soft");
 
-            Label waiting = new Label("Submitted " + Format.dateTime(property.getSubmittedAt()));
+            Label waiting = new Label(waitingText(property));
             waiting.getStyleClass().add("hint");
 
             HBox actions = buildActions(property);

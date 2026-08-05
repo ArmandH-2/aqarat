@@ -9,5 +9,6 @@ public enum PropertyStatus {
     RESERVED,
     UNDER_CONTRACT,
     CLOSED,
+    WITHDRAWAL_REQUESTED,
     WITHDRAWN
 }

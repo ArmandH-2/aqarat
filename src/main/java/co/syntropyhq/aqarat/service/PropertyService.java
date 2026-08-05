@@ -100,6 +100,17 @@ public class PropertyService {
     }
 
     /**
+     * An owner asking for a published listing to be taken down. The listing
+     * stays visible and reservable until an agent answers, because nothing has
+     * been decided yet (DESIGN.md section 6). The reason is kept as the review
+     * note so the agent sees it in the queue.
+     */
+    public void requestWithdrawal(int propertyId, String reason)
+            throws SQLException, InvalidTransitionException {
+        review(propertyId, PropertyStatus.WITHDRAWAL_REQUESTED, reason);
+    }
+
+    /**
      * Records an agent's decision on a submission: the new status and the note
      * explaining it are written together, so a rejection or a request for more
      * information can never reach the owner without its reason. Pass a null
@@ -227,7 +238,10 @@ public class PropertyService {
             case NEEDS_INFO:
                 return to == PropertyStatus.PENDING_REVIEW || to == PropertyStatus.WITHDRAWN;
             case AVAILABLE:
-                return to == PropertyStatus.RESERVED;
+                return to == PropertyStatus.RESERVED
+                    || to == PropertyStatus.WITHDRAWAL_REQUESTED;
+            case WITHDRAWAL_REQUESTED:
+                return to == PropertyStatus.WITHDRAWN || to == PropertyStatus.AVAILABLE;
             case RESERVED:
                 return to == PropertyStatus.UNDER_CONTRACT || to == PropertyStatus.AVAILABLE;
             case UNDER_CONTRACT:
