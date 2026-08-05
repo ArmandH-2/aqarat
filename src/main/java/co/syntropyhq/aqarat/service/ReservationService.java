@@ -201,6 +201,29 @@ public class ReservationService {
         writeStatus(reservation, ReservationStatus.CONVERTED, "CONVERT");
     }
 
+    /**
+     * Converting as part of activating a contract, on the caller's connection
+     * so the whole activation is one unit. Still refuses a reservation that
+     * has expired or already been used - going straight to the DAO would skip
+     * both of those checks, which is the reason this method exists.
+     */
+    public void convert(Connection connection, int reservationId)
+            throws SQLException, InvalidTransitionException {
+        Reservation reservation = reservationDao.findById(connection, reservationId);
+        if (reservation == null) {
+            throw new IllegalArgumentException("No reservation with id " + reservationId + ".");
+        }
+        if (reservation.getStatus() == ReservationStatus.ACTIVE
+                && !reservation.getExpiresAt().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
+            throw new InvalidTransitionException(
+                "This reservation expired on " + reservation.getExpiresAt() + " and cannot be converted.");
+        }
+        requireLegalTransition(reservation.getStatus(), ReservationStatus.CONVERTED);
+        reservationDao.updateStatus(connection, reservationId, ReservationStatus.CONVERTED);
+        auditService.record(connection, "reservation", reservationId, "CONVERT",
+            reservation.getStatus().name(), ReservationStatus.CONVERTED.name());
+    }
+
     private void writeStatus(Reservation reservation, ReservationStatus newStatus, String action)
             throws SQLException {
         ReservationStatus oldStatus = reservation.getStatus();

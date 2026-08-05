@@ -250,7 +250,12 @@ public class PropertyService {
             case NEEDS_INFO:
                 return to == PropertyStatus.PENDING_REVIEW || to == PropertyStatus.WITHDRAWN;
             case AVAILABLE:
+                // Straight to UNDER_CONTRACT because a contract may be drafted
+                // against an available property with no reservation at all
+                // (BUILD-ORDER phase 5). Routing it through RESERVED instead
+                // would record a reservation in the audit log that never existed.
                 return to == PropertyStatus.RESERVED
+                    || to == PropertyStatus.UNDER_CONTRACT
                     || to == PropertyStatus.WITHDRAWAL_REQUESTED;
             case WITHDRAWAL_REQUESTED:
                 return to == PropertyStatus.WITHDRAWN || to == PropertyStatus.AVAILABLE;

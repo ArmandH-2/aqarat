@@ -151,6 +151,12 @@ Loops that are part of the design and must be built: a review bouncing back as `
 a rejection with a reason, a viewing cancelled or marked no-show, a reservation lapsing when
 `expires_at` passes, and a lease reaching `end_date` and returning the property to `AVAILABLE`.
 
+**A contract without a reservation.** A reservation is the usual road to a contract, but not
+the only one: a contract may be drafted against a property that is simply `AVAILABLE`, so
+`AVAILABLE` moves directly to `UNDER_CONTRACT` as well as through `RESERVED`. The alternative —
+passing through `RESERVED` on the way — would write a reservation into the audit log that
+never happened, and the audit log is the one thing in this system that has to be true.
+
 **Taking a published listing down.** An owner may withdraw a submission that is still in
 review on their own. Once a listing is live, they ask instead: the property moves to
 `WITHDRAWAL_REQUESTED` and appears in the review queue, and an agent either accepts it —
