@@ -173,7 +173,26 @@ public class PropertyService {
     }
 
     /**
-     * Moves a property to a new status. This is the only place
+     * Moves a property to a new status as part of a larger piece of work. The
+     * caller owns the connection, so the status change, whatever else it
+     * belongs with, and the audit entry all commit or all roll back together.
+     * A reservation that exists while its property still reads AVAILABLE is
+     * the failure this prevents.
+     */
+    public void changeStatus(Connection connection, int propertyId, PropertyStatus newStatus)
+            throws SQLException, InvalidTransitionException {
+        Property property = requireProperty(connection, propertyId);
+        PropertyStatus oldStatus = property.getStatus();
+        requireLegalTransition(oldStatus, newStatus);
+        property.setStatus(newStatus);
+        stampTimestamp(property, newStatus);
+        propertyDao.updateStatus(connection, property);
+        auditService.record(connection, "property", propertyId, "STATUS_CHANGE",
+            oldStatus.name(), newStatus.name());
+    }
+
+    /**
+     * Moves a property to a new status on its own. This is the only place
      * property.status is ever written (DESIGN.md section 6) - every screen,
      * in every phase, comes through here rather than writing the column
      * itself. The transition is checked against the state machine first;
@@ -184,14 +203,7 @@ public class PropertyService {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
-                Property property = requireProperty(connection, propertyId);
-                PropertyStatus oldStatus = property.getStatus();
-                requireLegalTransition(oldStatus, newStatus);
-                property.setStatus(newStatus);
-                stampTimestamp(property, newStatus);
-                propertyDao.updateStatus(connection, property);
-                auditService.record(connection, "property", propertyId, "STATUS_CHANGE",
-                    oldStatus.name(), newStatus.name());
+                changeStatus(connection, propertyId, newStatus);
                 connection.commit();
             } catch (SQLException | InvalidTransitionException e) {
                 connection.rollback();
