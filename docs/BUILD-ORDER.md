@@ -80,7 +80,7 @@ merged and the shell works.
 
 ---
 
-## Phase 2 — Properties (days 4–6)
+## Phase 2 — Properties (days 4–6) — **DONE**
 
 ### Track A — the public side
 - `dao/PropertyDao` — search with filters, find by id, find by owner, find by agent.
