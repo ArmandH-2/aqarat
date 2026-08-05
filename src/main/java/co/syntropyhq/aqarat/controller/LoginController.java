@@ -4,6 +4,7 @@ import co.syntropyhq.aqarat.dao.UserDao;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.SessionManager;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -39,11 +40,11 @@ public class LoginController {
 
         boolean valid = true;
         if (email.isEmpty()) {
-            showError(emailError, "Enter your email.");
+            FieldError.show(emailField, emailError, "Enter your email.");
             valid = false;
         }
         if (password.isEmpty()) {
-            showError(passwordError, "Enter your password.");
+            FieldError.show(passwordField, passwordError, "Enter your password.");
             valid = false;
         }
         if (!valid) {
@@ -59,7 +60,11 @@ public class LoginController {
         }
 
         if (user == null) {
-            showError(formError, "Incorrect email or password.");
+            // formError belongs to the whole form, not one field - there is no
+            // control to redden, so it is shown directly rather than through FieldError.
+            formError.setText("Incorrect email or password.");
+            formError.setVisible(true);
+            formError.setManaged(true);
             return;
         }
 
@@ -100,20 +105,10 @@ public class LoginController {
         ((Stage) emailField.getScene().getWindow()).close();
     }
 
-    private void showError(Label label, String message) {
-        label.setText(message);
-        label.setVisible(true);
-        label.setManaged(true);
-    }
-
     private void clearErrors() {
-        hideError(emailError);
-        hideError(passwordError);
-        hideError(formError);
-    }
-
-    private void hideError(Label label) {
-        label.setVisible(false);
-        label.setManaged(false);
+        FieldError.clear(emailField, emailError);
+        FieldError.clear(passwordField, passwordError);
+        formError.setVisible(false);
+        formError.setManaged(false);
     }
 }

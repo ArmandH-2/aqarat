@@ -4,6 +4,7 @@ import co.syntropyhq.aqarat.dao.UserDao;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.FieldError;
 import java.io.IOException;
 import java.sql.SQLException;
 import javafx.fxml.FXML;
@@ -62,7 +63,7 @@ public class RegisterController {
         }
 
         if (user == null) {
-            showError(emailError, "This email is already registered.");
+            FieldError.show(emailField, emailError, "This email is already registered.");
             return;
         }
 
@@ -79,22 +80,22 @@ public class RegisterController {
             String password, String confirmPassword) {
         boolean valid = true;
         if (fullName.isEmpty()) {
-            showError(fullNameError, "Enter your full name.");
+            FieldError.show(fullNameField, fullNameError, "Enter your full name.");
             valid = false;
         }
         if (email.isEmpty()) {
-            showError(emailError, "Enter your email.");
+            FieldError.show(emailField, emailError, "Enter your email.");
             valid = false;
         }
         if (phone.isEmpty()) {
-            showError(phoneError, "Enter your phone number.");
+            FieldError.show(phoneField, phoneError, "Enter your phone number.");
             valid = false;
         }
         if (password.isEmpty()) {
-            showError(passwordError, "Enter a password.");
+            FieldError.show(passwordField, passwordError, "Enter a password.");
             valid = false;
         } else if (!password.equals(confirmPassword)) {
-            showError(confirmPasswordError, "Passwords do not match.");
+            FieldError.show(confirmPasswordField, confirmPasswordError, "Passwords do not match.");
             valid = false;
         }
         return valid;
@@ -118,22 +119,11 @@ public class RegisterController {
         ((Stage) fullNameField.getScene().getWindow()).close();
     }
 
-    private void showError(Label label, String message) {
-        label.setText(message);
-        label.setVisible(true);
-        label.setManaged(true);
-    }
-
     private void clearErrors() {
-        hideError(fullNameError);
-        hideError(emailError);
-        hideError(phoneError);
-        hideError(passwordError);
-        hideError(confirmPasswordError);
-    }
-
-    private void hideError(Label label) {
-        label.setVisible(false);
-        label.setManaged(false);
+        FieldError.clear(fullNameField, fullNameError);
+        FieldError.clear(emailField, emailError);
+        FieldError.clear(phoneField, phoneError);
+        FieldError.clear(passwordField, passwordError);
+        FieldError.clear(confirmPasswordField, confirmPasswordError);
     }
 }
