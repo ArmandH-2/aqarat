@@ -142,6 +142,7 @@
                                 <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                                     <Label text="Flag" styleClass="label-soft"/>
                                     <Label fx:id="flagPill" styleClass="pill"/>
+                                    <Label fx:id="flagCaption" styleClass="hint" wrapText="true"/>
                                 </VBox>
                             </HBox>
                             <VBox spacing="4">
@@ -170,17 +171,31 @@
 
             <VBox fx:id="decisionBox" styleClass="card" spacing="12">
                 <Label text="Decision" styleClass="section-title"/>
-                <VBox spacing="4">
+
+                <VBox fx:id="withdrawalReasonBox" spacing="4" managed="false" visible="false">
+                    <Label text="Owner's reason" styleClass="label-soft"/>
+                    <Label fx:id="withdrawalReasonValue" wrapText="true"/>
+                </VBox>
+
+                <VBox fx:id="noteBox" spacing="4">
                     <Label text="Note" styleClass="label-soft"/>
                     <TextArea fx:id="noteArea" wrapText="true" prefRowCount="3"/>
                     <Label fx:id="noteError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>
-                <HBox spacing="12">
+
+                <HBox fx:id="reviewActionsBox" spacing="12">
                     <Button text="Approve and publish" styleClass="button, button-primary"
                             onAction="#handleApprove"/>
                     <Button text="Request more information" styleClass="button, button-secondary"
                             onAction="#handleRequestInfo"/>
                     <Button text="Reject" styleClass="button, button-danger" onAction="#handleReject"/>
+                </HBox>
+
+                <HBox fx:id="withdrawalActionsBox" spacing="12" managed="false" visible="false">
+                    <Button text="Accept removal" styleClass="button, button-danger"
+                            onAction="#handleAcceptRemoval"/>
+                    <Button text="Decline and keep listed" styleClass="button, button-secondary"
+                            onAction="#handleDeclineRemoval"/>
                 </HBox>
             </VBox>
 

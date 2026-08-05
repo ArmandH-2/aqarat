@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -27,6 +28,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -107,6 +109,37 @@ public class MyPropertiesController {
         loadProperties();
     }
 
+    // The dialog is the one place DESIGN.md's owner-withdrawal note allows
+    // one (CLAUDE.md, comments) - a list row has nowhere to hold an inline
+    // form, and this is collecting input for an action, not reporting a
+    // validation failure.
+    private void handleRequestRemoval(Property property) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setHeaderText(null);
+        dialog.setTitle("Request removal");
+        dialog.setContentText("Why are you asking for this listing to be taken down?");
+        Optional<String> input = dialog.showAndWait();
+        if (input.isEmpty()) {
+            return;
+        }
+        String reason = input.get().trim();
+        if (reason.isEmpty()) {
+            AlertUtil.showError("A reason is required to request removal.");
+            return;
+        }
+        try {
+            propertyService.requestWithdrawal(property.getId(), reason);
+        } catch (PropertyService.InvalidTransitionException e) {
+            AlertUtil.showError("This listing can no longer have its removal requested.");
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Your removal request has been sent to an agent.");
+        loadProperties();
+    }
+
     // Maps each status to the one pill style docs/UI-STYLE.md assigns it.
     // Nothing on this screen is allowed to choose a colour on its own.
     private String pillClass(PropertyStatus status) {
@@ -115,6 +148,7 @@ public class MyPropertiesController {
                 return "pill-good";
             case PENDING_REVIEW:
             case NEEDS_INFO:
+            case WITHDRAWAL_REQUESTED:
                 return "pill-warn";
             case REJECTED:
                 return "pill-bad";
@@ -167,8 +201,13 @@ public class MyPropertiesController {
             card.getStyleClass().add("card");
             card.setPadding(new Insets(16));
 
-            if (property.getStatus() == PropertyStatus.NEEDS_INFO && property.getReviewNote() != null) {
-                Label reviewNote = new Label("Review note: " + property.getReviewNote());
+            PropertyStatus status = property.getStatus();
+            boolean showsNote = status == PropertyStatus.NEEDS_INFO
+                || status == PropertyStatus.WITHDRAWAL_REQUESTED;
+            if (showsNote && property.getReviewNote() != null) {
+                String caption = status == PropertyStatus.WITHDRAWAL_REQUESTED
+                    ? "Your reason: " : "Review note: ";
+                Label reviewNote = new Label(caption + property.getReviewNote());
                 reviewNote.setWrapText(true);
                 reviewNote.getStyleClass().add("hint");
                 card.getChildren().add(reviewNote);
@@ -195,6 +234,12 @@ public class MyPropertiesController {
                 withdraw.getStyleClass().addAll("button", "button-danger");
                 withdraw.setOnAction(event -> handleWithdraw(property));
                 actions.getChildren().add(withdraw);
+            }
+            if (status == PropertyStatus.AVAILABLE) {
+                Button requestRemoval = new Button("Request removal");
+                requestRemoval.getStyleClass().addAll("button", "button-secondary");
+                requestRemoval.setOnAction(event -> handleRequestRemoval(property));
+                actions.getChildren().add(requestRemoval);
             }
             return actions;
         }

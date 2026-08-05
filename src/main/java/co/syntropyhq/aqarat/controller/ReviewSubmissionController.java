@@ -109,6 +109,8 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label flagPill;
     @FXML
+    private Label flagCaption;
+    @FXML
     private Label rangeValue;
     @FXML
     private Label pricePerSqmValue;
@@ -124,9 +126,19 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label decisionHintLabel;
     @FXML
+    private VBox withdrawalReasonBox;
+    @FXML
+    private Label withdrawalReasonValue;
+    @FXML
+    private VBox noteBox;
+    @FXML
     private TextArea noteArea;
     @FXML
     private Label noteError;
+    @FXML
+    private HBox reviewActionsBox;
+    @FXML
+    private HBox withdrawalActionsBox;
 
     private final PropertyService propertyService =
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
@@ -302,18 +314,41 @@ public class ReviewSubmissionController implements NeedsId {
         return tile;
     }
 
-    // Decisions only apply to a submission actually waiting on one
-    // (PropertyService.review only allows PENDING_REVIEW -> a decision).
-    // A NEEDS_INFO submission is back with the owner until they resend it.
+    // Decisions apply to a submission waiting on one (PENDING_REVIEW) and to
+    // an owner's request to take a live listing down (WITHDRAWAL_REQUESTED,
+    // DESIGN.md section 6). A NEEDS_INFO submission is back with the owner
+    // until they resend it, so it gets neither button row.
     private void renderDecisionSection() {
-        boolean canDecide = property.getStatus() == PropertyStatus.PENDING_REVIEW;
+        PropertyStatus status = property.getStatus();
+        boolean isPendingReview = status == PropertyStatus.PENDING_REVIEW;
+        boolean isWithdrawalRequest = status == PropertyStatus.WITHDRAWAL_REQUESTED;
+        boolean canDecide = isPendingReview || isWithdrawalRequest;
+
         decisionBox.setVisible(canDecide);
         decisionBox.setManaged(canDecide);
         decisionHintLabel.setVisible(!canDecide);
         decisionHintLabel.setManaged(!canDecide);
         if (!canDecide) {
             decisionHintLabel.setText(
-                "Current status: " + Format.enumLabel(property.getStatus()) + ". No decision is needed right now.");
+                "Current status: " + Format.enumLabel(status) + ". No decision is needed right now.");
+            return;
+        }
+        showDecisionActions(isPendingReview, isWithdrawalRequest);
+    }
+
+    private void showDecisionActions(boolean isPendingReview, boolean isWithdrawalRequest) {
+        reviewActionsBox.setVisible(isPendingReview);
+        reviewActionsBox.setManaged(isPendingReview);
+        noteBox.setVisible(isPendingReview);
+        noteBox.setManaged(isPendingReview);
+
+        withdrawalActionsBox.setVisible(isWithdrawalRequest);
+        withdrawalActionsBox.setManaged(isWithdrawalRequest);
+        withdrawalReasonBox.setVisible(isWithdrawalRequest);
+        withdrawalReasonBox.setManaged(isWithdrawalRequest);
+        if (isWithdrawalRequest) {
+            withdrawalReasonValue.setText(
+                property.getReviewNote() == null ? "No reason was given." : property.getReviewNote());
         }
     }
 
@@ -352,6 +387,7 @@ public class ReviewSubmissionController implements NeedsId {
         valuationMetaLabel.setText(
             "Model " + saved.getModelVersion() + " • " + Format.dateTime(saved.getCreatedAt()));
         applyFlagPill(result.getFlag());
+        applyRangeCaption(result.getLowerBound(), result.getUpperBound());
         renderFactors(result.getFactorContributions());
         renderComparables(result.getComparables());
     }
@@ -362,6 +398,21 @@ public class ReviewSubmissionController implements NeedsId {
         flagPill.setText(Format.enumLabel(flag));
         flagPill.getStyleClass().removeAll("pill-good", "pill-warn", "pill-bad", "pill-info", "pill-neutral");
         flagPill.getStyleClass().add(flagPillClass(flag));
+    }
+
+    // ValuationFlag has no separate value for "below the range" (DESIGN.md
+    // section 7 uses ABOVE_MARKET for both directions), so this reads the
+    // same bounds the range line already shows rather than adding one. Text
+    // only - it feeds no decision and the flag itself is unchanged.
+    private void applyRangeCaption(BigDecimal lowerBound, BigDecimal upperBound) {
+        BigDecimal askingPrice = property.getAskingPrice();
+        if (askingPrice.compareTo(upperBound) > 0) {
+            flagCaption.setText("Above the estimated range");
+        } else if (askingPrice.compareTo(lowerBound) < 0) {
+            flagCaption.setText("Below the estimated range");
+        } else {
+            flagCaption.setText("Within the estimated range");
+        }
     }
 
     private String flagPillClass(ValuationFlag flag) {
@@ -492,6 +543,18 @@ public class ReviewSubmissionController implements NeedsId {
         if (AlertUtil.confirm("Reject this submission? The owner will see your reason.")) {
             submitDecision(PropertyStatus.REJECTED, note);
         }
+    }
+
+    @FXML
+    private void handleAcceptRemoval() {
+        if (AlertUtil.confirm("Accept this removal? The listing will come off the market.")) {
+            submitDecision(PropertyStatus.WITHDRAWN, null);
+        }
+    }
+
+    @FXML
+    private void handleDeclineRemoval() {
+        submitDecision(PropertyStatus.AVAILABLE, null);
     }
 
     private String requireNote(String message) {
