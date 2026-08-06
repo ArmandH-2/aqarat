@@ -149,10 +149,15 @@ and their payment histories from scratch. The districts and their average prices
 plausible for Lebanon; everything else — the addresses, the names, the prices — is generated.
 
 That matters for the estimator. Measured against the seeded closed properties, with each subject
-excluded from its own comparables and from the regression, the median error is about 22% for
-sales and 19% for rentals. That is inside the range the design expected, but it is a model
-fitted to synthetic data and it should be read as a demonstration of the method, not as a
-valuation anyone should trade on.
+excluded from its own comparables and from its own training set, the median error is about **12%**
+on sales and **12%** on rentals, with roughly four in five predictions inside 25%. That is well
+inside the range the design expected, but it is a model fitted to synthetic data and it should be
+read as a demonstration of the method, not as a valuation anyone should trade on. The tail is
+still long — the worst sale in the sample is out by more than a factor of two.
+
+The property photos are generated illustrations, not photographs, written into `uploads/` — which
+is gitignored, because uploaded files are runtime data rather than source. A fresh clone shows a
+caption tile in their place until they are regenerated.
 
 The seed also stops valuing properties once they are published, so the time-on-market report has
 nothing to compare against until properties are valued and closed through the application

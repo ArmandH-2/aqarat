@@ -155,7 +155,12 @@ public class PriceEstimator {
         double[] targets = new double[usable.size()];
         for (int i = 0; i < usable.size(); i++) {
             features[i] = featuresOf(usable.get(i), avgPricePerSqmByDistrict);
-            targets[i] = usable.get(i).getAskingPrice().doubleValue();
+            // Fitting price per m2 instead of raw price keeps every row's
+            // contribution to the least-squares fit on the same scale, so a
+            // $900,000 sale no longer dominates the fit the way it would
+            // when area only appears as a feature and not as the target's
+            // own denominator.
+            targets[i] = usable.get(i).getAskingPrice().doubleValue() / usable.get(i).getAreaSqm().doubleValue();
         }
 
         LinearRegression regression = new LinearRegression();
@@ -167,7 +172,8 @@ public class PriceEstimator {
             // a number produced from a degenerate fit.
             return null;
         }
-        double predicted = regression.predict(featuresOf(subject, avgPricePerSqmByDistrict));
+        double predictedPricePerSqm = regression.predict(featuresOf(subject, avgPricePerSqmByDistrict));
+        double predicted = predictedPricePerSqm * subject.getAreaSqm().doubleValue();
         return predicted > 0 ? predicted : null;
     }
 

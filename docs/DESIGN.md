@@ -206,7 +206,9 @@ and condition, multiply by area.
 
 **Regression.** Multiple linear regression over the closed-property dataset, using area,
 bedrooms, bathrooms, floor, building age, district average price per m², and the boolean
-features. Solved with normal equations in `LinearRegression`.
+features. Solved with normal equations in `LinearRegression`. It predicts price per m² rather
+than total price, then multiplies by the subject's area, so a handful of expensive sales cannot
+dominate the fit over cheaper rentals.
 
 The two are averaged. The confidence range is derived from the spread of the comparables:
 wide spread, wide range.
