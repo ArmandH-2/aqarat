@@ -7,6 +7,7 @@ import co.syntropyhq.aqarat.model.ValuationFlag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -134,6 +135,86 @@ class PriceEstimatorTest {
         assertThrows(IllegalArgumentException.class, () -> estimator.estimate(subject, comparables,
             Collections.emptyList(), districtAverages, comparables.size(), ABOVE_MARKET_PERCENT,
             IMPLAUSIBLE_PERCENT));
+    }
+
+    // Fitting price per m2 should make the regression scale-free: multiply
+    // every training price and the subject's own asking price by the same
+    // constant, and the estimate should scale by exactly that constant.
+    // Comparables are left empty so the blended estimate is the regression
+    // estimate alone.
+    @Test
+    void scalingAllTrainingPricesScalesTheRegressionEstimateByTheSameFactor() {
+        Map<Integer, BigDecimal> districts = Map.of(
+            1, BigDecimal.valueOf(1800),
+            2, BigDecimal.valueOf(2200),
+            3, BigDecimal.valueOf(2600));
+        List<Property> baseDataset = regressionTrainingSet(districts);
+        Property baseSubject = regressionSubject();
+
+        ValuationResult base = estimator.estimate(baseSubject, Collections.emptyList(), baseDataset,
+            districts, COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        int scale = 3;
+        List<Property> scaledDataset = scalePrices(regressionTrainingSet(districts), scale);
+        Property scaledSubject = regressionSubject();
+        scaledSubject.setAskingPrice(scaledSubject.getAskingPrice().multiply(BigDecimal.valueOf(scale)));
+
+        ValuationResult scaled = estimator.estimate(scaledSubject, Collections.emptyList(), scaledDataset,
+            districts, COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        double ratio = scaled.getEstimatedValue().doubleValue() / base.getEstimatedValue().doubleValue();
+        assertEquals(scale, ratio, 0.01);
+    }
+
+    private List<Property> scalePrices(List<Property> properties, int scale) {
+        for (Property property : properties) {
+            property.setAskingPrice(property.getAskingPrice().multiply(BigDecimal.valueOf(scale)));
+        }
+        return properties;
+    }
+
+    // 40 rows, three districts, every feature column varied so the design
+    // matrix has no constant column - a constant column (e.g. every row the
+    // same district, or every row unfurnished) is linearly dependent with
+    // the regression's own intercept column and the fit fails.
+    private List<Property> regressionTrainingSet(Map<Integer, BigDecimal> districts) {
+        int[] districtIds = {1, 2, 3};
+        List<Property> rows = new ArrayList<>();
+        for (int i = 0; i < 40; i++) {
+            Property property = new Property();
+            property.setDistrictId(districtIds[i % districtIds.length]);
+            property.setPropertyTypeId(1);
+            property.setAreaSqm(BigDecimal.valueOf(70 + i * 5));
+            property.setBedrooms(2 + i % 4);
+            property.setBathrooms(1 + i % 5);
+            property.setFloorNumber(1 + i % 7);
+            property.setYearBuilt(1985 + i % 13);
+            property.setDealType(DealType.SALE);
+            property.setStatus(PropertyStatus.CLOSED);
+            property.setHasParking(i % 2 == 0);
+            property.setHasElevator(i % 11 == 0);
+            property.setHasBalcony(i % 8 == 0);
+            property.setFurnished(i % 9 == 0);
+            double pricePerSqm = 1500 + i * 23 + property.getBedrooms() * 40;
+            property.setAskingPrice(BigDecimal.valueOf(pricePerSqm * property.getAreaSqm().doubleValue()));
+            rows.add(property);
+        }
+        return rows;
+    }
+
+    private Property regressionSubject() {
+        Property subject = new Property();
+        subject.setDistrictId(1);
+        subject.setPropertyTypeId(1);
+        subject.setAreaSqm(BigDecimal.valueOf(110));
+        subject.setBedrooms(3);
+        subject.setBathrooms(2);
+        subject.setFloorNumber(4);
+        subject.setYearBuilt(2005);
+        subject.setDealType(DealType.SALE);
+        subject.setStatus(PropertyStatus.CLOSED);
+        subject.setAskingPrice(BigDecimal.valueOf(230_000));
+        return subject;
     }
 
     private List<Property> comparablesAround(long pricePerComparable) {
