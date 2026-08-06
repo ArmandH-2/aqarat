@@ -188,9 +188,9 @@ public class ReservationService {
     }
 
     /**
-     * The reservation becomes a contract. Phase 5 calls this from
-     * ContractService when a contract is activated; the property's own move
-     * to UNDER_CONTRACT happens there, not here.
+     * The reservation becomes a contract, on its own connection. Contract
+     * activation uses the overload below instead, so the conversion joins
+     * that transaction rather than committing on its own.
      */
     public void convert(int reservationId)
             throws SQLException, PropertyService.InvalidTransitionException,
