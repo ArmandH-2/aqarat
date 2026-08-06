@@ -237,9 +237,12 @@ public class ReportsController {
         table.getColumns().add(column);
     }
 
+    // Without this the columns keep their own widths and leave a dead strip
+    // down the right of every table.
     private <T> void emptyState(TableView<T> table, String message) {
         Label empty = new Label(message);
         empty.getStyleClass().add("empty-state");
         table.setPlaceholder(empty);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 }

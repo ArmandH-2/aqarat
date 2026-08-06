@@ -5,7 +5,7 @@ payments, and an explainable price estimator.
 
 JavaFX desktop application, SQL Server, Java 21.
 
-<!-- Replace with a screenshot of ReviewSubmission once it exists. -->
+![The review screen](screenshots/03-review-submission.png)
 
 ---
 
@@ -24,137 +24,152 @@ The idea holding it together is that **every number can be traced to its source.
 - The system advises. A person decides. Both are recorded.
 
 The owner sets their own asking price. The estimator's job is not to price the property — it is
-to answer whether the owner's number is believable, and to flag the ones that are not.
+to answer whether the owner's number is believable, and to flag the ones that are not. An agent
+may publish a listing the estimator called implausible; a model trained on a few thousand rows
+does not get a veto over a real person's property.
+
+## Screens
+
+| | |
+|---|---|
+| ![Sign in](screenshots/01-login.png) | ![Browse listings](screenshots/02-browse-listings.png) |
+| Sign in, or browse without an account | Search and filter 2,000 listings |
+| ![Review queue](screenshots/04-review-queue.png) | ![Contracts](screenshots/05-contracts.png) |
+| Claim submissions from the unassigned queue | Draft a contract, then activate it |
+| ![Reports](screenshots/06-reports.png) | |
+| Revenue and commission by month | |
+
+Twenty panels in total, behind a role-aware sidebar: a guest sees published listings, a
+customer sees their own properties and contracts, an agent sees the pipeline, an admin sees
+everything plus accounts, reference data, reports and the audit log.
 
 ## Features
 
-**Properties** — owner submission, agent review queue, publication, a controlled status
-lifecycle from draft through to closed.
+**Properties** — owner submission, agent review queue, publication, and a controlled status
+lifecycle from draft through to closed. `property.status` moves only through `PropertyService`;
+no screen writes the column.
 
 **Clients** — one account per person. Whether someone is an owner or a client is answered by
 their relationships, not by a column, so the person selling one apartment and renting another
 has a single account.
 
-**Contracts** — sale and long-term lease. Term validation against the owner's minimum and
+**Price estimation** — comparable properties blended with a multiple linear regression, both
+written in plain Java. No external service, no API key, no network. Produces a range and a
+plausibility flag rather than a single authoritative number, with the comparables it used
+shown beside it.
+
+**Viewings and reservations** — a client requests, an agent confirms. One agent cannot hold two
+confirmed viewings at the same moment, and one property cannot hold two active reservations —
+both enforced by filtered unique indexes as well as by the service layer.
+
+**Contracts** — sale and long-term lease, with term validation against the owner's minimum and
 maximum. Activation runs as a single transaction: property status, generated payment schedule,
 commission, and audit entry, all or nothing.
 
-**Payments** — an installment schedule per contract, overdue detection, client-declared
-payments with proof, agent confirmation, and receipts.
+**Payments** — an installment schedule per contract, overdue detection, client-declared payments
+with proof, agent confirmation, and receipts. A schedule sums to exactly the contract total; the
+rounding remainder goes on the last row rather than quietly disappearing.
 
-**Price estimation** — comparable properties blended with a multiple linear regression, both
-written in plain Java. No external service, no API key, no network. Produces a range and a
-plausibility flag rather than a single authoritative number.
+**Audit trail** — every create, update and delete, with before and after values, filterable and
+exportable to CSV.
 
-**Audit trail** — every create, update and delete, with before and after values.
+## Two things decided deliberately
+
+**There is no scheduler.** A reservation past its expiry and a payment past its grace period are
+decided when something *reads* the row, not by a timer. A background thread in a desktop
+application is a source of bugs nobody needs, and the read-time answer is still correct after the
+application has been closed for a month.
+
+**The valuation package touches no database.** `PriceEstimator` takes a list of comparable
+properties and returns a result; `ValuationService` is what queries and what saves. That is why
+its tests run with no connection at all.
 
 ## Tech
 
 | | |
 |---|---|
 | Language | Java 21 |
-| UI | JavaFX, FXML, CSS |
+| UI | JavaFX 21, FXML, one stylesheet |
 | Database | SQL Server |
 | Driver | mssql-jdbc |
 | Pooling | HikariCP |
 | Passwords | BCrypt |
 | Build | Maven |
 
-No Spring, no ORM, no code generation. Every SQL statement in the project was written by hand
-as a prepared statement.
+No Spring, no Hibernate, no Lombok, no ORM. Roughly ninety classes across `model`, `dao`,
+`service`, `controller`, `valuation` and `util`.
 
 ## Running it
 
-**1. Database**
+You need Java 21, Maven, and a local SQL Server.
 
-Open `db/schema.sql` in SQL Server Management Studio and execute it, then `db/seed.sql`.
-The seed prints row counts when it finishes.
+**1. Create the database.**
 
-**2. Configuration**
-
-Copy `config/local.properties.example` to `config/local.properties` and set your connection
-details:
-
-```properties
-db.url=jdbc:sqlserver://localhost:1433;databaseName=Aqarat;encrypt=true;trustServerCertificate=true
-db.user=sa
-db.password=your-password
+```bash
+sqlcmd -S "localhost\SQLEXPRESS" -E -C -I -i db/schema.sql
+sqlcmd -S "localhost\SQLEXPRESS" -E -C -I -d Aqarat -i db/seed.sql
 ```
 
-This file is gitignored. No credentials are committed.
+The `-I` matters. It turns on `QUOTED_IDENTIFIER`, which the filtered unique indexes need;
+without it `schema.sql` fails partway through with a message about SET options.
 
-**3. Run**
+The seed prints its row counts at the end. You should see 2,000 properties.
 
-```
-./mvnw javafx:run
-```
+**2. Point the application at it.**
 
-**4. Sign in**
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@aqarat.local` | `Password123!` |
-| Agent | `rami@aqarat.local` | `Password123!` |
-| Customer | `user1@example.com` | `Password123!` |
-
-## About the data
-
-**The seeded dataset is synthetic.** Two thousand properties are generated from district-level
-price-per-m² figures, adjusted for type, size, age, floor and features, with noise applied. The
-district figures are indicative of the Lebanese market; the individual properties are not real.
-
-This is a deliberate choice, not a shortcut. Training the estimator only on deals closed inside
-the application would mean roughly twenty rows and useless estimates. Generated data makes the
-model demonstrable and every screen legible.
-
-A minority of the seeded listings are deliberately overpriced, so the review queue contains
-genuine `ABOVE_MARKET` and `IMPLAUSIBLE` cases to look at.
-
-## Architecture
-
-```
-FXML panels
-    |
-controller      one per panel, never any SQL
-    |
-service         business rules, owns transactions   ->   valuation
-    |
-dao             prepared statements only
-    |
-SQL Server      13 tables
+```bash
+cp config/local.properties.example config/local.properties
 ```
 
-Three rules are enforced throughout: controllers contain no SQL, DAOs contain no business
-rules, and services own transactions. Every DAO method takes a `Connection` as its first
-parameter so that a service can span several of them in one atomic operation.
+Then fill in your server, database and credentials. That file is gitignored and never
+committed. If SQL Server is on a named instance with dynamic ports, either give the instance a
+static port or put the dynamic one in the URL — the example assumes `localhost:1433`.
 
-Two integrity rules live in the database rather than only in code, as filtered unique indexes:
-one active reservation per property, and no two confirmed viewings for the same agent at the
-same moment.
+**3. Run it.**
 
-## Documentation
+```bash
+mvn javafx:run
+```
+
+Sign in as `admin@aqarat.local` / `Password123!`, or use "Browse listings without signing in".
+
+**Tests:**
+
+```bash
+mvn test
+```
+
+Fifteen tests, covering the two places where correctness is not visible by clicking: the price
+estimator, and payment schedule generation.
+
+## An honest note on the data
+
+**The dataset is synthetic.** `db/seed.sql` generates 2,000 properties, 255 users, 489 contracts
+and their payment histories from scratch. The districts and their average prices per m² are
+plausible for Lebanon; everything else — the addresses, the names, the prices — is generated.
+
+That matters for the estimator. Measured against the seeded closed properties, with each subject
+excluded from its own comparables and from the regression, the median error is about 22% for
+sales and 19% for rentals. That is inside the range the design expected, but it is a model
+fitted to synthetic data and it should be read as a demonstration of the method, not as a
+valuation anyone should trade on.
+
+The seed also stops valuing properties once they are published, so the time-on-market report has
+nothing to compare against until properties are valued and closed through the application
+itself. The report is correct and returns rows the moment that data exists; it is empty on a
+fresh seed by construction, not by fault.
+
+## Documents
 
 | | |
 |---|---|
-| [`docs/DESIGN.md`](docs/DESIGN.md) | Full specification — actors, use cases, lifecycle, data model, screens |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Every significant decision, what was rejected, and why |
-| [`docs/BUILD-ORDER.md`](docs/BUILD-ORDER.md) | Phased build plan |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | What the system is, and why |
+| [`docs/DIAGRAMS.md`](docs/DIAGRAMS.md) | Use case, entity, class and lifecycle diagrams |
+| [`docs/BUILD-ORDER.md`](docs/BUILD-ORDER.md) | The order it was built in, phase by phase |
+| [`docs/UI-STYLE.md`](docs/UI-STYLE.md) | The palette, spacing and components |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Decisions taken and the alternatives rejected |
 | [`CLAUDE.md`](CLAUDE.md) | Coding conventions |
 
-## Not built yet
+---
 
-A retrieval-based customer service assistant and an AI-guided submission chat are designed in
-`docs/DESIGN.md` section 10 but are not implemented. They add three tables that touch nothing
-existing, so they can be added without disturbing the schema.
-
-They are listed here rather than quietly omitted, because a README that describes features that
-do not exist is worse than one that is honest about scope.
-
-## Status
-
-University coursework. Not production software, and not intended to be.
-
-## Credits
-
-Built by a team of two as a Java training project.
-Published under [Syntropy](https://syntropyhq.co).
+Built as a Java training assignment. Published under Syntropy.

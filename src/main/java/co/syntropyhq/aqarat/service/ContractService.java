@@ -9,7 +9,6 @@ import co.syntropyhq.aqarat.model.ContractType;
 import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.Reservation;
-import co.syntropyhq.aqarat.model.ReservationStatus;
 import co.syntropyhq.aqarat.model.SystemSetting;
 import co.syntropyhq.aqarat.util.Db;
 import java.math.BigDecimal;
@@ -49,9 +48,8 @@ public class ContractService {
         return contractDao.findById(id);
     }
 
-    // ContractDao also has findByProperty and findByClient, for the panels
-    // that will need them (PropertyDetails, MyContracts) - not wired in here
-    // because nothing in this track calls them yet.
+    // ContractDao also has findByProperty, which no panel needs yet - nothing
+    // here filters a property's contracts on their own.
     public List<Contract> findByAgent(int agentId) throws SQLException {
         try (Connection connection = Db.get()) {
             return contractDao.findByAgent(connection, agentId);
@@ -308,11 +306,10 @@ public class ContractService {
         return false;
     }
 
-    // The seam for payment schedule generation. Runs inside activate()'s own
+    // The seam for payment schedule generation, implemented by PaymentService
+    // and wired in through the constructor. Runs inside activate()'s own
     // transaction: an implementation must use the connection passed in, and
-    // never call commit() or rollback() itself. Wired in through the
-    // constructor; null skips schedule generation, which is how the
-    // Contracts panel calls this until PaymentService exists to implement it.
+    // never call commit() or rollback() itself.
     public interface ScheduleGenerator {
         void generate(Connection connection, Contract activatedContract) throws SQLException;
     }

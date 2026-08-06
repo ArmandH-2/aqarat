@@ -24,8 +24,8 @@ public class PaymentDao {
     public int insert(Connection connection, Payment payment) throws SQLException {
         String sql = """
             INSERT INTO payment (schedule_id, reservation_id, amount, paid_at, method, reference,
-                proof_path, declared_by, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                proof_path, declared_by, confirmed_by, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
         try (PreparedStatement statement =
                 connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -37,7 +37,8 @@ public class PaymentDao {
             statement.setString(6, payment.getReference());
             statement.setString(7, payment.getProofPath());
             statement.setInt(8, payment.getDeclaredBy());
-            statement.setString(9, payment.getStatus().name());
+            statement.setObject(9, payment.getConfirmedBy());
+            statement.setString(10, payment.getStatus().name());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 generatedKeys.next();

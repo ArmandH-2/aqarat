@@ -193,7 +193,7 @@ uses it.
 
 ---
 
-## Phase 7 — Finishing (days 13–14, both)
+## Phase 7 — Finishing (days 13–14, both) — **DONE**
 
 This is not optional padding. It is where the marks are.
 

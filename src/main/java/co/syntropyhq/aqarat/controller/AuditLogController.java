@@ -82,6 +82,9 @@ public class AuditLogController {
         Label empty = new Label("No audit entries match these filters.");
         empty.getStyleClass().add("empty-state");
         auditTable.setPlaceholder(empty);
+        // Otherwise the columns keep their own widths and leave a dead strip
+        // down the right of the table.
+        auditTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         runSearch(0);
     }
 

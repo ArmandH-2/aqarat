@@ -152,9 +152,6 @@ public class ViewingDao {
         }
     }
 
-    // Used by the Viewings panel's date filter today, and lines up with what
-    // phase 6's agent dashboard will need for "this week's viewings" - both
-    // just want everything an agent has between two points in time.
     public List<Viewing> findByAgentInRange(Connection connection, int agentId,
             LocalDateTime from, LocalDateTime to) throws SQLException {
         String sql = ("""

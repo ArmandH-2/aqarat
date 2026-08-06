@@ -84,7 +84,7 @@ public class MainShellController {
         label.getStyleClass().add("nav-item");
         label.setMaxWidth(Double.MAX_VALUE);
 
-        // Panels for phases 2-6 do not exist yet; disable rather than crash on click.
+        // A missing FXML file disables the item rather than crashing on click.
         boolean fxmlExists = getClass().getResource("/fxml/" + entry.panel.getFxml()) != null;
         label.setDisable(!fxmlExists);
         label.setOnMouseClicked(event -> Router.show(entry.panel));
