@@ -40,8 +40,6 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         this.auditService = auditService;
     }
 
-    // ---- schedule generation: the ContractService.activate() seam ----
-
     @Override
     public void generate(Connection connection, Contract activatedContract) throws SQLException {
         List<PaymentSchedule> schedule = buildSchedule(activatedContract.getPaymentFrequency(),
@@ -108,8 +106,6 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         amounts[count - 1] = totalAmount.subtract(allocated);
         return amounts;
     }
-
-    // ---- reading, with overdue computed on read ----
 
     /**
      * DESIGN.md section 6: overdue is evaluated on read, not by a background
@@ -185,10 +181,6 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         }
     }
 
-    // MyContracts needs the client's own contracts alongside their payment
-
-    // ---- declare, confirm, reject ----
-
     /**
      * A client declares a payment with proof, against an installment or a
      * reservation deposit - never both, never neither (ck_payment_target).
@@ -227,12 +219,12 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         requireExactlyOneTarget(scheduleId, reservationId);
         requirePositiveAmount(amount);
         Payment payment = newPayment(scheduleId, reservationId, amount, method, reference,
-            proofPath, agentUserId, PaymentStatus.DECLARED);
+            proofPath, agentUserId, PaymentStatus.CONFIRMED);
+        payment.setConfirmedBy(agentUserId);
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
                 int id = paymentDao.insert(connection, payment);
-                paymentDao.updateStatus(connection, id, PaymentStatus.CONFIRMED, agentUserId);
                 auditService.record(connection, "payment", id, "RECORD_CONFIRMED", null,
                     PaymentStatus.CONFIRMED.name());
                 if (scheduleId != null) {
