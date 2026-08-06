@@ -43,6 +43,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -63,7 +64,7 @@ public class ContractsController {
     @FXML
     private VBox contractsBox;
     @FXML
-    private VBox draftBox;
+    private ScrollPane draftBox;
     @FXML
     private ListView<Contract> contractList;
 

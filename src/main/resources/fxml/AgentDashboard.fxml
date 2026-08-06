@@ -25,5 +25,16 @@
                 <Label text="Your active listings" styleClass="label-soft"/>
             </VBox>
         </HBox>
+
+        <HBox spacing="16">
+            <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label fx:id="weekViewingsCountLabel" styleClass="page-title" text="0"/>
+                <Label text="Your viewings this week" styleClass="label-soft"/>
+            </VBox>
+            <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <Label fx:id="overdueCountLabel" styleClass="page-title" text="0"/>
+                <Label text="Payments overdue across the agency" styleClass="label-soft"/>
+            </VBox>
+        </HBox>
     </VBox>
 </VBox>
