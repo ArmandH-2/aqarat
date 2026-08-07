@@ -4,20 +4,44 @@ import java.util.Arrays;
 import java.util.List;
 
 // Small, boring statistics helpers shared by PriceEstimator. Package-private:
-// nothing outside valuation needs plain-array median and spread.
+// nothing outside valuation needs plain-array weighted median and spread.
 final class Stats {
 
     private Stats() {
     }
 
-    static double median(double[] values) {
-        double[] sorted = values.clone();
-        Arrays.sort(sorted);
-        int mid = sorted.length / 2;
-        if (sorted.length % 2 == 0) {
-            return (sorted[mid - 1] + sorted[mid]) / 2.0;
+    // Weighted median: sort by value, walk the cumulative weight, and take
+    // the value where it crosses half the total weight. With equal weights
+    // this lands on the same value an unweighted median would pick.
+    static double weightedMedian(double[] values, double[] weights) {
+        Integer[] order = ascendingIndices(values);
+        double half = sum(weights) / 2.0;
+
+        double cumulative = 0.0;
+        for (int index : order) {
+            cumulative += weights[index];
+            if (cumulative >= half) {
+                return values[index];
+            }
         }
-        return sorted[mid];
+        return values[order[order.length - 1]];
+    }
+
+    private static Integer[] ascendingIndices(double[] values) {
+        Integer[] order = new Integer[values.length];
+        for (int i = 0; i < order.length; i++) {
+            order[i] = i;
+        }
+        Arrays.sort(order, (a, b) -> Double.compare(values[a], values[b]));
+        return order;
+    }
+
+    private static double sum(double[] values) {
+        double total = 0.0;
+        for (double value : values) {
+            total += value;
+        }
+        return total;
     }
 
     // Sample standard deviation. A single value has no spread to measure,

@@ -10,6 +10,7 @@
     -c-accent:        #004225;
     -c-accent-dark:   #00301B;
     -c-accent-soft:   #E6EEE9;
+    -c-on-accent:     #FFFFFF;
     -c-stone:         #8B8680;
 
     -c-good:          #26682B;  -c-good-bg:    #E8F3E8;
@@ -34,14 +35,17 @@
 .label-soft    { -fx-font-size: 12px; -fx-font-weight: 500; -fx-text-fill: -c-text-soft; }
 .hint          { -fx-font-size: 11px; -fx-text-fill: -c-text-mute; }
 
-.sidebar        { -fx-background-color: -c-surface-alt;
-                  -fx-border-color: transparent -c-border transparent transparent;
-                  -fx-border-width: 0 1 0 0; -fx-pref-width: 220px; }
-.nav-item       { -fx-background-radius: 8px; -fx-padding: 8 12 8 12;
-                  -fx-text-fill: -c-text-soft; -fx-cursor: hand; }
-.nav-item:hover { -fx-background-color: derive(-c-surface-alt, -4%); }
-.nav-item.active{ -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
-                  -fx-font-weight: 600; }
+/* The sidebar carries the identity: the green rail from the brand, not a gray one.
+   Text on it uses the light green tint (9.85:1 on the green) so it still reads. */
+.sidebar { -fx-background-color: -c-accent; -fx-pref-width: 220px; }
+.sidebar .section-title { -fx-text-fill: -c-on-accent; }
+.sidebar .label-soft, .sidebar .hint { -fx-text-fill: -c-accent-soft; }
+.nav-item        { -fx-background-radius: 8px; -fx-padding: 8 12 8 12;
+                   -fx-text-fill: -c-accent-soft; -fx-cursor: hand; }
+.nav-item:hover  { -fx-background-color: derive(-c-accent, 8%);
+                   -fx-text-fill: -c-on-accent; }
+.nav-item.active { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
+                   -fx-font-weight: 600; }
 
 /* Modena's hyperlink is its own blue and ignores the palette. */
 .hyperlink          { -fx-text-fill: -c-accent; -fx-border-color: transparent;
@@ -54,35 +58,77 @@
 .card { -fx-background-color: -c-surface; -fx-background-radius: 6px;
         -fx-border-color: -c-border; -fx-border-radius: 6px; -fx-padding: 16px; }
 
+/* Review discussion on a property card or submission page. */
+.thread { -fx-background-color: -c-surface-alt; -fx-background-radius: 6px;
+          -fx-padding: 10px; }
+
 .button           { -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
                     -fx-pref-height: 32px; -fx-cursor: hand; -fx-font-size: 13px; }
-.button-primary   { -fx-background-color: -c-accent; -fx-text-fill: white; }
-.button-primary:hover { -fx-background-color: -c-accent-dark; }
+.button-primary         { -fx-background-color: -c-accent; -fx-text-fill: -c-on-accent; }
+.button-primary:hover   { -fx-background-color: -c-accent-dark; }
+.button-primary:pressed { -fx-background-color: derive(-c-accent, -10%); }
 .button-secondary { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
                     -fx-border-color: -c-border-strong; -fx-border-radius: 6px; }
+.button-secondary:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
 .button-danger    { -fx-background-color: -c-surface; -fx-text-fill: -c-bad;
                     -fx-border-color: -c-bad; -fx-border-radius: 6px; }
+.button-danger:hover { -fx-background-color: -c-bad-bg; }
 
 .text-field, .text-area, .combo-box, .date-picker {
     -fx-background-color: -c-surface; -fx-background-radius: 4px;
-    -fx-border-color: -c-border-strong; -fx-border-radius: 4px;
+    -fx-border-color: -c-border; -fx-border-radius: 4px;
     -fx-pref-height: 32px; -fx-padding: 0 8 0 8;
 }
-.text-field:focused, .combo-box:focused, .date-picker:focused {
+.text-field:hover, .text-area:hover, .combo-box:hover, .date-picker:hover {
+    -fx-border-color: -c-border-strong;
+}
+.text-field:focused, .text-area:focused, .combo-box:focused, .date-picker:focused {
     -fx-border-color: -c-accent;
 }
 .field-invalid { -fx-border-color: -c-bad; }
 .field-error   { -fx-font-size: 12px; -fx-text-fill: -c-bad; }
 
+.check-box .box { -fx-background-color: -c-surface; -fx-border-color: -c-border-strong;
+                  -fx-border-radius: 3px; -fx-background-radius: 3px; }
+.check-box:selected .box { -fx-background-color: -c-accent; -fx-border-color: -c-accent; }
+.check-box:selected .mark { -fx-background-color: -c-on-accent; }
+
+/* Modena's default scrollbars are a bluish gray from another theme entirely. */
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: -c-border-strong; -fx-background-radius: 4px; }
+.scroll-bar .track { -fx-background-color: transparent; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent; -fx-padding: 0;
+}
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: " "; -fx-padding: 0; }
+
+.list-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
+             -fx-border-radius: 6px; -fx-background-radius: 6px; }
+.list-view .list-cell { -fx-padding: 8 12 8 12; }
+.list-view .list-cell:hover { -fx-background-color: -c-surface-alt; }
+.list-view .list-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
+
 .table-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
               -fx-border-radius: 6px; -fx-background-radius: 6px; }
-.table-view .column-header { -fx-background-color: -c-surface-alt; -fx-pref-height: 36px; }
-.table-view .column-header .label { -fx-font-size: 12px; -fx-text-fill: -c-text-soft;
-                                    -fx-font-weight: 500; -fx-alignment: center-left; }
+.table-view .column-header { -fx-background-color: -c-accent-soft; -fx-pref-height: 36px; }
+.table-view .column-header .label { -fx-font-size: 12px; -fx-text-fill: -c-accent;
+                                    -fx-font-weight: 600; -fx-alignment: center-left; }
 .table-row-cell { -fx-pref-height: 40px; -fx-border-color: transparent transparent -c-border transparent; }
 .table-row-cell:hover    { -fx-background-color: -c-surface-alt; }
 .table-row-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
 .numeric { -fx-alignment: center-right; }
+
+/* Alert and confirmation dialogs otherwise keep Modena's light gray panels. */
+.dialog-pane { -fx-background-color: -c-surface; }
+.dialog-pane .header-panel { -fx-background-color: -c-surface; }
+.dialog-pane .header-panel .label { -fx-text-fill: -c-text; -fx-font-size: 15px;
+                                    -fx-font-weight: 600; }
+.dialog-pane .content { -fx-padding: 16px; }
+.dialog-pane .button { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
+                       -fx-border-color: -c-border-strong; -fx-border-radius: 6px;
+                       -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
+                       -fx-pref-height: 32px; -fx-cursor: hand; }
+.dialog-pane .button:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
 
 .pill        { -fx-background-radius: 4px; -fx-padding: 3 8 3 8; -fx-font-size: 11px;
                -fx-font-weight: 500; }

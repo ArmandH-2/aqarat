@@ -21,6 +21,7 @@ GO
    -------------------------------------------------------------------------- */
 
 DROP TABLE IF EXISTS dbo.audit_log;
+DROP TABLE IF EXISTS dbo.property_message;
 DROP TABLE IF EXISTS dbo.payment;
 DROP TABLE IF EXISTS dbo.payment_schedule;
 DROP TABLE IF EXISTS dbo.contract;
@@ -336,6 +337,29 @@ CREATE TABLE dbo.audit_log (
     CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES dbo.app_user(id)
 );
 
+/* --------------------------------------------------------------------------
+   Review discussion
+
+   The conversation between an owner and the reviewing agent, one message per
+   row. The agent's note from a review decision is written here too, so the
+   thread carries the whole story instead of just the owner's replies
+   (DESIGN.md section 6).
+   -------------------------------------------------------------------------- */
+
+CREATE TABLE dbo.property_message (
+    id          INT IDENTITY(1,1) NOT NULL,
+    property_id INT           NOT NULL,
+    author_id   INT           NOT NULL,
+    message     VARCHAR(500)  NOT NULL,
+    created_at  DATETIME2(0)  NOT NULL CONSTRAINT df_msg_created DEFAULT SYSUTCDATETIME(),
+
+    CONSTRAINT pk_property_message  PRIMARY KEY (id),
+    CONSTRAINT fk_msg_property      FOREIGN KEY (property_id)
+        REFERENCES dbo.property(id) ON DELETE CASCADE,
+    CONSTRAINT fk_msg_author        FOREIGN KEY (author_id) REFERENCES dbo.app_user(id),
+    CONSTRAINT ck_msg_text          CHECK (LEN(message) > 0)
+);
+
 CREATE TABLE dbo.system_setting (
     setting_key VARCHAR(60)  NOT NULL,
     value       VARCHAR(200) NOT NULL,
@@ -381,6 +405,7 @@ CREATE INDEX ix_contract_property   ON dbo.contract(property_id);
 CREATE INDEX ix_schedule_due        ON dbo.payment_schedule(due_date, status);
 CREATE INDEX ix_payment_schedule    ON dbo.payment(schedule_id);
 CREATE INDEX ix_audit_entity        ON dbo.audit_log(entity_type, entity_id);
+CREATE INDEX ix_message_property    ON dbo.property_message(property_id, created_at);
 GO
 
 /* --------------------------------------------------------------------------

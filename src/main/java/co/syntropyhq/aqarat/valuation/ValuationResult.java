@@ -3,6 +3,7 @@ package co.syntropyhq.aqarat.valuation;
 import co.syntropyhq.aqarat.model.ValuationFlag;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +31,27 @@ public class ValuationResult {
 
     private final List<ComparableProperty> comparables;
 
+    // Feature name -> its fitted weight, so a saved estimate can be
+    // explained later without re-running the regression. Named rather than
+    // a plain list for the same reason factorContributions is a map: an
+    // agent reading this wants "yearBuilt", not "coefficient 4". Empty
+    // when no regression ran (comparables-only or district-average
+    // estimates).
+    private final Map<String, BigDecimal> regressionCoefficients;
+
+    // Convenience overload for callers rebuilding a result from a saved
+    // valuation row that predates this field (ValuationService reads old
+    // rows back through this constructor).
     public ValuationResult(BigDecimal estimatedValue, BigDecimal lowerBound, BigDecimal upperBound,
             BigDecimal pricePerSqm, ValuationFlag flag, Map<String, BigDecimal> factorContributions,
             List<ComparableProperty> comparables) {
+        this(estimatedValue, lowerBound, upperBound, pricePerSqm, flag, factorContributions, comparables,
+            Collections.emptyMap());
+    }
+
+    public ValuationResult(BigDecimal estimatedValue, BigDecimal lowerBound, BigDecimal upperBound,
+            BigDecimal pricePerSqm, ValuationFlag flag, Map<String, BigDecimal> factorContributions,
+            List<ComparableProperty> comparables, Map<String, BigDecimal> regressionCoefficients) {
         this.estimatedValue = estimatedValue;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
@@ -40,6 +59,7 @@ public class ValuationResult {
         this.flag = flag;
         this.factorContributions = factorContributions;
         this.comparables = comparables;
+        this.regressionCoefficients = regressionCoefficients;
     }
 
     public BigDecimal getEstimatedValue() {
@@ -68,5 +88,9 @@ public class ValuationResult {
 
     public List<ComparableProperty> getComparables() {
         return comparables;
+    }
+
+    public Map<String, BigDecimal> getRegressionCoefficients() {
+        return regressionCoefficients;
     }
 }

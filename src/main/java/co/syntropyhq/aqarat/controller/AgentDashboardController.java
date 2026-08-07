@@ -2,6 +2,7 @@ package co.syntropyhq.aqarat.controller;
 
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReportDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -50,9 +51,9 @@ public class AgentDashboardController {
     private Label overdueCountLabel;
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ViewingService viewingService =
-        new ViewingService(new ViewingDao(), new AuditService(new AuditDao()));
+        new ViewingService(new ViewingDao(), propertyService, new AuditService(new AuditDao()));
     private final ReportService reportService =
         new ReportService(new ReportDao(), new SystemSettingDao());
 
@@ -82,7 +83,11 @@ public class AgentDashboardController {
             unassignedCountLabel.setText(String.valueOf(countUnassigned()));
             activeListingsCountLabel.setText(String.valueOf(countActiveListings(agentId)));
             weekViewingsCountLabel.setText(String.valueOf(countViewingsThisWeek(agentId)));
-            overdueCountLabel.setText(String.valueOf(reportService.overduePayments().size()));
+            // The dashboard speaks about the agent's own portfolio, so the
+            // overdue figure is their queue, not the agency's.
+            AppUser user = SessionManager.getCurrentUser();
+            Integer scope = user.getRole() == Role.ADMIN ? null : agentId;
+            overdueCountLabel.setText(String.valueOf(reportService.overduePayments(scope).size()));
         } catch (SQLException e) {
             AlertUtil.showError("Could not load dashboard figures. Check that SQL Server is running.");
         }

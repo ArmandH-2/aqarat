@@ -1,7 +1,9 @@
 package co.syntropyhq.aqarat.service;
 
+import co.syntropyhq.aqarat.dao.ContractDao;
 import co.syntropyhq.aqarat.dao.PaymentDao;
 import co.syntropyhq.aqarat.dao.PaymentScheduleDao;
+import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
 import co.syntropyhq.aqarat.model.Contract;
 import co.syntropyhq.aqarat.model.Payment;
@@ -9,6 +11,7 @@ import co.syntropyhq.aqarat.model.PaymentFrequency;
 import co.syntropyhq.aqarat.model.PaymentMethod;
 import co.syntropyhq.aqarat.model.PaymentSchedule;
 import co.syntropyhq.aqarat.model.PaymentStatus;
+import co.syntropyhq.aqarat.model.Reservation;
 import co.syntropyhq.aqarat.model.ScheduleStatus;
 import co.syntropyhq.aqarat.model.SystemSetting;
 import co.syntropyhq.aqarat.util.Db;
@@ -29,13 +32,18 @@ public class PaymentService implements ContractService.ScheduleGenerator {
 
     private final PaymentScheduleDao paymentScheduleDao;
     private final PaymentDao paymentDao;
+    private final ContractDao contractDao;
+    private final ReservationDao reservationDao;
     private final SystemSettingDao systemSettingDao;
     private final AuditService auditService;
 
     public PaymentService(PaymentScheduleDao paymentScheduleDao, PaymentDao paymentDao,
+            ContractDao contractDao, ReservationDao reservationDao,
             SystemSettingDao systemSettingDao, AuditService auditService) {
         this.paymentScheduleDao = paymentScheduleDao;
         this.paymentDao = paymentDao;
+        this.contractDao = contractDao;
+        this.reservationDao = reservationDao;
         this.systemSettingDao = systemSettingDao;
         this.auditService = auditService;
     }
@@ -175,33 +183,42 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         }
     }
 
-    public List<Payment> findDeclaredAwaitingConfirmation() throws SQLException {
+    // agentId scopes the queue to one agent's own contracts and reservations;
+    // null (admin) shows the whole agency's. Bound into the query, not
+    // filtered afterwards (DESIGN.md section 8).
+    public List<Payment> findDeclaredAwaitingConfirmation(Integer agentId) throws SQLException {
         try (Connection connection = Db.get()) {
-            return paymentDao.findDeclared(connection);
+            return paymentDao.findDeclared(connection, agentId);
         }
     }
 
     /**
      * A client declares a payment with proof, against an installment or a
      * reservation deposit - never both, never neither (ck_payment_target).
-     * Checked here so the database is never asked to refuse it.
+     * The target must be the client's own: the installment's contract or the
+     * reservation has to carry this user's id, so a client can only ever
+     * declare against what they owe. The amount is capped at what is left
+     * to pay on that target. All of this is checked here so the database is
+     * never asked to accept it.
      */
     public int declare(Integer scheduleId, Integer reservationId, BigDecimal amount,
             PaymentMethod method, String reference, String proofPath, int declaredByUserId)
-            throws SQLException, InvalidPaymentTargetException {
+            throws SQLException, InvalidPaymentTargetException, InvalidPaymentAmountException {
         requireExactlyOneTarget(scheduleId, reservationId);
         requirePositiveAmount(amount);
-        Payment payment = newPayment(scheduleId, reservationId, amount, method, reference,
-            proofPath, declaredByUserId, PaymentStatus.DECLARED);
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
+                requireTargetBelongsTo(connection, scheduleId, reservationId, declaredByUserId);
+                requireAmountWithinOutstanding(connection, scheduleId, reservationId, amount);
+                Payment payment = newPayment(scheduleId, reservationId, amount, method, reference,
+                    proofPath, declaredByUserId, PaymentStatus.DECLARED);
                 int id = paymentDao.insert(connection, payment);
                 auditService.record(connection, "payment", id, "DECLARE", null,
                     PaymentStatus.DECLARED.name());
                 connection.commit();
                 return id;
-            } catch (SQLException e) {
+            } catch (SQLException | InvalidPaymentTargetException | InvalidPaymentAmountException e) {
                 connection.rollback();
                 throw e;
             }
@@ -212,18 +229,21 @@ public class PaymentService implements ContractService.ScheduleGenerator {
      * An agent recording a payment directly - as opposed to confirming one a
      * client declared - writes it already confirmed, in one transaction:
      * there is no point persisting DECLARED only to flip it a moment later.
+     * The amount is still capped at what is left on the target, because
+     * recording more than is owed is a data-entry error in either direction.
      */
     public int recordConfirmedPayment(Integer scheduleId, Integer reservationId, BigDecimal amount,
             PaymentMethod method, String reference, String proofPath, int agentUserId)
-            throws SQLException, InvalidPaymentTargetException {
+            throws SQLException, InvalidPaymentTargetException, InvalidPaymentAmountException {
         requireExactlyOneTarget(scheduleId, reservationId);
         requirePositiveAmount(amount);
-        Payment payment = newPayment(scheduleId, reservationId, amount, method, reference,
-            proofPath, agentUserId, PaymentStatus.CONFIRMED);
-        payment.setConfirmedBy(agentUserId);
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
+                requireAmountWithinOutstanding(connection, scheduleId, reservationId, amount);
+                Payment payment = newPayment(scheduleId, reservationId, amount, method, reference,
+                    proofPath, agentUserId, PaymentStatus.CONFIRMED);
+                payment.setConfirmedBy(agentUserId);
                 int id = paymentDao.insert(connection, payment);
                 auditService.record(connection, "payment", id, "RECORD_CONFIRMED", null,
                     PaymentStatus.CONFIRMED.name());
@@ -232,7 +252,7 @@ public class PaymentService implements ContractService.ScheduleGenerator {
                 }
                 connection.commit();
                 return id;
-            } catch (SQLException e) {
+            } catch (SQLException | InvalidPaymentAmountException e) {
                 connection.rollback();
                 throw e;
             }
@@ -268,6 +288,55 @@ public class PaymentService implements ContractService.ScheduleGenerator {
     private void requirePositiveAmount(BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("The amount must be greater than zero.");
+        }
+    }
+
+    // The target's owner is resolved from the database, never trusted from
+    // the caller - the declared-by id is checked against the row it names.
+    private void requireTargetBelongsTo(Connection connection, Integer scheduleId,
+            Integer reservationId, int userId) throws SQLException, InvalidPaymentTargetException {
+        if (scheduleId != null) {
+            PaymentSchedule schedule = paymentScheduleDao.findById(connection, scheduleId);
+            if (schedule == null) {
+                throw new InvalidPaymentTargetException("No installment with that id.");
+            }
+            Contract contract = contractDao.findById(connection, schedule.getContractId());
+            if (contract == null || contract.getClientId() != userId) {
+                throw new InvalidPaymentTargetException(
+                    "You can only declare a payment against your own contract.");
+            }
+            return;
+        }
+        Reservation reservation = reservationDao.findById(connection, reservationId);
+        if (reservation == null || reservation.getClientId() != userId) {
+            throw new InvalidPaymentTargetException(
+                "You can only declare a payment against your own reservation.");
+        }
+    }
+
+    // What is left on an installment is amount_due minus amount_paid; what is
+    // left on a reservation is the whole deposit, which is only ever settled
+    // in full (no partial-tracking column exists for it).
+    private void requireAmountWithinOutstanding(Connection connection, Integer scheduleId,
+            Integer reservationId, BigDecimal amount)
+            throws SQLException, InvalidPaymentAmountException {
+        BigDecimal outstanding;
+        if (scheduleId != null) {
+            PaymentSchedule schedule = paymentScheduleDao.findById(connection, scheduleId);
+            if (schedule == null) {
+                throw new InvalidPaymentAmountException("No installment with that id.");
+            }
+            outstanding = schedule.getAmountDue().subtract(schedule.getAmountPaid());
+        } else {
+            Reservation reservation = reservationDao.findById(connection, reservationId);
+            if (reservation == null) {
+                throw new InvalidPaymentAmountException("No reservation with that id.");
+            }
+            outstanding = reservation.getDepositAmount();
+        }
+        if (amount.compareTo(outstanding) > 0) {
+            throw new InvalidPaymentAmountException(
+                "This amount exceeds what is left to pay on the target.");
         }
     }
 
@@ -355,6 +424,13 @@ public class PaymentService implements ContractService.ScheduleGenerator {
     public static class InvalidPaymentTargetException extends Exception {
 
         public InvalidPaymentTargetException(String message) {
+            super(message);
+        }
+    }
+
+    public static class InvalidPaymentAmountException extends Exception {
+
+        public InvalidPaymentAmountException(String message) {
             super(message);
         }
     }

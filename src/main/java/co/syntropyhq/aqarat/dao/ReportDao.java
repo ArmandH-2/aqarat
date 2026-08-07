@@ -55,7 +55,8 @@ public class ReportDao {
     // "Overdue" per DESIGN.md section 6: due_date plus the grace period has
     // passed, and the row is still short. graceDays and today are passed in
     // rather than computed here - ReportDao does not know system_setting or
-    // the clock, it only compares the values it is given.
+    // the clock, it only compares the values it is given. A non-null agentId
+    // narrows the rows to that agent's own contracts.
     private static final String OVERDUE_SQL = """
         SELECT c.id AS contract_id, pr.title AS property_title, u.full_name AS client_name,
                ps.installment_no, ps.due_date, ps.amount_due, ps.amount_paid
@@ -65,14 +66,17 @@ public class ReportDao {
         JOIN app_user u ON u.id = c.client_id
         WHERE ps.amount_paid < ps.amount_due
           AND DATEADD(day, ?, ps.due_date) < ?
+          AND (? IS NULL OR c.agent_id = ?)
         ORDER BY ps.due_date
         """;
 
-    public List<OverduePayment> overduePayments(Connection connection, int graceDays, LocalDate today)
-            throws SQLException {
+    public List<OverduePayment> overduePayments(Connection connection, int graceDays,
+            LocalDate today, Integer agentId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(OVERDUE_SQL)) {
             statement.setInt(1, graceDays);
             statement.setObject(2, today);
+            statement.setObject(3, agentId);
+            statement.setObject(4, agentId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<OverduePayment> results = new ArrayList<>();
                 while (resultSet.next()) {

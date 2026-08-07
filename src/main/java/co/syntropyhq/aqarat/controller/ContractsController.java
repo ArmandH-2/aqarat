@@ -5,6 +5,7 @@ import co.syntropyhq.aqarat.dao.ContractDao;
 import co.syntropyhq.aqarat.dao.PaymentDao;
 import co.syntropyhq.aqarat.dao.PaymentScheduleDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -111,13 +112,14 @@ public class ContractsController {
 
     private final AuditService auditService = new AuditService(new AuditDao());
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), auditService);
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), auditService);
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, auditService);
     // PaymentService generates the schedule on the connection activate() is
     // already holding, so the contract and its installments arrive together.
     private final PaymentService paymentService = new PaymentService(
-        new PaymentScheduleDao(), new PaymentDao(), new SystemSettingDao(), auditService);
+        new PaymentScheduleDao(), new PaymentDao(), new ContractDao(), new ReservationDao(),
+        new SystemSettingDao(), auditService);
     private final ContractService contractService = new ContractService(
         new ContractDao(), new ReservationDao(), propertyService, reservationService,
         new SystemSettingDao(), auditService, paymentService);

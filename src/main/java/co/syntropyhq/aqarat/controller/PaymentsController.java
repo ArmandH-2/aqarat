@@ -5,6 +5,7 @@ import co.syntropyhq.aqarat.dao.ContractDao;
 import co.syntropyhq.aqarat.dao.PaymentDao;
 import co.syntropyhq.aqarat.dao.PaymentScheduleDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -82,7 +83,7 @@ public class PaymentsController {
 
     private final AuditService auditService = new AuditService(new AuditDao());
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), auditService);
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), auditService);
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, auditService);
     // No schedule generator: this panel never activates a contract, so
@@ -91,7 +92,8 @@ public class PaymentsController {
         new ContractDao(), new ReservationDao(), propertyService, reservationService,
         new SystemSettingDao(), auditService, null);
     private final PaymentService paymentService = new PaymentService(
-        new PaymentScheduleDao(), new PaymentDao(), new SystemSettingDao(), auditService);
+        new PaymentScheduleDao(), new PaymentDao(), new ContractDao(), new ReservationDao(),
+        new SystemSettingDao(), auditService);
     private final AuthService authService = new AuthService(new UserDao());
 
     private final Map<Integer, String> userNames = new HashMap<>();
@@ -154,7 +156,11 @@ public class PaymentsController {
         declaredList.setPlaceholder(empty);
         List<Payment> results;
         try {
-            results = paymentService.findDeclaredAwaitingConfirmation();
+            // An agent confirms payments declared against their own contracts
+            // and reservations; only an admin sees the whole agency's queue.
+            AppUser user = SessionManager.getCurrentUser();
+            Integer agentId = user.getRole() == Role.ADMIN ? null : user.getId();
+            results = paymentService.findDeclaredAwaitingConfirmation(agentId);
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
@@ -188,7 +194,18 @@ public class PaymentsController {
 
     private Contract fetchContract(int id) {
         try {
-            return contractService.findById(id);
+            Contract contract = contractService.findById(id);
+            if (contract == null) {
+                return null;
+            }
+            // A contract is this agent's business only when it carries their
+            // id. Someone else's contract is answered with the same message
+            // as a missing id, so its existence is not even revealed.
+            AppUser user = SessionManager.getCurrentUser();
+            if (user.getRole() != Role.ADMIN && contract.getAgentId() != user.getId()) {
+                return null;
+            }
+            return contract;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return null;
@@ -268,6 +285,9 @@ public class PaymentsController {
             paymentService.recordConfirmedPayment(schedule.getId(), null, amount,
                 form.method(), form.reference(), form.proofPath(), agentId);
         } catch (PaymentService.InvalidPaymentTargetException e) {
+            AlertUtil.showError(e.getMessage());
+            return;
+        } catch (PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
         } catch (SQLException e) {

@@ -46,13 +46,22 @@ public class ReservationService {
      */
     public int create(int propertyId, int clientId, BigDecimal depositAmount)
             throws SQLException, PropertyService.InvalidTransitionException,
-            PropertyNotAvailableException, DuplicateReservationException {
+            PropertyNotAvailableException, DuplicateReservationException,
+            CannotReserveOwnPropertyException {
         if (depositAmount == null || depositAmount.signum() <= 0) {
             throw new IllegalArgumentException("The deposit must be a positive amount.");
         }
         Property property = propertyService.findById(propertyId);
         if (property == null) {
             throw new IllegalArgumentException("No property with id " + propertyId + ".");
+        }
+        // The owner's own listing is not on the market for them: reserving
+        // it would take their own property off the market against themselves.
+        // The details screen hides the actions for the owner; this is the
+        // backstop that keeps a crafted request from getting through.
+        if (property.getOwnerId() == clientId) {
+            throw new CannotReserveOwnPropertyException(
+                "You cannot reserve your own property.");
         }
         if (property.getStatus() != PropertyStatus.AVAILABLE) {
             throw new PropertyNotAvailableException(
@@ -291,6 +300,13 @@ public class ReservationService {
     public static class DuplicateReservationException extends Exception {
 
         public DuplicateReservationException(String message) {
+            super(message);
+        }
+    }
+
+    public static class CannotReserveOwnPropertyException extends Exception {
+
+        public CannotReserveOwnPropertyException(String message) {
             super(message);
         }
     }

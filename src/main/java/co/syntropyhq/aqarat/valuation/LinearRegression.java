@@ -1,5 +1,7 @@
 package co.syntropyhq.aqarat.valuation;
 
+import java.util.Arrays;
+
 /**
  * Multiple linear regression, solved with the normal equations: fit finds
  * the coefficient vector b that satisfies (XtX)b = Xty, where X is the
@@ -14,9 +16,16 @@ public class LinearRegression {
     private double[] coefficients;
 
     public void fit(double[][] features, double[] targets) {
-        if (features.length == 0 || features.length != targets.length) {
+        fit(features, targets, uniformWeights(targets.length));
+    }
+
+    // Weighted least squares: each row's contribution to the normal
+    // equations is scaled by its weight, so (XtWX)b = XtWy. A row with
+    // weight 1 for every row is exactly the unweighted fit above.
+    public void fit(double[][] features, double[] targets, double[] weights) {
+        if (features.length == 0 || features.length != targets.length || features.length != weights.length) {
             throw new IllegalArgumentException(
-                "Features and targets must be the same, non-zero length.");
+                "Features, targets and weights must be the same, non-zero length.");
         }
         int columns = features[0].length + 1;
         double[][] xtx = new double[columns][columns];
@@ -26,10 +35,11 @@ public class LinearRegression {
             double[] designRow = new double[columns];
             designRow[0] = 1.0;
             System.arraycopy(features[row], 0, designRow, 1, features[row].length);
+            double weight = weights[row];
             for (int i = 0; i < columns; i++) {
-                xty[i] += designRow[i] * targets[row];
+                xty[i] += weight * designRow[i] * targets[row];
                 for (int j = 0; j < columns; j++) {
-                    xtx[i][j] += designRow[i] * designRow[j];
+                    xtx[i][j] += weight * designRow[i] * designRow[j];
                 }
             }
         }
@@ -46,6 +56,22 @@ public class LinearRegression {
             result += coefficients[i + 1] * features[i];
         }
         return result;
+    }
+
+    // Index 0 is the intercept, followed by one coefficient per feature
+    // column in the order fit() was given them. A clone: callers must not
+    // be able to corrupt the fitted model through the returned array.
+    public double[] getCoefficients() {
+        if (coefficients == null) {
+            throw new IllegalStateException("Call fit before getCoefficients.");
+        }
+        return coefficients.clone();
+    }
+
+    private double[] uniformWeights(int rowCount) {
+        double[] weights = new double[rowCount];
+        Arrays.fill(weights, 1.0);
+        return weights;
     }
 
     // Gaussian elimination with partial pivoting. Without pivoting, a column

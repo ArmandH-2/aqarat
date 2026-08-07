@@ -3,6 +3,7 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
@@ -108,11 +109,11 @@ public class PropertyDetailsController implements NeedsId {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
     private final ViewingService viewingService =
-        new ViewingService(new ViewingDao(), new AuditService(new AuditDao()));
+        new ViewingService(new ViewingDao(), propertyService, new AuditService(new AuditDao()));
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, new AuditService(new AuditDao()));
 
@@ -157,7 +158,14 @@ public class PropertyDetailsController implements NeedsId {
     }
 
     private void updateActionsVisibility(Property property) {
-        boolean canAct = SessionManager.isCustomer() && property.getStatus() == PropertyStatus.AVAILABLE;
+        boolean isCustomer = SessionManager.isCustomer();
+        boolean isOwner = isCustomer
+            && SessionManager.getCurrentUser().getId() == property.getOwnerId();
+        // A customer does not shop their own listing - reserving or viewing
+        // it would be acting against themselves. Both actions come with a
+        // service-level backstop too, in case a crafted request gets through.
+        boolean canAct = isCustomer && !isOwner
+            && property.getStatus() == PropertyStatus.AVAILABLE;
         actionsBox.setVisible(canAct);
         actionsBox.setManaged(canAct);
     }
@@ -296,6 +304,9 @@ public class PropertyDetailsController implements NeedsId {
         try {
             viewingService.request(
                 currentProperty.getId(), SessionManager.getCurrentUser().getId(), scheduledAt);
+        } catch (ViewingService.CannotRequestOwnPropertyException e) {
+            AlertUtil.showError(e.getMessage());
+            return;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
@@ -325,6 +336,9 @@ public class PropertyDetailsController implements NeedsId {
             return;
         } catch (ReservationService.DuplicateReservationException e) {
             AlertUtil.showError("This property already has an active reservation.");
+            return;
+        } catch (ReservationService.CannotReserveOwnPropertyException e) {
+            AlertUtil.showError(e.getMessage());
             return;
         } catch (PropertyService.InvalidTransitionException e) {
             AlertUtil.showError(

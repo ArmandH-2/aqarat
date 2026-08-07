@@ -107,6 +107,12 @@ public class ContractService {
 
     private void requireClientCanDraft(Property property, int clientId)
             throws SQLException, DraftRefusedException {
+        // A contract has two roles - the owner and the client. One person
+        // cannot play both: selling or renting a property to yourself is not
+        // a transaction.
+        if (clientId == property.getOwnerId()) {
+            throw new DraftRefusedException("You cannot sign a contract on your own property.");
+        }
         if (property.getStatus() == PropertyStatus.AVAILABLE) {
             return;
         }

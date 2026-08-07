@@ -41,11 +41,21 @@ public class ReportService {
      * grace period is read here, never hardcoded (CLAUDE.md).
      */
     public List<OverduePayment> overduePayments() throws SQLException {
+        return overduePayments(null);
+    }
+
+    /**
+     * The whole agency's overdue rows, or one agent's own - the dashboard's
+     * "overdue" figure measures the agent's portfolio, not the company's
+     * (ReportsController is where the company-wide view lives). A null
+     * agentId means no scoping.
+     */
+    public List<OverduePayment> overduePayments(Integer agentId) throws SQLException {
         int graceDays = paymentGraceDays();
         LocalDate today = LocalDate.now();
         List<OverduePayment> rows;
         try (Connection connection = Db.get()) {
-            rows = reportDao.overduePayments(connection, graceDays, today);
+            rows = reportDao.overduePayments(connection, graceDays, today, agentId);
         }
         for (OverduePayment row : rows) {
             row.setDaysOverdue((int) ChronoUnit.DAYS.between(row.getDueDate(), today));

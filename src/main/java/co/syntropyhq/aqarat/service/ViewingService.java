@@ -1,6 +1,7 @@
 package co.syntropyhq.aqarat.service;
 
 import co.syntropyhq.aqarat.dao.ViewingDao;
+import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.Viewing;
 import co.syntropyhq.aqarat.model.ViewingStatus;
 import co.syntropyhq.aqarat.util.Db;
@@ -18,10 +19,13 @@ public class ViewingService {
     private static final int SQL_ERROR_UNIQUE_CONSTRAINT = 2627;
 
     private final ViewingDao viewingDao;
+    private final PropertyService propertyService;
     private final AuditService auditService;
 
-    public ViewingService(ViewingDao viewingDao, AuditService auditService) {
+    public ViewingService(ViewingDao viewingDao, PropertyService propertyService,
+            AuditService auditService) {
         this.viewingDao = viewingDao;
+        this.propertyService = propertyService;
         this.auditService = auditService;
     }
 
@@ -59,10 +63,20 @@ public class ViewingService {
     /**
      * A client asking to see a property. Starts REQUESTED with no agent -
      * any agent may confirm it, the same way an unclaimed property submission
-     * waits for whoever picks it up first (DESIGN.md section 6).
+     * waits for whoever picks it up first (DESIGN.md section 6). The owner
+     * cannot ask to view their own listing; the details screen hides the
+     * request for them, and this is the backstop that refuses it anyway.
      */
     public int request(int propertyId, int clientId, LocalDateTime scheduledAt)
-            throws SQLException {
+            throws SQLException, CannotRequestOwnPropertyException {
+        Property property = propertyService.findById(propertyId);
+        if (property == null) {
+            throw new IllegalArgumentException("No property with id " + propertyId + ".");
+        }
+        if (property.getOwnerId() == clientId) {
+            throw new CannotRequestOwnPropertyException(
+                "You cannot request a viewing of your own property.");
+        }
         Viewing viewing = new Viewing();
         viewing.setPropertyId(propertyId);
         viewing.setClientId(clientId);
@@ -230,6 +244,13 @@ public class ViewingService {
     public static class SlotTakenException extends Exception {
 
         public SlotTakenException(String message) {
+            super(message);
+        }
+    }
+
+    public static class CannotRequestOwnPropertyException extends Exception {
+
+        public CannotRequestOwnPropertyException(String message) {
             super(message);
         }
     }

@@ -1,12 +1,19 @@
 package co.syntropyhq.aqarat.service;
 
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertySearch;
+import co.syntropyhq.aqarat.model.AppUser;
+import co.syntropyhq.aqarat.model.NewPhoto;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyMessage;
 import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.util.Db;
+import co.syntropyhq.aqarat.util.PhotoStore;
+import co.syntropyhq.aqarat.util.SessionManager;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -17,17 +24,27 @@ public class PropertyService {
 
     private final PropertyDao propertyDao;
     private final PropertyPhotoDao propertyPhotoDao;
+    private final PropertyMessageDao propertyMessageDao;
     private final AuditService auditService;
 
     public PropertyService(PropertyDao propertyDao, PropertyPhotoDao propertyPhotoDao,
-            AuditService auditService) {
+            PropertyMessageDao propertyMessageDao, AuditService auditService) {
         this.propertyDao = propertyDao;
         this.propertyPhotoDao = propertyPhotoDao;
+        this.propertyMessageDao = propertyMessageDao;
         this.auditService = auditService;
     }
 
     public List<PropertyPhoto> findPhotos(int propertyId) throws SQLException {
         return propertyPhotoDao.findByProperty(propertyId);
+    }
+
+    // The review discussion (property_message), oldest first. Read-only, so
+    // it opens and closes its own connection like any other find method.
+    public List<PropertyMessage> findMessages(int propertyId) throws SQLException {
+        try (Connection connection = Db.get()) {
+            return propertyMessageDao.findByProperty(connection, propertyId);
+        }
     }
 
     // Guests and clients only ever search AVAILABLE stock. Passing the status
@@ -95,6 +112,76 @@ public class PropertyService {
         }
     }
 
+    /**
+     * Submits a new property with photos chosen on the form. Both are one
+     * transaction: the submission and its photos cannot exist apart, so a
+     * photo copy that fails rolls the property back rather than leaving a
+     * listing with no gallery.
+     */
+    public int submit(Property property, List<NewPhoto> photos) throws SQLException, IOException {
+        property.setStatus(PropertyStatus.PENDING_REVIEW);
+        property.setSubmittedAt(LocalDateTime.now(ZoneOffset.UTC));
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                int id = propertyDao.insert(connection, property);
+                int sortOrder = 0;
+                for (NewPhoto photo : photos) {
+                    String filePath = PhotoStore.store(id, sortOrder, photo.getPath());
+                    PropertyPhoto record = new PropertyPhoto();
+                    record.setPropertyId(id);
+                    record.setFilePath(filePath);
+                    record.setPrimary(sortOrder == 0);
+                    record.setSortOrder(sortOrder);
+                    propertyPhotoDao.insert(connection, record);
+                    sortOrder++;
+                }
+                auditService.record(connection, "property", id, "CREATE", null,
+                    PropertyStatus.PENDING_REVIEW.name());
+                connection.commit();
+                return id;
+            } catch (SQLException | IOException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Appends photos to a property that already exists. Multiple rows under
+     * one transaction, same rule as submit(): the copies and the audit entry
+     * either all land or none do.
+     */
+    public int addPhotos(int propertyId, List<NewPhoto> photos) throws SQLException, IOException {
+        int added = 0;
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                int sortOrder = propertyPhotoDao.findByProperty(connection, propertyId).size();
+                for (NewPhoto photo : photos) {
+                    sortOrder++;
+                    String filePath = PhotoStore.store(propertyId, sortOrder, photo.getPath());
+                    PropertyPhoto record = new PropertyPhoto();
+                    record.setPropertyId(propertyId);
+                    record.setFilePath(filePath);
+                    record.setPrimary(false);
+                    record.setSortOrder(sortOrder);
+                    propertyPhotoDao.insert(connection, record);
+                    added++;
+                }
+                if (added > 0) {
+                    auditService.record(connection, "property", propertyId, "ADD_PHOTOS",
+                        null, String.valueOf(added));
+                }
+                connection.commit();
+            } catch (SQLException | IOException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+        return added;
+    }
+
     public void withdraw(int propertyId) throws SQLException, InvalidTransitionException {
         changeStatus(propertyId, PropertyStatus.WITHDRAWN);
     }
@@ -114,7 +201,9 @@ public class PropertyService {
      * Records an agent's decision on a submission: the new status and the note
      * explaining it are written together, so a rejection or a request for more
      * information can never reach the owner without its reason. Pass a null
-     * note for an approval, which needs none.
+     * note for an approval, which needs none. The note is also appended to the
+     * property's discussion thread, so the agent's question and the owner's
+     * reply live in the same place.
      */
     public void review(int propertyId, PropertyStatus decision, String reviewNote)
             throws SQLException, InvalidTransitionException {
@@ -128,6 +217,9 @@ public class PropertyService {
                 stampTimestamp(property, decision);
                 propertyDao.updateStatus(connection, property);
                 propertyDao.updateReviewNote(connection, propertyId, reviewNote);
+                if (reviewNote != null) {
+                    insertThreadNote(connection, propertyId, reviewNote);
+                }
                 auditService.record(connection, "property", propertyId, "REVIEW",
                     oldStatus.name(), decision.name());
                 connection.commit();
@@ -136,6 +228,59 @@ public class PropertyService {
                 throw e;
             }
         }
+    }
+
+    /**
+     * The owner answering the agent's question on a NEEDS_INFO submission.
+     * The reply is written to the discussion thread and the property moves
+     * back to PENDING_REVIEW in one transaction - the answer cannot exist
+     * without putting the submission back in the queue. Only the owner of
+     * the property may respond; the author id is checked against the row,
+     * not trusted from the caller.
+     */
+    public void respondToReview(int propertyId, String response, int ownerId)
+            throws SQLException, InvalidTransitionException {
+        if (response == null || response.trim().isEmpty()) {
+            throw new IllegalArgumentException("A response cannot be empty.");
+        }
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                Property property = requireProperty(connection, propertyId);
+                if (property.getOwnerId() != ownerId) {
+                    throw new IllegalArgumentException("Only the owner can respond to a review.");
+                }
+                insertMessage(connection, propertyId, ownerId, response.trim());
+                changeStatus(connection, propertyId, PropertyStatus.PENDING_REVIEW);
+                connection.commit();
+            } catch (SQLException | InvalidTransitionException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private void insertThreadNote(Connection connection, int propertyId, String note)
+            throws SQLException {
+        // A message needs an author (author_id is NOT NULL), and the person
+        // acting is the one signed in - the agent deciding, or the owner
+        // asking for removal. With nobody signed in there is nobody to
+        // credit, so the note stays out of the thread.
+        AppUser author = SessionManager.getCurrentUser();
+        if (author == null) {
+            return;
+        }
+        insertMessage(connection, propertyId, author.getId(), note);
+    }
+
+    private void insertMessage(Connection connection, int propertyId, int authorId, String text)
+            throws SQLException {
+        PropertyMessage message = new PropertyMessage();
+        message.setPropertyId(propertyId);
+        message.setAuthorId(authorId);
+        message.setMessage(text);
+        int id = propertyMessageDao.insert(connection, message);
+        auditService.record(connection, "property_message", id, "CREATE", null, "message");
     }
 
     /**

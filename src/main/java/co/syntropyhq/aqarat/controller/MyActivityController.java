@@ -2,6 +2,7 @@ package co.syntropyhq.aqarat.controller;
 
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -42,11 +43,11 @@ public class MyActivityController {
     private ListView<Viewing> viewingList;
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, new AuditService(new AuditDao()));
     private final ViewingService viewingService =
-        new ViewingService(new ViewingDao(), new AuditService(new AuditDao()));
+        new ViewingService(new ViewingDao(), propertyService, new AuditService(new AuditDao()));
 
     private final Map<Integer, Property> propertiesById = new HashMap<>();
 

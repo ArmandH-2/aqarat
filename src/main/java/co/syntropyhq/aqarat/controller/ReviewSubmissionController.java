@@ -3,6 +3,7 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -11,6 +12,7 @@ import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyMessage;
 import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.PropertyType;
@@ -117,12 +119,16 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label valuationMetaLabel;
     @FXML
+    private Label evidenceLabel;
+    @FXML
     private VBox factorsBox;
     @FXML
     private VBox comparablesBox;
 
     @FXML
     private VBox decisionBox;
+    @FXML
+    private VBox discussionBox;
     @FXML
     private Label decisionHintLabel;
     @FXML
@@ -141,7 +147,7 @@ public class ReviewSubmissionController implements NeedsId {
     private HBox withdrawalActionsBox;
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
     private final ValuationService valuationService = new ValuationService(
@@ -191,6 +197,7 @@ public class ReviewSubmissionController implements NeedsId {
         renderProperty();
         renderGallery();
         renderDecisionSection();
+        renderDiscussion();
         loadValuation();
     }
 
@@ -352,6 +359,34 @@ public class ReviewSubmissionController implements NeedsId {
         }
     }
 
+    // The owner's answers to previous decisions, oldest first. The agent's
+    // own notes are in here too (PropertyService.review writes them), so the
+    // agent reads the whole conversation rather than only the newest reply.
+    private void renderDiscussion() {
+        List<PropertyMessage> messages;
+        try {
+            messages = propertyService.findMessages(propertyId);
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not load the discussion for this submission.");
+            return;
+        }
+        discussionBox.getChildren().clear();
+        if (messages.isEmpty()) {
+            Label empty = new Label("No messages in this discussion yet.");
+            empty.getStyleClass().add("empty-state");
+            discussionBox.getChildren().add(empty);
+            return;
+        }
+        for (PropertyMessage message : messages) {
+            Label senderLine = new Label(
+                message.getAuthorName() + " • " + Format.dateTime(message.getCreatedAt()));
+            senderLine.getStyleClass().add("hint");
+            Label body = new Label(message.getMessage());
+            body.setWrapText(true);
+            discussionBox.getChildren().add(new VBox(2, senderLine, body));
+        }
+    }
+
     private void loadValuation() {
         try {
             Valuation saved = valuationService.findLatest(propertyId);
@@ -388,8 +423,24 @@ public class ReviewSubmissionController implements NeedsId {
             "Model " + saved.getModelVersion() + " • " + Format.dateTime(saved.getCreatedAt()));
         applyFlagPill(result.getFlag());
         applyRangeCaption(result.getLowerBound(), result.getUpperBound());
+        applyEvidenceLine(result.getComparables().size());
         renderFactors(result.getFactorContributions());
         renderComparables(result.getComparables());
+    }
+
+    // Every one of the twenty worst estimates measured against the closed
+    // properties had fewer than five comparables, and most had none. The
+    // number is the single best clue to how much the estimate is worth, so it
+    // is said out loud next to the price rather than left to be counted.
+    private void applyEvidenceLine(int comparableCount) {
+        if (comparableCount == 0) {
+            evidenceLabel.setText(
+                "No comparable sales were found, so this rests on the model alone. Treat it as a rough guide.");
+            return;
+        }
+        evidenceLabel.setText(comparableCount == 1
+            ? "Based on 1 comparable sale."
+            : "Based on " + comparableCount + " comparable sales.");
     }
 
     // The flag is advisory only (DESIGN.md section 7) - it gets a loud pill

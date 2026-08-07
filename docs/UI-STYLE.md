@@ -21,15 +21,16 @@ here and the whole application follows.
 |---|---|---|
 | `-c-bg` | `#F8F8F6` | Page background |
 | `-c-surface` | `#FFFFFF` | Cards, tables, panels, inputs |
-| `-c-surface-alt` | `#F1F1EE` | Sidebar, table headers, hover rows |
+| `-c-surface-alt` | `#F1F1EE` | Hover rows, thread boxes |
 | `-c-border` | `#D7D8D5` | All hairlines |
 | `-c-border-strong` | `#BFC0BC` | Input borders, focus outlines |
 | `-c-text` | `#1F2320` | Primary text |
 | `-c-text-soft` | `#5B5B57` | Labels, secondary text |
 | `-c-text-mute` | `#70706B` | Placeholders, disabled, hints |
-| `-c-accent` | `#004225` | Primary actions, active nav, links |
+| `-c-accent` | `#004225` | Sidebar, primary actions, links |
 | `-c-accent-dark` | `#00301B` | Hover and pressed |
-| `-c-accent-soft` | `#E6EEE9` | Active nav background, accent pills |
+| `-c-accent-soft` | `#E6EEE9` | Text on the green sidebar, active nav, table headers, selected rows |
+| `-c-on-accent` | `#FFFFFF` | Text on the green sidebar and on primary buttons |
 | `-c-stone` | `#8B8680` | Architectural detail and heavier dividers. **Never text.** |
 | `-c-good` | `#26682B` / bg `#E8F3E8` | Available, paid, confirmed, OK |
 | `-c-warn` | `#8F5800` / bg `#FDF1DF` | Pending review, needs info, above market |
@@ -48,7 +49,8 @@ the background each colour is actually used on:
 | Pair | Ratio |
 |---|---|
 | `-c-accent` on `-c-surface` | 11.63:1 |
-| white on `-c-accent` | 11.63:1 |
+| `-c-on-accent` on `-c-accent` | 11.63:1 |
+| `-c-accent-soft` on `-c-accent` | 9.85:1 |
 | `-c-text` on `-c-bg` | 14.97:1 |
 | `-c-text-soft` on `-c-bg` | 6.41:1 |
 | `-c-text-mute` on `-c-bg` | 4.68:1 |
@@ -117,8 +119,11 @@ fastest way to make a desktop app look amateur. Flat surfaces separated by hairl
 
 Window opens at 1280×800, minimum 1100×700.
 
-Sidebar is 220px fixed. Items are 36px tall with 8px radius and 12px horizontal padding.
-The active item gets `-c-accent-soft` background and `-c-accent` text.
+Sidebar is 220px fixed and painted in the brand green — the one place the identity is always
+visible. Items are 36px tall with 8px radius and 12px horizontal padding. Item text is
+`-c-accent-soft`; hovering lifts the row to `derive(-c-accent, 8%)` with white text; the active
+item keeps the light pill — `-c-accent-soft` background, `-c-accent` text. The wordmark PNG is
+drawn for light surfaces, so the shell shows the name as text in white instead.
 
 Content area scrolls; the sidebar does not.
 
@@ -126,24 +131,38 @@ Content area scrolls; the sidebar does not.
 
 **Buttons** — 32px tall, 14px horizontal padding, 6px radius, 13px text.
 
-- Primary: `-c-accent` background, white text. One per screen, at most.
-- Secondary: white background, `-c-border-strong` border, `-c-text` text.
+- Primary: `-c-accent` background, `-c-on-accent` text, hover `-c-accent-dark`, pressed a touch darker. One per screen, at most.
+- Secondary: white background, `-c-border-strong` border, `-c-text` text. Hover turns the border and text accent green, marking it clickable without making every button solid.
 - Danger: white background, `-c-bad` border and text. Solid red only inside a confirmation dialog.
 - Disabled: 45% opacity, no hover.
 
-**Inputs** — 32px tall, white, 1px `-c-border-strong`, 4px radius. On focus the border becomes
-`-c-accent`. Invalid fields get a `-c-bad` border and a 12px message directly beneath. Never use
-a dialog for field validation.
+**Inputs** — 32px tall, white, 1px `-c-border`, 4px radius. Hover deepens the border to
+`-c-border-strong`, focus turns it `-c-accent`. Invalid fields get a `-c-bad` border and a 12px
+message directly beneath. Never use a dialog for field validation.
 
-**Tables** — header row 36px on `-c-surface-alt`, 12px `-c-text-soft` labels. Rows 40px with a
-hairline between them, hover `-c-surface-alt`, selected `-c-accent-soft`. Money and area columns
-right-aligned; everything else left. No vertical gridlines.
+**Checkboxes** — box is white with a `-c-border-strong` outline; when checked the box fills
+`-c-accent` with a white mark. The Modena default is another theme's gray-blue and does not ship.
+
+**Tables** — header row 36px on `-c-accent-soft` with 12px `-c-accent` 600 labels — the pale
+green band is the table's way of carrying the identity. Rows 40px with a hairline between them,
+hover `-c-surface-alt`, selected `-c-accent-soft`. Money and area columns right-aligned;
+everything else left. No vertical gridlines.
+
+**Scrollbars** — thumb `-c-border-strong` on a transparent track. Modena's bluish-gray bar is
+the single loudest "default theme" tell left in a styled app.
 
 **Cards** — white, 1px `-c-border`, 6px radius, 16px padding. Used for property results,
 dashboard tiles, and the valuation panel.
 
 **Status pills** — 22px tall, 4px radius, 8px horizontal padding, 11px text. Background and
 text from the status table above.
+
+**Dialogs** — `AlertUtil` dialogs get a white panel, a 600-weight title, and secondary-styled
+buttons so a dialog never opens as a gray Modena box mid-app. Dialogs carry error and
+confirmation messages only — field validation stays under the field.
+
+**Thread box** — the review discussion on property cards and the submission page sits in a
+`-c-surface-alt` rounded box inside the card, sender line in `hint`, body wrapped.
 
 **Empty states** — every list needs one. Centred, `-c-text-soft`, a single sentence saying what
 would appear here and how to make it appear. "No submissions waiting for review." Not "No data."
@@ -217,6 +236,7 @@ palette change stops propagating and panels start disagreeing with each other.
     -c-accent:        #004225;
     -c-accent-dark:   #00301B;
     -c-accent-soft:   #E6EEE9;
+    -c-on-accent:     #FFFFFF;
     -c-stone:         #8B8680;
 
     -c-good:          #26682B;  -c-good-bg:    #E8F3E8;
@@ -241,14 +261,17 @@ palette change stops propagating and panels start disagreeing with each other.
 .label-soft    { -fx-font-size: 12px; -fx-font-weight: 500; -fx-text-fill: -c-text-soft; }
 .hint          { -fx-font-size: 11px; -fx-text-fill: -c-text-mute; }
 
-.sidebar        { -fx-background-color: -c-surface-alt;
-                  -fx-border-color: transparent -c-border transparent transparent;
-                  -fx-border-width: 0 1 0 0; -fx-pref-width: 220px; }
-.nav-item       { -fx-background-radius: 8px; -fx-padding: 8 12 8 12;
-                  -fx-text-fill: -c-text-soft; -fx-cursor: hand; }
-.nav-item:hover { -fx-background-color: derive(-c-surface-alt, -4%); }
-.nav-item.active{ -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
-                  -fx-font-weight: 600; }
+/* The sidebar carries the identity: the green rail from the brand, not a gray one.
+   Text on it uses the light green tint (9.85:1 on the green) so it still reads. */
+.sidebar { -fx-background-color: -c-accent; -fx-pref-width: 220px; }
+.sidebar .section-title { -fx-text-fill: -c-on-accent; }
+.sidebar .label-soft, .sidebar .hint { -fx-text-fill: -c-accent-soft; }
+.nav-item        { -fx-background-radius: 8px; -fx-padding: 8 12 8 12;
+                   -fx-text-fill: -c-accent-soft; -fx-cursor: hand; }
+.nav-item:hover  { -fx-background-color: derive(-c-accent, 8%);
+                   -fx-text-fill: -c-on-accent; }
+.nav-item.active { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
+                   -fx-font-weight: 600; }
 
 /* Modena's hyperlink is its own blue and ignores the palette. */
 .hyperlink          { -fx-text-fill: -c-accent; -fx-border-color: transparent;
@@ -261,35 +284,77 @@ palette change stops propagating and panels start disagreeing with each other.
 .card { -fx-background-color: -c-surface; -fx-background-radius: 6px;
         -fx-border-color: -c-border; -fx-border-radius: 6px; -fx-padding: 16px; }
 
+/* Review discussion on a property card or submission page. */
+.thread { -fx-background-color: -c-surface-alt; -fx-background-radius: 6px;
+          -fx-padding: 10px; }
+
 .button           { -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
                     -fx-pref-height: 32px; -fx-cursor: hand; -fx-font-size: 13px; }
-.button-primary   { -fx-background-color: -c-accent; -fx-text-fill: white; }
-.button-primary:hover { -fx-background-color: -c-accent-dark; }
+.button-primary         { -fx-background-color: -c-accent; -fx-text-fill: -c-on-accent; }
+.button-primary:hover   { -fx-background-color: -c-accent-dark; }
+.button-primary:pressed { -fx-background-color: derive(-c-accent, -10%); }
 .button-secondary { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
                     -fx-border-color: -c-border-strong; -fx-border-radius: 6px; }
+.button-secondary:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
 .button-danger    { -fx-background-color: -c-surface; -fx-text-fill: -c-bad;
                     -fx-border-color: -c-bad; -fx-border-radius: 6px; }
+.button-danger:hover { -fx-background-color: -c-bad-bg; }
 
 .text-field, .text-area, .combo-box, .date-picker {
     -fx-background-color: -c-surface; -fx-background-radius: 4px;
-    -fx-border-color: -c-border-strong; -fx-border-radius: 4px;
+    -fx-border-color: -c-border; -fx-border-radius: 4px;
     -fx-pref-height: 32px; -fx-padding: 0 8 0 8;
 }
-.text-field:focused, .combo-box:focused, .date-picker:focused {
+.text-field:hover, .text-area:hover, .combo-box:hover, .date-picker:hover {
+    -fx-border-color: -c-border-strong;
+}
+.text-field:focused, .text-area:focused, .combo-box:focused, .date-picker:focused {
     -fx-border-color: -c-accent;
 }
 .field-invalid { -fx-border-color: -c-bad; }
 .field-error   { -fx-font-size: 12px; -fx-text-fill: -c-bad; }
 
+.check-box .box { -fx-background-color: -c-surface; -fx-border-color: -c-border-strong;
+                  -fx-border-radius: 3px; -fx-background-radius: 3px; }
+.check-box:selected .box { -fx-background-color: -c-accent; -fx-border-color: -c-accent; }
+.check-box:selected .mark { -fx-background-color: -c-on-accent; }
+
+/* Modena's default scrollbars are a bluish gray from another theme entirely. */
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: -c-border-strong; -fx-background-radius: 4px; }
+.scroll-bar .track { -fx-background-color: transparent; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent; -fx-padding: 0;
+}
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: " "; -fx-padding: 0; }
+
+.list-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
+             -fx-border-radius: 6px; -fx-background-radius: 6px; }
+.list-view .list-cell { -fx-padding: 8 12 8 12; }
+.list-view .list-cell:hover { -fx-background-color: -c-surface-alt; }
+.list-view .list-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
+
 .table-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
               -fx-border-radius: 6px; -fx-background-radius: 6px; }
-.table-view .column-header { -fx-background-color: -c-surface-alt; -fx-pref-height: 36px; }
-.table-view .column-header .label { -fx-font-size: 12px; -fx-text-fill: -c-text-soft;
-                                    -fx-font-weight: 500; -fx-alignment: center-left; }
+.table-view .column-header { -fx-background-color: -c-accent-soft; -fx-pref-height: 36px; }
+.table-view .column-header .label { -fx-font-size: 12px; -fx-text-fill: -c-accent;
+                                    -fx-font-weight: 600; -fx-alignment: center-left; }
 .table-row-cell { -fx-pref-height: 40px; -fx-border-color: transparent transparent -c-border transparent; }
 .table-row-cell:hover    { -fx-background-color: -c-surface-alt; }
 .table-row-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
 .numeric { -fx-alignment: center-right; }
+
+/* Alert and confirmation dialogs otherwise keep Modena's light gray panels. */
+.dialog-pane { -fx-background-color: -c-surface; }
+.dialog-pane .header-panel { -fx-background-color: -c-surface; }
+.dialog-pane .header-panel .label { -fx-text-fill: -c-text; -fx-font-size: 15px;
+                                    -fx-font-weight: 600; }
+.dialog-pane .content { -fx-padding: 16px; }
+.dialog-pane .button { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
+                       -fx-border-color: -c-border-strong; -fx-border-radius: 6px;
+                       -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
+                       -fx-pref-height: 32px; -fx-cursor: hand; }
+.dialog-pane .button:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
 
 .pill        { -fx-background-radius: 4px; -fx-padding: 3 8 3 8; -fx-font-size: 11px;
                -fx-font-weight: 500; }

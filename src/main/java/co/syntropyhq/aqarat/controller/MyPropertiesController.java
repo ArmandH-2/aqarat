@@ -3,11 +3,14 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
+import co.syntropyhq.aqarat.model.NewPhoto;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyMessage;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
@@ -16,7 +19,11 @@ import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import java.io.File;
+import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +38,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 
 public class MyPropertiesController {
 
@@ -38,7 +46,7 @@ public class MyPropertiesController {
     private ListView<Property> propertyList;
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
 
@@ -78,9 +86,27 @@ public class MyPropertiesController {
         }
     }
 
+    // Same dialog pattern as handleRequestRemoval: a card has nowhere to
+    // hold an inline form, and the answer belongs to an action, not to
+    // field validation. The answer is written to the discussion thread and
+    // the submission moves back to PENDING_REVIEW as one unit.
     private void handleRespond(Property property) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setHeaderText(null);
+        dialog.setTitle("Respond to review");
+        dialog.setContentText("Your answer, which the reviewing agent will see:");
+        Optional<String> input = dialog.showAndWait();
+        if (input.isEmpty()) {
+            return;
+        }
+        String answer = input.get().trim();
+        if (answer.isEmpty()) {
+            AlertUtil.showError("An answer is required to go back to review.");
+            return;
+        }
         try {
-            propertyService.changeStatus(property.getId(), PropertyStatus.PENDING_REVIEW);
+            propertyService.respondToReview(property.getId(), answer,
+                SessionManager.getCurrentUser().getId());
         } catch (PropertyService.InvalidTransitionException e) {
             AlertUtil.showError("This submission can no longer be sent back for review.");
             return;
@@ -88,7 +114,7 @@ public class MyPropertiesController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your submission has been sent back for review.");
+        AlertUtil.showInfo("Your answer has been sent back for review.");
         loadProperties();
     }
 
@@ -107,6 +133,34 @@ public class MyPropertiesController {
         }
         AlertUtil.showInfo("The submission has been withdrawn.");
         loadProperties();
+    }
+
+    // An agent can only ask for photos (NEEDS_INFO) if the owner actually has
+    // somewhere to add them - that is what this button is for. All the file
+    // work is in PropertyService, same rule as submit().
+    private void handleAddPhotos(Property property) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose photos for " + property.getTitle());
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("Photos", "*.jpg", "*.jpeg", "*.png"));
+        List<File> chosen = chooser.showOpenMultipleDialog(null);
+        if (chosen == null || chosen.isEmpty()) {
+            return;
+        }
+        List<NewPhoto> photos = new ArrayList<>();
+        for (File file : chosen) {
+            photos.add(new NewPhoto(file.toPath()));
+        }
+        try {
+            propertyService.addPhotos(property.getId(), photos);
+        } catch (IOException e) {
+            AlertUtil.showError("One photo could not be read. Check the file is a JPG or PNG.");
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("The photos are attached to the listing.");
     }
 
     // The dialog is the one place DESIGN.md's owner-withdrawal note allows
@@ -201,16 +255,9 @@ public class MyPropertiesController {
             card.getStyleClass().add("card");
             card.setPadding(new Insets(16));
 
-            PropertyStatus status = property.getStatus();
-            boolean showsNote = status == PropertyStatus.NEEDS_INFO
-                || status == PropertyStatus.WITHDRAWAL_REQUESTED;
-            if (showsNote && property.getReviewNote() != null) {
-                String caption = status == PropertyStatus.WITHDRAWAL_REQUESTED
-                    ? "Your reason: " : "Review note: ";
-                Label reviewNote = new Label(caption + property.getReviewNote());
-                reviewNote.setWrapText(true);
-                reviewNote.getStyleClass().add("hint");
-                card.getChildren().add(reviewNote);
+            VBox thread = buildThread(property);
+            if (thread != null) {
+                card.getChildren().add(thread);
             }
 
             HBox actions = buildActions(property);
@@ -218,6 +265,34 @@ public class MyPropertiesController {
                 card.getChildren().add(actions);
             }
             return card;
+        }
+
+        // The discussion - the agent's question, the owner's answers, the
+        // removal request - reads as quiet lines under the meta line. Loaded
+        // on demand per card rather than for the whole list at once.
+        private VBox buildThread(Property property) {
+            List<PropertyMessage> messages;
+            try {
+                messages = propertyService.findMessages(property.getId());
+            } catch (SQLException e) {
+                return null;
+            }
+            if (messages.isEmpty()) {
+                return null;
+            }
+            int currentUserId = SessionManager.getCurrentUser().getId();
+            VBox thread = new VBox(8);
+            thread.getStyleClass().add("thread");
+            for (PropertyMessage message : messages) {
+                String sender = message.getAuthorId() == currentUserId
+                    ? "You" : message.getAuthorName();
+                Label senderLine = new Label(sender + " • " + Format.dateTime(message.getCreatedAt()));
+                senderLine.getStyleClass().add("hint");
+                Label body = new Label(message.getMessage());
+                body.setWrapText(true);
+                thread.getChildren().add(new VBox(2, senderLine, body));
+            }
+            return thread;
         }
 
         private HBox buildActions(Property property) {
@@ -228,6 +303,12 @@ public class MyPropertiesController {
                 respond.getStyleClass().addAll("button", "button-secondary");
                 respond.setOnAction(event -> handleRespond(property));
                 actions.getChildren().add(respond);
+            }
+            if (status == PropertyStatus.NEEDS_INFO || status == PropertyStatus.PENDING_REVIEW) {
+                Button addPhotos = new Button("Add photos");
+                addPhotos.getStyleClass().addAll("button", "button-secondary");
+                addPhotos.setOnAction(event -> handleAddPhotos(property));
+                actions.getChildren().add(addPhotos);
             }
             if (status == PropertyStatus.PENDING_REVIEW || status == PropertyStatus.NEEDS_INFO) {
                 Button withdraw = new Button("Withdraw");

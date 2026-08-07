@@ -3,12 +3,16 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.model.DealType;
+import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.District;
+import co.syntropyhq.aqarat.model.NewPhoto;
 import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.PropertyType;
+import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
@@ -18,9 +22,14 @@ import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -30,10 +39,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
 public class SubmitPropertyController {
 
+    @FXML
+    private VBox contentBox;
+    @FXML
+    private Label accessDeniedLabel;
     @FXML
     private TextField titleField;
     @FXML
@@ -100,20 +114,40 @@ public class SubmitPropertyController {
     private TextField maxTermField;
     @FXML
     private Label maxTermError;
+    @FXML
+    private Label photoListLabel;
+
+    private final List<Path> selectedPhotos = new ArrayList<>();
 
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
 
     @FXML
     private void initialize() {
+        // Only customers own property to submit. An agent or admin has no
+        // use for this form, and a guest would fail on the null session
+        // the form reads for owner_id - so the panel refuses both up front.
+        AppUser user = SessionManager.getCurrentUser();
+        if (user == null || user.getRole() != Role.CUSTOMER) {
+            denyAccess();
+            return;
+        }
         loadReferenceData();
         setLabelConverter(dealTypeCombo, Format::enumLabel);
         dealTypeCombo.setItems(FXCollections.observableArrayList(DealType.values()));
         dealTypeCombo.getSelectionModel().select(DealType.SALE);
         dealTypeCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateDealTypeUi(newValue));
         updateDealTypeUi(DealType.SALE);
+    }
+
+    private void denyAccess() {
+        contentBox.setVisible(false);
+        contentBox.setManaged(false);
+        accessDeniedLabel.setText("Only customers can submit a property.");
+        accessDeniedLabel.setVisible(true);
+        accessDeniedLabel.setManaged(true);
     }
 
     private void loadReferenceData() {
@@ -156,14 +190,37 @@ public class SubmitPropertyController {
             return;
         }
         property.setOwnerId(SessionManager.getCurrentUser().getId());
+        List<NewPhoto> photos = new ArrayList<>();
+        for (Path path : selectedPhotos) {
+            photos.add(new NewPhoto(path));
+        }
         try {
-            propertyService.submit(property);
+            propertyService.submit(property, photos);
+        } catch (IOException e) {
+            AlertUtil.showError("One of the photos could not be read. Check the file exists and is a JPG or PNG, then try again.");
+            return;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
         AlertUtil.showInfo("Your submission is now awaiting review.");
         Router.show(Panel.MY_PROPERTIES);
+    }
+
+    @FXML
+    private void handleAddPhotos() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose property photos");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("Photos", "*.jpg", "*.jpeg", "*.png"));
+        List<File> chosen = chooser.showOpenMultipleDialog(null);
+        if (chosen == null || chosen.isEmpty()) {
+            return;
+        }
+        for (File file : chosen) {
+            selectedPhotos.add(file.toPath());
+        }
+        photoListLabel.setText(selectedPhotos.size() + " photo(s) chosen.");
     }
 
     private boolean collectBasicFields(Property property) {

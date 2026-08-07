@@ -3,6 +3,7 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertySearch;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
@@ -88,7 +89,7 @@ public class ListingsController {
     private Button nextButton;
 
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
 

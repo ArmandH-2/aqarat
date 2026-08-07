@@ -113,6 +113,11 @@
                         <Label text="Description" styleClass="section-title"/>
                         <Label fx:id="descriptionValue" wrapText="true"/>
                     </VBox>
+
+                    <VBox styleClass="card" spacing="12">
+                        <Label text="Discussion" styleClass="section-title"/>
+                        <VBox fx:id="discussionBox" spacing="10"/>
+                    </VBox>
                 </VBox>
 
                 <!-- Right column: the valuation -->
@@ -153,6 +158,7 @@
                                 <Label text="Price per m²" styleClass="label-soft"/>
                                 <Label fx:id="pricePerSqmValue"/>
                             </VBox>
+                            <Label fx:id="evidenceLabel" styleClass="label-soft" wrapText="true"/>
                             <Label fx:id="valuationMetaLabel" styleClass="hint"/>
                         </VBox>
                     </VBox>

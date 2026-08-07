@@ -5,6 +5,7 @@ import co.syntropyhq.aqarat.dao.ContractDao;
 import co.syntropyhq.aqarat.dao.PaymentDao;
 import co.syntropyhq.aqarat.dao.PaymentScheduleDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
@@ -65,9 +66,10 @@ public class MyContractsController {
 
     private final AuditService auditService = new AuditService(new AuditDao());
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), auditService);
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), auditService);
     private final PaymentService paymentService = new PaymentService(
-        new PaymentScheduleDao(), new PaymentDao(), new SystemSettingDao(), auditService);
+        new PaymentScheduleDao(), new PaymentDao(), new ContractDao(), new ReservationDao(),
+        new SystemSettingDao(), auditService);
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, auditService);
     private final ContractService contractService = new ContractService(
@@ -151,6 +153,9 @@ public class MyContractsController {
             paymentService.declare(schedule.getId(), null, amount, form.method(), form.reference(),
                 form.proofPath(), clientId);
         } catch (PaymentService.InvalidPaymentTargetException e) {
+            AlertUtil.showError(e.getMessage());
+            return;
+        } catch (PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
         } catch (SQLException e) {

@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 // null is fine for all of them.
 class PaymentServiceTest {
 
-    private final PaymentService paymentService = new PaymentService(null, null, null, null);
+    private final PaymentService paymentService = new PaymentService(null, null, null, null, null, null);
 
     @Test
     void twelveMonthlyInstallmentsSumToTheTotalWithNoDriftOnTheLastRow() {

@@ -2,8 +2,10 @@ package co.syntropyhq.aqarat.valuation;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LinearRegressionTest {
 
@@ -40,5 +42,41 @@ class LinearRegressionTest {
 
         LinearRegression regression = new LinearRegression();
         assertThrows(IllegalStateException.class, () -> regression.fit(features, targets));
+    }
+
+    @Test
+    void weightedFitWithAllWeightsEqualMatchesTheUnweightedFit() {
+        double[][] features = {
+            { 0, 0 },
+            { 1, 0 },
+            { 0, 1 },
+            { 1, 1 },
+            { 2, 1 },
+        };
+        double[] targets = { 5, 7, 8, 10, 12 };
+        double[] equalWeights = { 1, 1, 1, 1, 1 };
+
+        LinearRegression unweighted = new LinearRegression();
+        unweighted.fit(features, targets);
+
+        LinearRegression weighted = new LinearRegression();
+        weighted.fit(features, targets, equalWeights);
+
+        assertArrayEquals(unweighted.getCoefficients(), weighted.getCoefficients(), 1e-9);
+    }
+
+    @Test
+    void weightingARowMoreHeavilyPullsTheFitTowardIt() {
+        // Three rows with no feature columns - fit degenerates to a
+        // weighted mean of the targets. Weighting the outlier heavily
+        // should pull the prediction toward it, well past the unweighted
+        // mean of 3.33.
+        double[][] features = { {}, {}, {} };
+        double[] targets = { 0, 0, 10 };
+
+        LinearRegression heavyOnOutlier = new LinearRegression();
+        heavyOnOutlier.fit(features, targets, new double[] { 1, 1, 100 });
+
+        assertTrue(heavyOnOutlier.predict(new double[] {}) > 9.0);
     }
 }

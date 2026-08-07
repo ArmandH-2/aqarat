@@ -7,6 +7,7 @@ import co.syntropyhq.aqarat.model.ValuationFlag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,16 +116,111 @@ class PriceEstimatorTest {
         assertTrue(result.getEstimatedValue().compareTo(result.getUpperBound()) <= 0);
     }
 
-    // No comparables and no usable regression data: PriceEstimator has
-    // nothing to reason from and says so with a clear, documented exception
-    // rather than a NaN or a divide-by-zero.
+    // No comparables, no usable regression data, and no district average
+    // either: PriceEstimator truly has nothing to reason from and says so
+    // with a clear, documented exception rather than a NaN or a
+    // divide-by-zero.
     @Test
-    void noComparablesAndNoRegressionDataThrowsAClearException() {
+    void noComparablesNoRegressionDataAndNoDistrictAverageThrowsAClearException() {
         Property subject = property(100, 200_000, 3, 2, 2015);
+
+        assertThrows(IllegalStateException.class, () -> estimator.estimate(subject,
+            Collections.emptyList(), Collections.emptyList(), Map.of(),
+            COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT));
+    }
+
+    // No comparables and no usable regression data, but the district does
+    // have an average price per m² on file: a brand-new district's first
+    // submission still gets a usable estimate instead of a dead end.
+    @Test
+    void districtAverageFallbackProducesAnEstimateInsteadOfThrowing() {
+        Property subject = property(100, 200_000, 3, 2, 2015);
+
+        ValuationResult result = estimator.estimate(subject, Collections.emptyList(), Collections.emptyList(),
+            districtAverages, COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        // districtAverages maps district 1 to $2000/m², times the subject's 100 m².
+        assertEquals(0, new BigDecimal("200000.00").compareTo(result.getEstimatedValue()));
+        assertTrue(result.getFactorContributions().containsKey("districtAverageFallback"));
+        assertTrue(result.getLowerBound().compareTo(result.getEstimatedValue()) <= 0);
+        assertTrue(result.getEstimatedValue().compareTo(result.getUpperBound()) <= 0);
+    }
+
+    // district.avg_price_per_sqm (db/schema.sql) is calibrated to sale
+    // prices only - there is no rent equivalent column. Using it directly
+    // as a monthly rent would be off by roughly two orders of magnitude, so
+    // a RENT property still gets the same refusal it always has rather than
+    // a fabricated number.
+    @Test
+    void districtAverageFallbackDoesNotApplyToRentProperties() {
+        Property subject = property(100, 1_500, 3, 2, 2015);
+        subject.setDealType(DealType.RENT);
 
         assertThrows(IllegalStateException.class, () -> estimator.estimate(subject,
             Collections.emptyList(), Collections.emptyList(), districtAverages,
             COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT));
+    }
+
+    // The range must widen, not narrow, when there is less to check the
+    // estimate against. Zero comparables (regression-only) is compared
+    // against a full set of comparables at the business's own minimum count.
+    @Test
+    void zeroComparablesProducesAWiderRangeThanManyComparables() {
+        Map<Integer, BigDecimal> districts = Map.of(
+            1, BigDecimal.valueOf(1800),
+            2, BigDecimal.valueOf(2200),
+            3, BigDecimal.valueOf(2600));
+        List<Property> dataset = regressionTrainingSet(districts);
+        Property subject = regressionSubject();
+
+        ValuationResult zeroComparables = estimator.estimate(subject, Collections.emptyList(), dataset,
+            districts, COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+        ValuationResult manyComparables = estimator.estimate(subject, fiveComparablesMatchingSubject(210_000),
+            dataset, districts, COMPARABLE_MIN_COUNT, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        double zeroWidth = width(zeroComparables);
+        double manyWidth = width(manyComparables);
+        assertTrue(zeroWidth > manyWidth,
+            "zero-comparable range (" + zeroWidth + ") should be wider than the many-comparable range (" + manyWidth + ")");
+    }
+
+    // Recency weighting: two comparables with the same prices, but which one
+    // is "recent" is swapped between scenarios. The recent one should pull
+    // the weighted median toward its own price each time.
+    @Test
+    void recentComparableMovesTheEstimateMoreThanAnOldOne() {
+        Property subject = property(100, 200_000, 3, 2, 2015);
+        LocalDateTime recent = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime old = recent.minusYears(5);
+
+        Property lowPriced = property(100, 150_000, 3, 2, 2015);
+        Property highPriced = property(100, 250_000, 3, 2, 2015);
+
+        lowPriced.setClosedAt(recent);
+        highPriced.setClosedAt(old);
+        ValuationResult lowIsRecent = estimator.estimate(subject, Arrays.asList(lowPriced, highPriced),
+            Collections.emptyList(), districtAverages, 2, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        lowPriced.setClosedAt(old);
+        highPriced.setClosedAt(recent);
+        ValuationResult highIsRecent = estimator.estimate(subject, Arrays.asList(lowPriced, highPriced),
+            Collections.emptyList(), districtAverages, 2, ABOVE_MARKET_PERCENT, IMPLAUSIBLE_PERCENT);
+
+        assertTrue(highIsRecent.getEstimatedValue().compareTo(lowIsRecent.getEstimatedValue()) > 0,
+            "the estimate should be higher when the higher-priced comparable is the recent one");
+    }
+
+    private double width(ValuationResult result) {
+        return result.getUpperBound().subtract(result.getLowerBound()).doubleValue();
+    }
+
+    private List<Property> fiveComparablesMatchingSubject(long pricePerComparable) {
+        return Arrays.asList(
+            property(110, pricePerComparable - 10_000, 3, 4, 2005),
+            property(110, pricePerComparable - 5_000, 3, 4, 2005),
+            property(110, pricePerComparable, 3, 4, 2005),
+            property(110, pricePerComparable + 5_000, 3, 4, 2005),
+            property(110, pricePerComparable + 10_000, 3, 4, 2005));
     }
 
     @Test

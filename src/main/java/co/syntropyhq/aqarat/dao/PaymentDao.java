@@ -106,16 +106,29 @@ public class PaymentDao {
         }
     }
 
-    public List<Payment> findDeclared(Connection connection) throws SQLException {
-        String sql = ("""
-            SELECT %s
-            FROM payment
-            WHERE status = 'DECLARED'
-            ORDER BY created_at
-            """).formatted(COLUMNS);
-        try (PreparedStatement statement = connection.prepareStatement(sql);
-                ResultSet resultSet = statement.executeQuery()) {
-            return mapRows(resultSet);
+    // agentId scopes the queue to one agent's work: a declared payment
+    // belongs to a schedule on one of their contracts, or to a reservation
+    // where they are the agent. Pass null for an admin, who sees the whole
+    // agency's queue.
+    public List<Payment> findDeclared(Connection connection, Integer agentId) throws SQLException {
+        String sql = """
+            SELECT p.id, p.schedule_id, p.reservation_id, p.amount, p.paid_at, p.method,
+                p.reference, p.proof_path, p.declared_by, p.confirmed_by, p.status, p.created_at
+            FROM payment p
+            LEFT JOIN payment_schedule ps ON ps.id = p.schedule_id
+            LEFT JOIN contract c ON c.id = ps.contract_id
+            LEFT JOIN reservation r ON r.id = p.reservation_id
+            WHERE p.status = 'DECLARED'
+              AND (? IS NULL OR c.agent_id = ? OR r.agent_id = ?)
+            ORDER BY p.created_at
+            """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, agentId);
+            statement.setObject(2, agentId);
+            statement.setObject(3, agentId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return mapRows(resultSet);
+            }
         }
     }
 

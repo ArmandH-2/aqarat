@@ -400,11 +400,33 @@ SET IDENTITY_INSERT dbo.property OFF;
 DBCC CHECKIDENT ('dbo.property', RESEED) WITH NO_INFOMSGS;
 GO
 
-/* One primary photo placeholder per property. Real images are added through
-   the application; these keep the list views from looking broken. */
+/* One primary photo per property, matched to its type so a villa does not
+   open with an apartment thumbnail. The files ship with the app under
+   uploads/images; the path stored in the row is relative to that root. */
 
 INSERT INTO dbo.property_photo (property_id, file_path, is_primary, sort_order)
-SELECT id, 'images/placeholder.jpg', 1, 0 FROM dbo.property;
+SELECT p.id,
+    LOWER(REPLACE(pt.name, ' ', '-')) + '-1.jpg',
+    1,
+    0
+FROM dbo.property p
+JOIN dbo.property_type pt ON pt.id = p.property_type_id;
+GO
+
+/* --------------------------------------------------------------------------
+   Review threads
+   -------------------------------------------------------------------------- */
+
+/* The agent's review note is mirrored as the first message of the discussion,
+   so a customer opening My Properties sees the thread without having to
+   provoke one first. */
+
+INSERT INTO dbo.property_message (property_id, author_id, message, created_at)
+SELECT p.id, p.agent_id, p.review_note, p.submitted_at
+FROM dbo.property p
+WHERE p.status = 'NEEDS_INFO'
+  AND p.agent_id IS NOT NULL
+  AND p.review_note IS NOT NULL;
 GO
 
 /* --------------------------------------------------------------------------

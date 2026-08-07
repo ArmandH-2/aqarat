@@ -2,6 +2,7 @@ package co.syntropyhq.aqarat.controller;
 
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.UserDao;
 import co.syntropyhq.aqarat.dao.ViewingDao;
@@ -49,10 +50,10 @@ public class ViewingsController {
     @FXML
     private ListView<Viewing> viewingList;
 
-    private final ViewingService viewingService =
-        new ViewingService(new ViewingDao(), new AuditService(new AuditDao()));
     private final PropertyService propertyService =
-        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new AuditService(new AuditDao()));
+        new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
+    private final ViewingService viewingService =
+        new ViewingService(new ViewingDao(), propertyService, new AuditService(new AuditDao()));
     private final AuthService authService = new AuthService(new UserDao());
 
     private final Map<Integer, String> propertyTitles = new HashMap<>();
