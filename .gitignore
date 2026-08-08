@@ -7,7 +7,12 @@ target/
 config/local.properties
 
 # Uploaded files created at runtime
-uploads/
+uploads/*
+# The seed gallery images are the only uploads committed: they are what the
+# demo's Browse Listings and Review Queue screens point at.
+!uploads/images/
+uploads/images/*
+!uploads/images/seed/
 proofs/
 
 # IDE

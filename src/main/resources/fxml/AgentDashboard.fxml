@@ -33,7 +33,7 @@
             </VBox>
             <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                 <Label fx:id="overdueCountLabel" styleClass="page-title" text="0"/>
-                <Label text="Payments overdue across the agency" styleClass="label-soft"/>
+                <Label fx:id="overdueCaptionLabel" text="Payments overdue across the agency" styleClass="label-soft"/>
             </VBox>
         </HBox>
     </VBox>

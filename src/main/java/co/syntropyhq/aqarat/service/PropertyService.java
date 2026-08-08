@@ -87,37 +87,22 @@ public class PropertyService {
     }
 
     /**
-     * Submits a new property. A submission is created and reviewed in the
-     * same step - there is no persisted DRAFT row to save and come back to -
-     * so this writes the property straight in at PENDING_REVIEW and stamps
-     * submitted_at, rather than inserting a DRAFT row and immediately
-     * transitioning it. Both writes (the property and its audit entry) are
-     * one transaction.
+     * A submission is created and reviewed in the same step - there is no
+     * persisted DRAFT row to save and come back to - so this writes the
+     * property straight in at PENDING_REVIEW and stamps submitted_at. With
+     * photos in play, both writes go into one transaction so a photo copy
+     * failure never leaves a listed property with no gallery.
      */
     public int submit(Property property) throws SQLException {
-        property.setStatus(PropertyStatus.PENDING_REVIEW);
-        property.setSubmittedAt(LocalDateTime.now(ZoneOffset.UTC));
-        try (Connection connection = Db.get()) {
-            connection.setAutoCommit(false);
-            try {
-                int id = propertyDao.insert(connection, property);
-                auditService.record(connection, "property", id, "CREATE", null,
-                    PropertyStatus.PENDING_REVIEW.name());
-                connection.commit();
-                return id;
-            } catch (SQLException e) {
-                connection.rollback();
-                throw e;
-            }
+        try {
+            return submit(property, List.of());
+        } catch (IOException e) {
+            // The photos path only throws IOException when it actually reads a
+            // file, which this branch never does.
+            throw new IllegalStateException("Unreachable: no photos to read.", e);
         }
     }
 
-    /**
-     * Submits a new property with photos chosen on the form. Both are one
-     * transaction: the submission and its photos cannot exist apart, so a
-     * photo copy that fails rolls the property back rather than leaving a
-     * listing with no gallery.
-     */
     public int submit(Property property, List<NewPhoto> photos) throws SQLException, IOException {
         property.setStatus(PropertyStatus.PENDING_REVIEW);
         property.setSubmittedAt(LocalDateTime.now(ZoneOffset.UTC));

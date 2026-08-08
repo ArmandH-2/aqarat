@@ -7,9 +7,11 @@ import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.ReservationDao;
 import co.syntropyhq.aqarat.dao.SystemSettingDao;
 import co.syntropyhq.aqarat.dao.ViewingDao;
+import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.Reservation;
 import co.syntropyhq.aqarat.model.ReservationStatus;
+import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.model.Viewing;
 import co.syntropyhq.aqarat.model.ViewingStatus;
 import co.syntropyhq.aqarat.service.AuditService;
@@ -53,6 +55,12 @@ public class MyActivityController {
 
     @FXML
     private void initialize() {
+        AppUser user = SessionManager.getCurrentUser();
+        if (user == null || user.getRole() != Role.CUSTOMER) {
+            denyAccess();
+            return;
+        }
+        // placeholder text and other setup continues below
         Label emptyReservations = new Label("You have no reservations yet.");
         emptyReservations.getStyleClass().add("empty-state");
         reservationList.setPlaceholder(emptyReservations);
@@ -64,6 +72,15 @@ public class MyActivityController {
         viewingList.setPlaceholder(emptyViewings);
         viewingList.setCellFactory(list -> new ViewingCard());
         loadViewings();
+    }
+
+    private void denyAccess() {
+        Label denied = new Label("Only customers can see their activity here.");
+        denied.getStyleClass().add("empty-state");
+        reservationList.setPlaceholder(denied);
+        viewingList.setPlaceholder(denied);
+        reservationList.setItems(FXCollections.observableArrayList());
+        viewingList.setItems(FXCollections.observableArrayList());
     }
 
     private void loadReservations() {

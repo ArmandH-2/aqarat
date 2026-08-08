@@ -49,6 +49,8 @@ public class AgentDashboardController {
     private Label weekViewingsCountLabel;
     @FXML
     private Label overdueCountLabel;
+    @FXML
+    private Label overdueCaptionLabel;
 
     private final PropertyService propertyService =
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
@@ -84,10 +86,13 @@ public class AgentDashboardController {
             activeListingsCountLabel.setText(String.valueOf(countActiveListings(agentId)));
             weekViewingsCountLabel.setText(String.valueOf(countViewingsThisWeek(agentId)));
             // The dashboard speaks about the agent's own portfolio, so the
-            // overdue figure is their queue, not the agency's.
+            // overdue figure is their queue. For an admin it is the agency's and
+            // the caption has to say so, or the number reads as a lie.
             AppUser user = SessionManager.getCurrentUser();
             Integer scope = user.getRole() == Role.ADMIN ? null : agentId;
             overdueCountLabel.setText(String.valueOf(reportService.overduePayments(scope).size()));
+            overdueCaptionLabel.setText(user.getRole() == Role.ADMIN
+                ? "Payments overdue across the agency" : "Payments overdue in your portfolio");
         } catch (SQLException e) {
             AlertUtil.showError("Could not load dashboard figures. Check that SQL Server is running.");
         }

@@ -6,6 +6,7 @@ import co.syntropyhq.aqarat.dao.PropertyDao;
 import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
+import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.NewPhoto;
@@ -55,12 +56,27 @@ public class MyPropertiesController {
 
     @FXML
     private void initialize() {
+        // A customer-only panel: the sidebar hides it from everyone else, and
+        // a guest would NPE on getCurrentUser().getId(). The guard stays after
+        // navigation already hides it, not instead of.
+        AppUser user = SessionManager.getCurrentUser();
+        if (user == null || user.getRole() != co.syntropyhq.aqarat.model.Role.CUSTOMER) {
+            denyAccess();
+            return;
+        }
         Label emptyState = new Label("You have not submitted any properties yet.");
         emptyState.getStyleClass().add("empty-state");
         propertyList.setPlaceholder(emptyState);
         propertyList.setCellFactory(list -> new PropertyCard());
         loadReferenceData();
         loadProperties();
+    }
+
+    private void denyAccess() {
+        Label denied = new Label("Only customers can see their own properties.");
+        denied.getStyleClass().add("empty-state");
+        propertyList.setPlaceholder(denied);
+        propertyList.setItems(FXCollections.observableArrayList());
     }
 
     private void loadReferenceData() {

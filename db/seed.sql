@@ -406,7 +406,7 @@ GO
 
 INSERT INTO dbo.property_photo (property_id, file_path, is_primary, sort_order)
 SELECT p.id,
-    LOWER(REPLACE(pt.name, ' ', '-')) + '-1.jpg',
+    'images/seed/' + LOWER(REPLACE(pt.name, ' ', '-')) + '-1.jpg',
     1,
     0
 FROM dbo.property p
