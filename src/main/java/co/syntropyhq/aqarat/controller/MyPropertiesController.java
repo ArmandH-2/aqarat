@@ -19,6 +19,8 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.Panel;
+import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
 import java.io.File;
 import java.io.IOException;
@@ -314,6 +316,13 @@ public class MyPropertiesController {
         private HBox buildActions(Property property) {
             HBox actions = new HBox(8);
             PropertyStatus status = property.getStatus();
+            // The owner's only way into the listing page: a submission that is
+            // still under review never appears in Browse listings, so without
+            // this the photos they just uploaded are invisible to them.
+            Button view = new Button("View listing");
+            view.getStyleClass().addAll("button", "button-secondary");
+            view.setOnAction(event -> Router.show(Panel.PROPERTY_DETAILS, property.getId()));
+            actions.getChildren().add(view);
             if (status == PropertyStatus.NEEDS_INFO) {
                 Button respond = new Button("Respond");
                 respond.getStyleClass().addAll("button", "button-secondary");

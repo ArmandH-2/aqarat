@@ -34,8 +34,10 @@ does not get a veto over a real person's property.
 |---|---|
 | ![Sign in](screenshots/01-login.png) | ![Browse listings](screenshots/02-browse-listings.png) |
 | Sign in, or browse without an account | Search and filter 2,000 listings |
-| ![Review queue](screenshots/04-review-queue.png) | ![Contracts](screenshots/05-contracts.png) |
-| Claim submissions from the unassigned queue | Draft a contract, then activate it |
+| ![Property details](screenshots/07-property-details.png) | ![Review queue](screenshots/04-review-queue.png) |
+| Photos, price, and specs for one listing | Claim submissions from the unassigned queue |
+| ![Contracts](screenshots/05-contracts.png) | ![My properties](screenshots/08-my-properties.png) |
+| Draft a contract, then activate it | An owner's submissions, with the review discussion |
 | ![Reports](screenshots/06-reports.png) | |
 | Revenue and commission by month | |
 

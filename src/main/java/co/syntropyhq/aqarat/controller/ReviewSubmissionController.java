@@ -44,6 +44,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -68,7 +69,7 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label statusPill;
     @FXML
-    private HBox galleryBox;
+    private FlowPane galleryBox;
     @FXML
     private Label districtValue;
     @FXML
@@ -309,7 +310,10 @@ public class ReviewSubmissionController implements NeedsId {
         Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
         if (Files.exists(path)) {
             ImageView view = new ImageView(new Image(path.toUri().toString()));
+            // Both dimensions are capped: a tall photo with only fitWidth set
+            // stretches the row and pushes the rest of the panel off screen.
             view.setFitWidth(220);
+            view.setFitHeight(150);
             view.setPreserveRatio(true);
             return view;
         }

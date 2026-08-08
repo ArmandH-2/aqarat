@@ -7,6 +7,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -30,7 +31,7 @@
 
         <VBox styleClass="card" spacing="12">
             <Label text="Photos" styleClass="section-title"/>
-            <HBox fx:id="galleryBox" spacing="12"/>
+            <FlowPane fx:id="galleryBox" hgap="12" vgap="12"/>
         </VBox>
 
         <VBox styleClass="card" spacing="12">
