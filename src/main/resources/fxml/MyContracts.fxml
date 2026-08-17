@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.MyContractsController"
-      styleClass="content" spacing="24">
-    <Label text="My contracts" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.MyContractsController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="28" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
-        <ListView fx:id="contractList" VBox.vgrow="ALWAYS"/>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+        <VBox fx:id="contentBox" spacing="20">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="My Contracts &amp; Payments" styleClass="page-title"/>
+                <Label text="Review signed contracts, upcoming installment schedules, and declare direct payments" styleClass="hint"/>
+            </VBox>
+
+            <!-- Contracts List -->
+            <ListView fx:id="contractList" minHeight="500"/>
+        </VBox>
     </VBox>
-</VBox>
+</ScrollPane>

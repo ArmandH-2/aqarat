@@ -8,15 +8,18 @@ import co.syntropyhq.aqarat.model.UserStatus;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -26,6 +29,8 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -70,9 +75,7 @@ public class UsersController {
         roleCombo.setItems(FXCollections.observableArrayList(Role.values()));
         roleCombo.getSelectionModel().select(Role.AGENT);
 
-        Label empty = new Label("No accounts yet.");
-        empty.getStyleClass().add("empty-state");
-        userList.setPlaceholder(empty);
+        userList.setPlaceholder(UIHelper.createEmptyState("No User Accounts Found", "Provision a new account using the form above."));
         userList.setCellFactory(list -> new UserCard());
         loadUsers();
     }
@@ -116,7 +119,7 @@ public class UsersController {
             FieldError.show(emailField, emailError, "This email is already registered.");
             return;
         }
-        AlertUtil.showInfo("Account created.");
+        AlertUtil.showInfo("Account successfully provisioned.");
         clearForm();
         loadUsers();
     }
@@ -171,7 +174,7 @@ public class UsersController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Role updated.");
+        AlertUtil.showInfo("Account role updated.");
         loadUsers();
     }
 
@@ -194,21 +197,18 @@ public class UsersController {
         loadUsers();
     }
 
-    // A password is set here but never shown back - DESIGN.md section 8 says
-    // nothing anywhere stores or logs a plaintext password, and that
-    // includes the admin who just typed it.
     private void handleResetPassword(AppUser user) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setHeaderText(null);
-        dialog.setTitle("Reset password");
-        dialog.setContentText("New password for " + user.getFullName() + ":");
+        dialog.setTitle("Reset User Password");
+        dialog.setContentText("Enter new temporary password for " + user.getFullName() + ":");
         Optional<String> input = dialog.showAndWait();
         if (input.isEmpty()) {
             return;
         }
         String newPassword = input.get().trim();
         if (newPassword.isEmpty()) {
-            AlertUtil.showError("Enter a new password.");
+            AlertUtil.showError("Enter a valid password.");
             return;
         }
         try {
@@ -217,7 +217,7 @@ public class UsersController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Password reset.");
+        AlertUtil.showInfo("User password has been successfully reset.");
     }
 
     private String statusPillClass(UserStatus status) {
@@ -248,21 +248,42 @@ public class UsersController {
         }
 
         private VBox buildCard(AppUser user) {
-            Label name = new Label(user.getFullName());
-            Label statusPill = new Label(Format.enumLabel(user.getStatus()));
-            statusPill.getStyleClass().addAll("pill", statusPillClass(user.getStatus()));
-            HBox header = new HBox(8, name, statusPill);
-
-            Label meta = new Label(user.getEmail() + " • " + user.getPhone());
-            meta.getStyleClass().add("label-soft");
-
-            VBox card = new VBox(8, header, meta, buildActions(user));
-            card.getStyleClass().add("card");
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
             card.setPadding(new Insets(16));
+
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            javafx.scene.Node avatar = UIHelper.createAvatar(user.getFullName(), 36);
+
+            VBox info = new VBox(2);
+            Label name = new Label(user.getFullName());
+            name.getStyleClass().add("section-title");
+
+            Label meta = new Label(user.getEmail() + " • " + (user.getPhone() == null ? "No phone" : user.getPhone()));
+            meta.getStyleClass().add("hint");
+            info.getChildren().addAll(name, meta);
+            HBox.setHgrow(info, Priority.ALWAYS);
+
+            Label statusPill = UIHelper.createPill(Format.enumLabel(user.getStatus()), statusPillClass(user.getStatus()));
+            header.getChildren().addAll(avatar, info, statusPill);
+
+            HBox actions = buildActions(user);
+
+            card.getChildren().addAll(header, actions);
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox buildActions(AppUser user) {
+            HBox actions = new HBox(10);
+            actions.setAlignment(Pos.CENTER_LEFT);
+            actions.setPadding(new Insets(4, 0, 0, 48));
+
+            Label roleLabel = new Label("Role:");
+            roleLabel.getStyleClass().add("label-soft");
+
             ComboBox<Role> roleField =
                 new ComboBox<>(FXCollections.observableArrayList(Role.values()));
             setRoleConverter(roleField);
@@ -279,7 +300,8 @@ public class UsersController {
             resetPassword.getStyleClass().addAll("button", "button-secondary");
             resetPassword.setOnAction(event -> handleResetPassword(user));
 
-            return new HBox(8, roleField, toggle, resetPassword);
+            actions.getChildren().addAll(roleLabel, roleField, toggle, resetPassword);
+            return actions;
         }
     }
 }

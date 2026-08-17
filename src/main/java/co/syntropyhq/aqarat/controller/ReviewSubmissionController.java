@@ -24,12 +24,14 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.service.ValuationService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import co.syntropyhq.aqarat.valuation.ComparableProperty;
 import co.syntropyhq.aqarat.valuation.ValuationResult;
 import java.math.BigDecimal;
@@ -39,6 +41,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -50,12 +55,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 
-// The centrepiece screen (DESIGN.md section 9): the submission beside its
-// valuation, and the decision that follows from looking at both together.
-// ValuationService returns the same ValuationResult whether an estimate was
-// just computed or read back from an earlier run, so there is one rendering
-// path rather than two.
 public class ReviewSubmissionController implements NeedsId {
 
     private static final String IMAGE_ROOT = "uploads";
@@ -67,7 +68,13 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label titleLabel;
     @FXML
+    private Label districtSubtitle;
+    @FXML
     private Label statusPill;
+    @FXML
+    private ImageView mainImageView;
+    @FXML
+    private HBox thumbnailStrip;
     @FXML
     private FlowPane galleryBox;
     @FXML
@@ -87,13 +94,7 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private Label yearBuiltValue;
     @FXML
-    private Label parkingValue;
-    @FXML
-    private Label elevatorValue;
-    @FXML
-    private Label balconyValue;
-    @FXML
-    private Label furnishedValue;
+    private FlowPane amenitiesPane;
     @FXML
     private Label addressValue;
     @FXML
@@ -205,29 +206,55 @@ public class ReviewSubmissionController implements NeedsId {
     private void renderProperty() {
         titleLabel.setText(property.getTitle());
         applyStatusPill(property.getStatus());
-        descriptionValue.setText(property.getDescription() == null ? "" : property.getDescription());
-        renderSpecs();
-        renderFeatures();
+
+        String districtName = lookupDistrictName(property.getDistrictId());
+        String typeName = lookupTypeName(property.getPropertyTypeId());
+        districtSubtitle.setText(districtName + " • " + typeName + " • " + Format.enumLabel(property.getDealType()));
+
+        descriptionValue.setText(property.getDescription() == null || property.getDescription().isBlank()
+            ? "No detailed description provided." : property.getDescription());
+
+        renderSpecs(districtName, typeName);
+        renderAmenities();
         renderAskingPrice();
     }
 
-    private void renderSpecs() {
-        districtValue.setText(lookupDistrictName(property.getDistrictId()));
-        typeValue.setText(lookupTypeName(property.getPropertyTypeId()));
+    private void renderSpecs(String districtName, String typeName) {
+        districtValue.setText(districtName);
+        typeValue.setText(typeName);
         dealTypeValue.setText(Format.enumLabel(property.getDealType()));
         areaValue.setText(Format.area(property.getAreaSqm()));
         bedroomsValue.setText(String.valueOf(property.getBedrooms()));
         bathroomsValue.setText(String.valueOf(property.getBathrooms()));
         floorValue.setText(formatNullableInt(property.getFloorNumber()));
         yearBuiltValue.setText(formatNullableInt(property.getYearBuilt()));
-        addressValue.setText(property.getAddressLine() == null ? "" : property.getAddressLine());
+        addressValue.setText(property.getAddressLine() == null || property.getAddressLine().isBlank()
+            ? "No exact street address provided" : property.getAddressLine());
     }
 
-    private void renderFeatures() {
-        parkingValue.setText(property.isHasParking() ? "Yes" : "No");
-        elevatorValue.setText(property.isHasElevator() ? "Yes" : "No");
-        balconyValue.setText(property.isHasBalcony() ? "Yes" : "No");
-        furnishedValue.setText(property.isFurnished() ? "Yes" : "No");
+    private void renderAmenities() {
+        if (amenitiesPane == null) return;
+        amenitiesPane.getChildren().clear();
+        addAmenityChip("Dedicated Parking", property.isHasParking());
+        addAmenityChip("Elevator", property.isHasElevator());
+        addAmenityChip("Balcony", property.isHasBalcony());
+        addAmenityChip("Furnished", property.isFurnished());
+    }
+
+    private void addAmenityChip(String name, boolean active) {
+        HBox chip = new HBox(6);
+        chip.setAlignment(Pos.CENTER_LEFT);
+        chip.setStyle(active
+            ? "-fx-background-color: -c-primary-tint; -fx-padding: 5 10 5 10; -fx-background-radius: 20px; -fx-border-color: -c-primary; -fx-border-radius: 20px;"
+            : "-fx-background-color: -c-surface-subtle; -fx-padding: 5 10 5 10; -fx-background-radius: 20px; -fx-border-color: -c-border-subtle; -fx-border-radius: 20px; -fx-opacity: 0.6;");
+
+        Label label = new Label((active ? "✓ " : "✕ ") + name);
+        label.setStyle(active
+            ? "-fx-font-weight: 600; -fx-text-fill: -c-primary; -fx-font-size: 11px;"
+            : "-fx-font-weight: 500; -fx-text-fill: -c-text-muted; -fx-font-size: 11px;");
+
+        chip.getChildren().add(label);
+        amenitiesPane.getChildren().add(chip);
     }
 
     private void renderAskingPrice() {
@@ -271,6 +298,7 @@ public class ReviewSubmissionController implements NeedsId {
                 return "pill-good";
             case PENDING_REVIEW:
             case NEEDS_INFO:
+            case WITHDRAWAL_REQUESTED:
                 return "pill-warn";
             case REJECTED:
                 return "pill-bad";
@@ -283,52 +311,60 @@ public class ReviewSubmissionController implements NeedsId {
         }
     }
 
-    // Matches PropertyDetailsController's approach: the seeded photo rows
-    // point at a file that was never generated, so a tile falls back to a
-    // caption instead of showing a broken image.
     private void renderGallery() {
         List<PropertyPhoto> photos;
         try {
             photos = propertyService.findPhotos(propertyId);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load the photos for this submission.");
+            AlertUtil.showError("Could not load photos for this submission.");
             return;
         }
-        galleryBox.getChildren().clear();
+
+        thumbnailStrip.getChildren().clear();
+
         if (photos.isEmpty()) {
-            Label empty = new Label("No photos have been added to this submission.");
-            empty.getStyleClass().add("empty-state");
-            galleryBox.getChildren().add(empty);
+            mainImageView.setImage(null);
             return;
         }
+
+        setMainPhoto(photos.get(0));
+
         for (PropertyPhoto photo : photos) {
-            galleryBox.getChildren().add(buildPhotoTile(photo));
+            StackPane thumbContainer = new StackPane();
+            thumbContainer.setPrefSize(64, 46);
+            thumbContainer.setMinSize(64, 46);
+            thumbContainer.setMaxSize(64, 46);
+            thumbContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 6px; -fx-border-color: -c-border-subtle; -fx-border-radius: 6px;");
+            thumbContainer.setCursor(Cursor.HAND);
+
+            Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+            if (Files.exists(path)) {
+                ImageView thumbView = new ImageView(new Image(path.toUri().toString(), 64, 46, false, true));
+                Rectangle clip = new Rectangle(64, 46);
+                clip.setArcWidth(8);
+                clip.setArcHeight(8);
+                thumbView.setClip(clip);
+                thumbContainer.getChildren().add(thumbView);
+            } else {
+                Label placeholder = new Label("🖼️");
+                thumbContainer.getChildren().add(placeholder);
+            }
+
+            thumbContainer.setOnMouseClicked(e -> setMainPhoto(photo));
+            AnimationUtil.addHoverLift(thumbContainer);
+            thumbnailStrip.getChildren().add(thumbContainer);
         }
     }
 
-    private Node buildPhotoTile(PropertyPhoto photo) {
+    private void setMainPhoto(PropertyPhoto photo) {
         Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
         if (Files.exists(path)) {
-            ImageView view = new ImageView(new Image(path.toUri().toString()));
-            // Both dimensions are capped: a tall photo with only fitWidth set
-            // stretches the row and pushes the rest of the panel off screen.
-            view.setFitWidth(220);
-            view.setFitHeight(150);
-            view.setPreserveRatio(true);
-            return view;
+            Image img = new Image(path.toUri().toString());
+            mainImageView.setImage(img);
+            AnimationUtil.fadeIn(mainImageView, 200);
         }
-        Label missing = new Label("Photo not available");
-        missing.getStyleClass().add("empty-state");
-        StackPane tile = new StackPane(missing);
-        tile.getStyleClass().add("card");
-        tile.setPrefSize(220, 150);
-        return tile;
     }
 
-    // Decisions apply to a submission waiting on one (PENDING_REVIEW) and to
-    // an owner's request to take a live listing down (WITHDRAWAL_REQUESTED,
-    // DESIGN.md section 6). A NEEDS_INFO submission is back with the owner
-    // until they resend it, so it gets neither button row.
     private void renderDecisionSection() {
         PropertyStatus status = property.getStatus();
         boolean isPendingReview = status == PropertyStatus.PENDING_REVIEW;
@@ -363,21 +399,18 @@ public class ReviewSubmissionController implements NeedsId {
         }
     }
 
-    // The owner's answers to previous decisions, oldest first. The agent's
-    // own notes are in here too (PropertyService.review writes them), so the
-    // agent reads the whole conversation rather than only the newest reply.
     private void renderDiscussion() {
         List<PropertyMessage> messages;
         try {
             messages = propertyService.findMessages(propertyId);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load the discussion for this submission.");
+            AlertUtil.showError("Could not load discussion for this submission.");
             return;
         }
         discussionBox.getChildren().clear();
         if (messages.isEmpty()) {
-            Label empty = new Label("No messages in this discussion yet.");
-            empty.getStyleClass().add("empty-state");
+            Label empty = new Label("No discussion messages yet.");
+            empty.getStyleClass().add("hint");
             discussionBox.getChildren().add(empty);
             return;
         }
@@ -387,6 +420,7 @@ public class ReviewSubmissionController implements NeedsId {
             senderLine.getStyleClass().add("hint");
             Label body = new Label(message.getMessage());
             body.setWrapText(true);
+            body.getStyleClass().add("body");
             discussionBox.getChildren().add(new VBox(2, senderLine, body));
         }
     }
@@ -405,15 +439,13 @@ public class ReviewSubmissionController implements NeedsId {
     }
 
     private void showNoValuation() {
-        noValuationLabel.setText("This property has not been valued yet. Run a valuation to see an estimate.");
+        noValuationLabel.setText("This property has not been valued yet. Click 'Re-run' to execute price estimation engine.");
         noValuationLabel.setVisible(true);
         noValuationLabel.setManaged(true);
         valuationContent.setVisible(false);
         valuationContent.setManaged(false);
     }
 
-    // The saved row carries when the estimate was made and by which model
-    // version; the result carries the numbers and the evidence behind them.
     private void renderValuation(Valuation saved, ValuationResult result) {
         noValuationLabel.setVisible(false);
         noValuationLabel.setManaged(false);
@@ -421,7 +453,7 @@ public class ReviewSubmissionController implements NeedsId {
         valuationContent.setManaged(true);
 
         estimateValue.setText(formatMoney(result.getEstimatedValue()));
-        rangeValue.setText(formatMoney(result.getLowerBound()) + " to " + formatMoney(result.getUpperBound()));
+        rangeValue.setText(formatMoney(result.getLowerBound()) + " – " + formatMoney(result.getUpperBound()));
         pricePerSqmValue.setText(Format.pricePerSqm(result.getPricePerSqm()));
         valuationMetaLabel.setText(
             "Model " + saved.getModelVersion() + " • " + Format.dateTime(saved.getCreatedAt()));
@@ -432,41 +464,28 @@ public class ReviewSubmissionController implements NeedsId {
         renderComparables(result.getComparables());
     }
 
-    // Every one of the twenty worst estimates measured against the closed
-    // properties had fewer than five comparables, and most had none. The
-    // number is the single best clue to how much the estimate is worth, so it
-    // is said out loud next to the price rather than left to be counted.
     private void applyEvidenceLine(int comparableCount) {
         if (comparableCount == 0) {
-            evidenceLabel.setText(
-                "No comparable sales were found, so this rests on the model alone. Treat it as a rough guide.");
+            evidenceLabel.setText("Based on algorithmic base model (no recent matching comparables in district).");
             return;
         }
-        evidenceLabel.setText(comparableCount == 1
-            ? "Based on 1 comparable sale."
-            : "Based on " + comparableCount + " comparable sales.");
+        evidenceLabel.setText("Calculated against " + comparableCount + " verified comparable sale(s) in this district.");
     }
 
-    // The flag is advisory only (DESIGN.md section 7) - it gets a loud pill
-    // and nothing else. Nothing here disables or gates the Approve action.
     private void applyFlagPill(ValuationFlag flag) {
         flagPill.setText(Format.enumLabel(flag));
         flagPill.getStyleClass().removeAll("pill-good", "pill-warn", "pill-bad", "pill-info", "pill-neutral");
         flagPill.getStyleClass().add(flagPillClass(flag));
     }
 
-    // ValuationFlag has no separate value for "below the range" (DESIGN.md
-    // section 7 uses ABOVE_MARKET for both directions), so this reads the
-    // same bounds the range line already shows rather than adding one. Text
-    // only - it feeds no decision and the flag itself is unchanged.
     private void applyRangeCaption(BigDecimal lowerBound, BigDecimal upperBound) {
         BigDecimal askingPrice = property.getAskingPrice();
         if (askingPrice.compareTo(upperBound) > 0) {
-            flagCaption.setText("Above the estimated range");
+            flagCaption.setText("Asking price is ABOVE estimated market corridor");
         } else if (askingPrice.compareTo(lowerBound) < 0) {
-            flagCaption.setText("Below the estimated range");
+            flagCaption.setText("Asking price is BELOW estimated market corridor");
         } else {
-            flagCaption.setText("Within the estimated range");
+            flagCaption.setText("Asking price falls within realistic market corridor");
         }
     }
 
@@ -484,8 +503,8 @@ public class ReviewSubmissionController implements NeedsId {
     private void renderFactors(Map<String, BigDecimal> factors) {
         factorsBox.getChildren().clear();
         if (factors.isEmpty()) {
-            Label empty = new Label("No factor breakdown was recorded for this estimate.");
-            empty.getStyleClass().add("empty-state");
+            Label empty = new Label("No factor breakdown recorded.");
+            empty.getStyleClass().add("hint");
             factorsBox.getChildren().add(empty);
             return;
         }
@@ -496,16 +515,17 @@ public class ReviewSubmissionController implements NeedsId {
 
     private HBox buildFactorRow(String key, BigDecimal value) {
         Label label = new Label(sentenceCase(key));
+        label.getStyleClass().add("label-soft");
+
         Label amount = new Label(formatMoney(value));
-        amount.getStyleClass().add("numeric");
+        amount.getStyleClass().add("label-soft");
+        amount.setStyle("-fx-font-weight: 600; -fx-text-fill: -c-primary;");
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         return new HBox(8, label, spacer, amount);
     }
 
-    // "comparablesEstimate" -> "Comparables estimate". The factor names come
-    // from PriceEstimator and are camelCase for the code that reads them, not
-    // for a person, so this is the one place they get turned into words.
     private String sentenceCase(String camelCase) {
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < camelCase.length(); i++) {
@@ -524,8 +544,8 @@ public class ReviewSubmissionController implements NeedsId {
     private void renderComparables(List<ComparableProperty> comparables) {
         comparablesBox.getChildren().clear();
         if (comparables.isEmpty()) {
-            Label empty = new Label("No comparable properties were used for this estimate.");
-            empty.getStyleClass().add("empty-state");
+            Label empty = new Label("No comparable properties used.");
+            empty.getStyleClass().add("hint");
             comparablesBox.getChildren().add(empty);
             return;
         }
@@ -537,15 +557,21 @@ public class ReviewSubmissionController implements NeedsId {
     private VBox buildComparableRow(ComparableProperty comparable) {
         Property comparableProperty = comparable.getProperty();
         Label title = new Label(comparableLabel(comparableProperty));
+        title.getStyleClass().add("label-soft");
+        title.setStyle("-fx-font-weight: 600;");
+
         Label meta = new Label(Format.area(comparableProperty.getAreaSqm()) + " • "
             + formatMoney(comparableProperty.getAskingPrice()) + " • "
-            + Format.percentage(similarityPercent(comparable.getSimilarityScore())) + " similar");
-        meta.getStyleClass().add("label-soft");
-        return new VBox(4, title, meta);
+            + Format.percentage(similarityPercent(comparable.getSimilarityScore())) + " match");
+        meta.getStyleClass().add("hint");
+
+        VBox row = new VBox(2, title, meta);
+        row.setStyle("-fx-background-color: -c-surface-subtle; -fx-padding: 8 10 8 10; -fx-background-radius: 6px;");
+        return row;
     }
 
     private String comparableLabel(Property comparableProperty) {
-        return comparableProperty.getAddressLine() != null
+        return comparableProperty.getAddressLine() != null && !comparableProperty.getAddressLine().isBlank()
             ? comparableProperty.getAddressLine() : comparableProperty.getTitle();
     }
 
@@ -553,10 +579,6 @@ public class ReviewSubmissionController implements NeedsId {
         return similarityScore.multiply(BigDecimal.valueOf(100));
     }
 
-    // estimatedValue, its bounds and each factor all carry the same dual
-    // meaning as asking_price (DESIGN.md section 8): a sale price for SALE,
-    // a monthly rent for RENT, because they were built from comparables of
-    // the same deal type. Formatted the same way asking price is.
     private String formatMoney(BigDecimal amount) {
         return property.getDealType() == DealType.RENT
             ? Format.monthlyRent(amount) : Format.salePrice(amount);

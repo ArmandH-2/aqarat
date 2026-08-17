@@ -56,7 +56,11 @@ public final class Router {
         if (entry.id != null && loader.getController() instanceof NeedsId needsId) {
             needsId.receiveId(entry.id.intValue());
         }
-        contentPane.getChildren().setAll(view);
+        if (contentPane != null) {
+            contentPane.getChildren().setAll(view);
+            // Smooth entrance animation for all panel transitions
+            AnimationUtil.slideAndFadeIn(view, 8, 220);
+        }
     }
 
     // Keeps a panel and the optional id it was opened with together, so back()

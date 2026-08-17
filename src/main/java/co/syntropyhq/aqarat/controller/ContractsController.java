@@ -24,9 +24,11 @@ import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
@@ -38,6 +40,7 @@ import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -47,11 +50,10 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-// Two tabs, the same shape ReviewQueueController and ViewingsController
-// already use: a list of what the agent has, and a form to add to it.
 public class ContractsController {
 
     @FXML
@@ -115,8 +117,6 @@ public class ContractsController {
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), auditService);
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, auditService);
-    // PaymentService generates the schedule on the connection activate() is
-    // already holding, so the contract and its installments arrive together.
     private final PaymentService paymentService = new PaymentService(
         new PaymentScheduleDao(), new PaymentDao(), new ContractDao(), new ReservationDao(),
         new SystemSettingDao(), auditService);
@@ -170,8 +170,8 @@ public class ContractsController {
     }
 
     private void selectContractsTab() {
-        contractsTabButton.getStyleClass().setAll("button", "button-primary");
-        draftTabButton.getStyleClass().setAll("button", "button-secondary");
+        contractsTabButton.getStyleClass().setAll("tab-pill-button", "active");
+        draftTabButton.getStyleClass().setAll("tab-pill-button");
         contractsBox.setVisible(true);
         contractsBox.setManaged(true);
         draftBox.setVisible(false);
@@ -180,8 +180,8 @@ public class ContractsController {
     }
 
     private void selectDraftTab() {
-        contractsTabButton.getStyleClass().setAll("button", "button-secondary");
-        draftTabButton.getStyleClass().setAll("button", "button-primary");
+        contractsTabButton.getStyleClass().setAll("tab-pill-button");
+        draftTabButton.getStyleClass().setAll("tab-pill-button", "active");
         contractsBox.setVisible(false);
         contractsBox.setManaged(false);
         draftBox.setVisible(true);
@@ -189,9 +189,7 @@ public class ContractsController {
     }
 
     private void loadContracts() {
-        Label empty = new Label("You have not drafted any contracts yet.");
-        empty.getStyleClass().add("empty-state");
-        contractList.setPlaceholder(empty);
+        contractList.setPlaceholder(UIHelper.createEmptyState("No Drafted Contracts", "Use '+ Draft New Contract' to prepare a lease or sales agreement."));
         List<Contract> results;
         try {
             results = contractService.findByAgent(SessionManager.getCurrentUser().getId());
@@ -259,7 +257,7 @@ public class ContractsController {
             return;
         }
         loadedClient = client;
-        clientSummaryLabel.setText(client.getFullName());
+        clientSummaryLabel.setText(client.getFullName() + " (" + client.getEmail() + ")");
     }
 
     private AppUser fetchClient(String email) {
@@ -271,9 +269,6 @@ public class ContractsController {
         }
     }
 
-    // The term-only fields only mean something for a lease
-    // (ck_contract_lease), matching how SubmitPropertyController drives its
-    // own deal-type-dependent fields from one listener.
     private void updateContractTypeUi(ContractType type) {
         boolean isLease = type == ContractType.LEASE;
         leaseBox.setVisible(isLease);
@@ -329,9 +324,6 @@ public class ContractsController {
         return ok;
     }
 
-    // The term is checked against the property's own min/max here, inline,
-    // before the service is ever called - BUILD-ORDER.md phase 5 calls this
-    // out by name: "term validation fires here".
     private boolean collectLeaseFields(Contract contract) {
         BigDecimal monthlyRent =
             requirePositiveDecimal(monthlyRentField, monthlyRentError, "Enter the monthly rent.");
@@ -544,7 +536,6 @@ public class ContractsController {
         });
     }
 
-    // Matches the status-to-pill table in docs/UI-STYLE.md exactly.
     private String pillClass(ContractStatus status) {
         switch (status) {
             case DRAFT:
@@ -562,7 +553,7 @@ public class ContractsController {
     private String amountText(Contract contract) {
         return contract.getContractType() == ContractType.SALE
             ? Format.salePrice(contract.getTotalAmount())
-            : Format.monthlyRent(contract.getMonthlyRent()) + " for " + contract.getTermMonths() + " months";
+            : Format.monthlyRent(contract.getMonthlyRent()) + " / mo (" + contract.getTermMonths() + " mos)";
     }
 
     private final class ContractCard extends ListCell<Contract> {
@@ -575,35 +566,50 @@ public class ContractsController {
         }
 
         private VBox buildCard(Contract contract) {
-            Label title = new Label(propertyTitle(contract.getPropertyId()));
-            Label pill = new Label(Format.enumLabel(contract.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(contract.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(16));
 
-            Label meta = new Label(clientName(contract.getClientId()) + " • "
-                + Format.enumLabel(contract.getContractType()) + " • " + amountText(contract)
-                + " • from " + Format.date(contract.getStartDate()));
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label title = new Label(propertyTitle(contract.getPropertyId()));
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(contract.getStatus()), pillClass(contract.getStatus()));
+            Label amountLabel = new Label(amountText(contract));
+            amountLabel.getStyleClass().add("section-title");
+            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+
+            header.getChildren().addAll(title, pill, amountLabel);
+
+            Label meta = new Label("Client: " + clientName(contract.getClientId()) + " • "
+                + Format.enumLabel(contract.getContractType())
+                + " • Start Date: " + Format.date(contract.getStartDate()));
             meta.getStyleClass().add("label-soft");
 
-            VBox card = new VBox(8, header, meta);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta);
 
             HBox actions = buildActions(contract);
             if (!actions.getChildren().isEmpty()) {
                 card.getChildren().add(actions);
             }
+
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox buildActions(Contract contract) {
             HBox actions = new HBox(8);
+            actions.setAlignment(Pos.CENTER_LEFT);
+
             if (contract.getStatus() == ContractStatus.DRAFT) {
-                addButton(actions, "Activate", "button-primary", () -> handleActivate(contract));
+                addButton(actions, "Activate contract", "button-primary", () -> handleActivate(contract));
             }
             if (contract.getStatus() == ContractStatus.ACTIVE) {
-                addButton(actions, "Close", "button-secondary", () -> handleClose(contract));
-                addButton(actions, "Terminate", "button-danger", () -> handleTerminate(contract));
+                addButton(actions, "Close contract", "button-secondary", () -> handleClose(contract));
+                addButton(actions, "Terminate contract", "button-danger", () -> handleTerminate(contract));
             }
             return actions;
         }

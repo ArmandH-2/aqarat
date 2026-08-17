@@ -7,7 +7,10 @@ import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -20,32 +23,33 @@ import javafx.stage.Stage;
 
 public class MainShellController {
 
-    // Every sidebar item and which roles see it. Order here is the order on screen.
     private static final NavEntry[] NAV_ENTRIES = {
-        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", Role.CUSTOMER),
-        new NavEntry(Panel.MY_PROPERTIES, "My properties", Role.CUSTOMER),
-        new NavEntry(Panel.SUBMIT_PROPERTY, "Submit a property", Role.CUSTOMER),
-        new NavEntry(Panel.MY_CONTRACTS, "My contracts", Role.CUSTOMER),
-        new NavEntry(Panel.MY_ACTIVITY, "My activity", Role.CUSTOMER),
-        new NavEntry(Panel.AGENT_DASHBOARD, "Dashboard", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.REVIEW_QUEUE, "Review queue", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.LISTINGS, "Listings", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.VIEWINGS, "Viewings", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.CONTRACTS, "Contracts", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.PAYMENTS, "Payments", Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.USERS, "Users", Role.ADMIN),
-        new NavEntry(Panel.REFERENCE, "Reference data", Role.ADMIN),
-        new NavEntry(Panel.AUDIT_LOG, "Audit log", Role.ADMIN),
-        new NavEntry(Panel.REPORTS, "Reports", Role.ADMIN),
+        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", "DISCOVER", Role.CUSTOMER),
+        new NavEntry(Panel.MY_PROPERTIES, "My properties", "PORTFOLIO", Role.CUSTOMER),
+        new NavEntry(Panel.SUBMIT_PROPERTY, "Submit a property", "PORTFOLIO", Role.CUSTOMER),
+        new NavEntry(Panel.MY_CONTRACTS, "My contracts", "PORTFOLIO", Role.CUSTOMER),
+        new NavEntry(Panel.MY_ACTIVITY, "My activity", "PORTFOLIO", Role.CUSTOMER),
+        new NavEntry(Panel.AGENT_DASHBOARD, "Dashboard", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.REVIEW_QUEUE, "Review queue", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.LISTINGS, "Listings", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.VIEWINGS, "Viewings", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.CONTRACTS, "Contracts", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.PAYMENTS, "Payments", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.USERS, "Users", "ADMINISTRATION", Role.ADMIN),
+        new NavEntry(Panel.REFERENCE, "Reference data", "ADMINISTRATION", Role.ADMIN),
+        new NavEntry(Panel.AUDIT_LOG, "Audit log", "ADMINISTRATION", Role.ADMIN),
+        new NavEntry(Panel.REPORTS, "Reports", "ADMINISTRATION", Role.ADMIN),
     };
 
     private static final NavEntry GUEST_ENTRY =
-        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings");
+        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", "DISCOVER");
 
     @FXML
     private VBox navItems;
     @FXML
     private StackPane contentPane;
+    @FXML
+    private StackPane avatarContainer;
     @FXML
     private Label userNameLabel;
     @FXML
@@ -53,42 +57,64 @@ public class MainShellController {
     @FXML
     private Button signOutButton;
 
+    private final List<Label> navLabels = new ArrayList<>();
+
     @FXML
     private void initialize() {
         Router.setContentPane(contentPane);
 
-        // A guest reaches the shell without signing in, so there is no user to
-        // name and no role to match nav items against - they see the published
-        // listings and nothing else (DESIGN.md section 4).
         AppUser user = SessionManager.getCurrentUser();
         if (user == null) {
-            userNameLabel.setText("Guest");
-            userRoleLabel.setText("Not signed in");
+            userNameLabel.setText("Guest User");
+            userRoleLabel.setText("Browsing Catalog");
             signOutButton.setText("Sign in");
-            navItems.getChildren().add(buildNavLabel(GUEST_ENTRY));
+            avatarContainer.getChildren().setAll(UIHelper.createAvatar("Guest", 16));
+            addNavItem(GUEST_ENTRY);
             return;
         }
 
         userNameLabel.setText(user.getFullName());
         userRoleLabel.setText(Format.enumLabel(user.getRole()));
+        avatarContainer.getChildren().setAll(UIHelper.createAvatar(user.getFullName(), 16));
 
+        String currentCategory = null;
         for (NavEntry entry : NAV_ENTRIES) {
             if (entry.appliesTo(user.getRole())) {
-                navItems.getChildren().add(buildNavLabel(entry));
+                if (currentCategory == null || !currentCategory.equals(entry.category)) {
+                    currentCategory = entry.category;
+                    Label catLabel = new Label(currentCategory);
+                    catLabel.getStyleClass().add("sidebar-category");
+                    navItems.getChildren().add(catLabel);
+                }
+                addNavItem(entry);
             }
         }
     }
 
-    private Label buildNavLabel(NavEntry entry) {
+    private void addNavItem(NavEntry entry) {
         Label label = new Label(entry.text);
         label.getStyleClass().add("nav-item");
         label.setMaxWidth(Double.MAX_VALUE);
 
-        // A missing FXML file disables the item rather than crashing on click.
         boolean fxmlExists = getClass().getResource("/fxml/" + entry.panel.getFxml()) != null;
         label.setDisable(!fxmlExists);
-        label.setOnMouseClicked(event -> Router.show(entry.panel));
-        return label;
+
+        label.setOnMouseClicked(event -> {
+            setActiveNav(label);
+            Router.show(entry.panel);
+        });
+
+        navLabels.add(label);
+        navItems.getChildren().add(label);
+    }
+
+    private void setActiveNav(Label activeLabel) {
+        for (Label l : navLabels) {
+            l.getStyleClass().remove("active");
+        }
+        if (!activeLabel.getStyleClass().contains("active")) {
+            activeLabel.getStyleClass().add("active");
+        }
     }
 
     @FXML
@@ -118,12 +144,13 @@ public class MainShellController {
     private static final class NavEntry {
         private final Panel panel;
         private final String text;
+        private final String category;
         private final Role[] roles;
 
-        // A guest matches no role, so its one entry is built with none.
-        private NavEntry(Panel panel, String text, Role... roles) {
+        private NavEntry(Panel panel, String text, String category, Role... roles) {
             this.panel = panel;
             this.text = text;
+            this.category = category;
             this.roles = roles;
         }
 

@@ -12,6 +12,7 @@ import co.syntropyhq.aqarat.dao.ViewingDao;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
@@ -20,12 +21,14 @@ import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
-import co.syntropyhq.aqarat.model.PropertyPhoto;
+import co.syntropyhq.aqarat.util.UIHelper;
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
@@ -37,7 +40,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -45,24 +49,29 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 
-// A client sees "Request a viewing" and "Reserve" only on an AVAILABLE
-// listing (DESIGN.md section 5) - a guest, an agent, or any other status
-// gets neither. Approve/reject belong to the review screens, not here.
 public class PropertyDetailsController implements NeedsId {
 
-    // property_photo.file_path is stored relative to the upload folder, so
-    // "images/x.jpg" lives at "uploads/images/x.jpg".
     private static final String IMAGE_ROOT = "uploads";
 
     @FXML
     private Label titleLabel;
     @FXML
+    private Label districtSubtitle;
+    @FXML
     private Label statusPill;
     @FXML
     private Label priceValue;
+    @FXML
+    private Label pricePerSqmLabel;
+    @FXML
+    private ImageView mainImageView;
+    @FXML
+    private HBox thumbnailStrip;
     @FXML
     private Label descriptionValue;
     @FXML
@@ -82,17 +91,9 @@ public class PropertyDetailsController implements NeedsId {
     @FXML
     private Label yearBuiltValue;
     @FXML
-    private Label parkingValue;
-    @FXML
-    private Label elevatorValue;
-    @FXML
-    private Label balconyValue;
-    @FXML
-    private Label furnishedValue;
+    private FlowPane amenitiesPane;
     @FXML
     private Label addressValue;
-    @FXML
-    private FlowPane galleryBox;
     @FXML
     private VBox actionsBox;
     @FXML
@@ -121,8 +122,6 @@ public class PropertyDetailsController implements NeedsId {
 
     @FXML
     private void initialize() {
-        // Layout only. Router calls receiveId(int) after this method runs,
-        // so the data load has to happen there - not here (CLAUDE.md).
         for (int hour = 9; hour <= 18; hour++) {
             viewingTimeCombo.getItems().add(String.format("%02d:00", hour));
         }
@@ -149,21 +148,30 @@ public class PropertyDetailsController implements NeedsId {
         titleLabel.setText(property.getTitle());
         applyStatusPill(property.getStatus());
         priceValue.setText(formatPrice(property));
-        descriptionValue.setText(
-            property.getDescription() == null ? "" : property.getDescription());
-        renderSpecs(property);
-        renderFeatures(property);
+
+        String districtName = lookupDistrictName(property.getDistrictId());
+        String typeName = lookupTypeName(property.getPropertyTypeId());
+        districtSubtitle.setText(districtName + " • " + typeName);
+
+        BigDecimal pricePerSqm = BigDecimal.ZERO;
+        if (property.getAreaSqm() != null && property.getAreaSqm().compareTo(BigDecimal.ZERO) > 0 && property.getAskingPrice() != null) {
+            pricePerSqm = property.getAskingPrice().divide(property.getAreaSqm(), 0, RoundingMode.HALF_UP);
+        }
+        pricePerSqmLabel.setText("$" + pricePerSqm + "/m² estimated rate");
+
+        descriptionValue.setText(property.getDescription() == null || property.getDescription().isBlank()
+            ? "No detailed description provided." : property.getDescription());
+
+        renderSpecs(property, districtName, typeName);
+        renderAmenities(property);
         renderGallery(property.getId());
         updateActionsVisibility(property);
     }
 
     private void updateActionsVisibility(Property property) {
         boolean isCustomer = SessionManager.isCustomer();
-        boolean isOwner = isCustomer
+        boolean isOwner = isCustomer && SessionManager.getCurrentUser() != null
             && SessionManager.getCurrentUser().getId() == property.getOwnerId();
-        // A customer does not shop their own listing - reserving or viewing
-        // it would be acting against themselves. Both actions come with a
-        // service-level backstop too, in case a crafted request gets through.
         boolean canAct = isCustomer && !isOwner
             && property.getStatus() == PropertyStatus.AVAILABLE;
         actionsBox.setVisible(canAct);
@@ -175,41 +183,55 @@ public class PropertyDetailsController implements NeedsId {
         try {
             photos = propertyService.findPhotos(propertyId);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load the photos for this listing.");
+            AlertUtil.showError("Could not load photos for this listing.");
             return;
         }
-        galleryBox.getChildren().clear();
+
+        thumbnailStrip.getChildren().clear();
+
         if (photos.isEmpty()) {
-            Label empty = new Label("No photos have been added to this listing.");
-            empty.getStyleClass().add("empty-state");
-            galleryBox.getChildren().add(empty);
+            mainImageView.setImage(null);
             return;
         }
+
+        // Set primary photo
+        setMainPhoto(photos.get(0));
+
+        // Populate thumbnail strip
         for (PropertyPhoto photo : photos) {
-            galleryBox.getChildren().add(buildTile(photo));
+            StackPane thumbContainer = new StackPane();
+            thumbContainer.setPrefSize(70, 50);
+            thumbContainer.setMinSize(70, 50);
+            thumbContainer.setMaxSize(70, 50);
+            thumbContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 6px; -fx-border-color: -c-border-subtle; -fx-border-radius: 6px;");
+            thumbContainer.setCursor(Cursor.HAND);
+
+            Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+            if (Files.exists(path)) {
+                ImageView thumbView = new ImageView(new Image(path.toUri().toString(), 70, 50, false, true));
+                Rectangle clip = new Rectangle(70, 50);
+                clip.setArcWidth(10);
+                clip.setArcHeight(10);
+                thumbView.setClip(clip);
+                thumbContainer.getChildren().add(thumbView);
+            } else {
+                Label placeholder = new Label("🖼️");
+                thumbContainer.getChildren().add(placeholder);
+            }
+
+            thumbContainer.setOnMouseClicked(e -> setMainPhoto(photo));
+            AnimationUtil.addHoverLift(thumbContainer);
+            thumbnailStrip.getChildren().add(thumbContainer);
         }
     }
 
-    // The seeded rows all point at one image file that was never generated,
-    // so a tile falls back to a caption when its file is missing rather than
-    // showing a broken image. Real photos render as soon as they exist.
-    private Node buildTile(PropertyPhoto photo) {
+    private void setMainPhoto(PropertyPhoto photo) {
         Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
         if (Files.exists(path)) {
-            ImageView view = new ImageView(new Image(path.toUri().toString()));
-            // Both dimensions are capped: a tall photo with only fitWidth set
-            // stretches the row and pushes the rest of the panel off screen.
-            view.setFitWidth(220);
-            view.setFitHeight(150);
-            view.setPreserveRatio(true);
-            return view;
+            Image img = new Image(path.toUri().toString());
+            mainImageView.setImage(img);
+            AnimationUtil.fadeIn(mainImageView, 200);
         }
-        Label missing = new Label("Photo not available");
-        missing.getStyleClass().add("empty-state");
-        StackPane tile = new StackPane(missing);
-        tile.getStyleClass().add("card");
-        tile.setPrefSize(220, 150);
-        return tile;
     }
 
     private String formatPrice(Property property) {
@@ -218,32 +240,47 @@ public class PropertyDetailsController implements NeedsId {
             : Format.monthlyRent(property.getAskingPrice());
     }
 
-    private void renderSpecs(Property property) {
-        districtValue.setText(lookupDistrictName(property.getDistrictId()));
-        typeValue.setText(lookupTypeName(property.getPropertyTypeId()));
+    private void renderSpecs(Property property, String districtName, String typeName) {
+        districtValue.setText(districtName);
+        typeValue.setText(typeName);
         dealTypeValue.setText(Format.enumLabel(property.getDealType()));
         areaValue.setText(Format.area(property.getAreaSqm()));
         bedroomsValue.setText(String.valueOf(property.getBedrooms()));
         bathroomsValue.setText(String.valueOf(property.getBathrooms()));
         floorValue.setText(formatNullableInt(property.getFloorNumber()));
         yearBuiltValue.setText(formatNullableInt(property.getYearBuilt()));
-        addressValue.setText(
-            property.getAddressLine() == null ? "" : property.getAddressLine());
+        addressValue.setText(property.getAddressLine() == null || property.getAddressLine().isBlank()
+            ? "Address on file" : property.getAddressLine());
     }
 
-    private void renderFeatures(Property property) {
-        parkingValue.setText(property.isHasParking() ? "Yes" : "No");
-        elevatorValue.setText(property.isHasElevator() ? "Yes" : "No");
-        balconyValue.setText(property.isHasBalcony() ? "Yes" : "No");
-        furnishedValue.setText(property.isFurnished() ? "Yes" : "No");
+    private void renderAmenities(Property property) {
+        amenitiesPane.getChildren().clear();
+        addAmenityChip("Parking", property.isHasParking());
+        addAmenityChip("Elevator", property.isHasElevator());
+        addAmenityChip("Balcony", property.isHasBalcony());
+        addAmenityChip("Furnished", property.isFurnished());
+    }
+
+    private void addAmenityChip(String name, boolean active) {
+        HBox chip = new HBox(6);
+        chip.setAlignment(Pos.CENTER_LEFT);
+        chip.setStyle(active
+            ? "-fx-background-color: -c-primary-tint; -fx-padding: 6 12 6 12; -fx-background-radius: 20px; -fx-border-color: -c-primary; -fx-border-radius: 20px;"
+            : "-fx-background-color: -c-surface-subtle; -fx-padding: 6 12 6 12; -fx-background-radius: 20px; -fx-border-color: -c-border-subtle; -fx-border-radius: 20px; -fx-opacity: 0.6;");
+
+        Label label = new Label((active ? "✓ " : "✕ ") + name);
+        label.setStyle(active
+            ? "-fx-font-weight: 600; -fx-text-fill: -c-primary;"
+            : "-fx-font-weight: 500; -fx-text-fill: -c-text-muted;");
+
+        chip.getChildren().add(label);
+        amenitiesPane.getChildren().add(chip);
     }
 
     private String formatNullableInt(Integer value) {
         return value == null ? "—" : String.valueOf(value);
     }
 
-    // Falls back to a dash rather than failing the whole panel - a missing
-    // reference row should not stop the rest of the listing from showing.
     private String lookupDistrictName(int districtId) {
         try {
             District district = referenceService.findDistrict(districtId);
@@ -269,8 +306,6 @@ public class PropertyDetailsController implements NeedsId {
         statusPill.getStyleClass().add(pillClassFor(status));
     }
 
-    // The status-to-pill mapping from docs/UI-STYLE.md, kept in one place
-    // rather than picked at each call site.
     private String pillClassFor(PropertyStatus status) {
         switch (status) {
             case AVAILABLE:

@@ -1,79 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.ListingsController"
-      styleClass="content" spacing="24">
-    <Label text="Listings" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.ListingsController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="28" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
-        <VBox styleClass="card" spacing="12">
-            <HBox spacing="12">
-                <TextField fx:id="titleField" promptText="Search by title" HBox.hgrow="ALWAYS"
-                           maxWidth="Infinity"/>
-                <Button text="Search" styleClass="button, button-primary" onAction="#handleSearch"/>
-                <Button text="Clear filters" styleClass="button, button-secondary"
-                        onAction="#handleClearFilters"/>
-            </HBox>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
-            <HBox spacing="12">
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="District" styleClass="label-soft"/>
-                    <ComboBox fx:id="districtCombo" maxWidth="Infinity"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Property type" styleClass="label-soft"/>
-                    <ComboBox fx:id="typeCombo" maxWidth="Infinity"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Deal type" styleClass="label-soft"/>
-                    <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Bedrooms" styleClass="label-soft"/>
-                    <ComboBox fx:id="bedroomsCombo" maxWidth="Infinity"/>
-                </VBox>
-            </HBox>
+        <VBox fx:id="contentBox" spacing="18">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="Agency Listings Ledger" styleClass="page-title"/>
+                <Label text="Search, manage inventory status, adjust asking prices, and inspect property details" styleClass="hint"/>
+            </VBox>
 
-            <HBox spacing="12">
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Min price" styleClass="label-soft"/>
-                    <TextField fx:id="minPriceField"/>
-                    <Label fx:id="minPriceError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Max price" styleClass="label-soft"/>
-                    <TextField fx:id="maxPriceField"/>
-                    <Label fx:id="maxPriceError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Min area (m²)" styleClass="label-soft"/>
-                    <TextField fx:id="minAreaField"/>
-                    <Label fx:id="minAreaError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label text="Max area (m²)" styleClass="label-soft"/>
-                    <TextField fx:id="maxAreaField"/>
-                    <Label fx:id="maxAreaError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+            <!-- Filter Card -->
+            <VBox styleClass="card" spacing="12">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="titleField" promptText="Search listings by title..."
+                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <Button text="Search" styleClass="button, button-primary" onAction="#handleSearch"/>
+                    <Button text="Clear filters" styleClass="button, button-secondary"
+                            onAction="#handleClearFilters"/>
+                </HBox>
+
+                <HBox spacing="12">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="District" styleClass="label-soft"/>
+                        <ComboBox fx:id="districtCombo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Property type" styleClass="label-soft"/>
+                        <ComboBox fx:id="typeCombo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Deal type" styleClass="label-soft"/>
+                        <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Bedrooms" styleClass="label-soft"/>
+                        <ComboBox fx:id="bedroomsCombo" maxWidth="Infinity"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="12">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Min price ($)" styleClass="label-soft"/>
+                        <TextField fx:id="minPriceField"/>
+                        <Label fx:id="minPriceError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Max price ($)" styleClass="label-soft"/>
+                        <TextField fx:id="maxPriceField"/>
+                        <Label fx:id="maxPriceError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Min area (m²)" styleClass="label-soft"/>
+                        <TextField fx:id="minAreaField"/>
+                        <Label fx:id="minAreaError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                        <Label text="Max area (m²)" styleClass="label-soft"/>
+                        <TextField fx:id="maxAreaField"/>
+                        <Label fx:id="maxAreaError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Listings List -->
+            <ListView fx:id="propertyList" minHeight="500"/>
+
+            <!-- Pagination Controls -->
+            <HBox spacing="16" alignment="CENTER">
+                <Button fx:id="previousButton" text="← Previous" styleClass="button, button-secondary"
+                        onAction="#handlePrevious"/>
+                <Button fx:id="nextButton" text="Next →" styleClass="button, button-secondary"
+                        onAction="#handleNext"/>
             </HBox>
         </VBox>
-
-        <ListView fx:id="propertyList" VBox.vgrow="ALWAYS"/>
-
-        <HBox spacing="12" alignment="CENTER">
-            <Button fx:id="previousButton" text="Previous" styleClass="button, button-secondary"
-                    onAction="#handlePrevious"/>
-            <Button fx:id="nextButton" text="Next" styleClass="button, button-secondary"
-                    onAction="#handleNext"/>
-        </HBox>
     </VBox>
-</VBox>
+</ScrollPane>

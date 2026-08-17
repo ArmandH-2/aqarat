@@ -8,33 +8,41 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="co.syntropyhq.aqarat.controller.LoginController"
-           styleClass="content">
-    <VBox styleClass="card" spacing="12" maxWidth="360">
+           styleClass="content" alignment="CENTER">
+    <VBox styleClass="card" spacing="16" maxWidth="400" alignment="TOP_CENTER">
         <padding>
-            <Insets top="24" right="24" bottom="24" left="24"/>
+            <Insets top="32" right="28" bottom="28" left="28"/>
         </padding>
-        <ImageView fitWidth="150" preserveRatio="true">
+
+        <ImageView fitWidth="160" preserveRatio="true">
             <image>
                 <Image url="@../images/lockup.png"/>
             </image>
         </ImageView>
-        <Label text="Sign in to continue" styleClass="label-soft"/>
 
-        <VBox spacing="4">
-            <Label text="Email" styleClass="label-soft"/>
-            <TextField fx:id="emailField"/>
-            <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+        <VBox spacing="2" alignment="CENTER">
+            <Label text="Welcome back" styleClass="page-title"/>
+            <Label text="Sign in to manage listings, viewings, and contracts" styleClass="hint" wrapText="true" alignment="CENTER"/>
         </VBox>
 
-        <VBox spacing="4">
-            <Label text="Password" styleClass="label-soft"/>
-            <PasswordField fx:id="passwordField"/>
-            <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+        <VBox spacing="14" maxWidth="Infinity">
+            <VBox spacing="4">
+                <Label text="Email address" styleClass="label-soft"/>
+                <TextField fx:id="emailField" promptText="name@example.com"/>
+                <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
+
+            <VBox spacing="4">
+                <Label text="Password" styleClass="label-soft"/>
+                <PasswordField fx:id="passwordField" promptText="Enter your password"/>
+                <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+            </VBox>
         </VBox>
 
         <Label fx:id="formError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
@@ -42,7 +50,9 @@
         <Button text="Sign in" styleClass="button, button-primary" maxWidth="Infinity"
                 onAction="#handleSignIn"/>
 
-        <Hyperlink text="Don't have an account? Register" onAction="#handleRegisterLink"/>
-        <Hyperlink text="Browse listings without signing in" onAction="#handleBrowseAsGuest"/>
+        <VBox spacing="6" alignment="CENTER">
+            <Hyperlink text="Don't have an account? Register" onAction="#handleRegisterLink"/>
+            <Hyperlink text="Browse listings without signing in →" onAction="#handleBrowseAsGuest"/>
+        </VBox>
     </VBox>
 </StackPane>

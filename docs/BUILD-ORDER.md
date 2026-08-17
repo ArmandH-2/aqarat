@@ -207,15 +207,11 @@ This is not optional padding. It is where the marks are.
 
 ---
 
-## If you fall behind
+## Full UI Upgrade & Polish Focus
 
-Cut in this order, and say in the README that you cut them deliberately:
+With all initial functional phases complete, every panel is eligible for full visual, interactive, and UX upgrades:
 
-1. `Reports`
-2. `AuditLog` panel (keep the table and the writes — just drop the viewer)
-3. `Reference` panel (settings stay in the database, edited through SSMS)
-4. `MyActivity`
-5. Viewings entirely (phase 4 track A)
-
-Do not cut: the review queue, the valuation, contract activation, or the payment schedule.
-Those four are the project.
+1. **Rich Dashboards & Overviews**: `AgentDashboard`, `Reports`, and `BrowseListings` enhanced with KPI tiles, charts, and interactive filtering.
+2. **Review & Valuation Experience**: `ReviewSubmission` and `PropertyDetails` enhanced with gallery overlays, comparison metrics, and interactive maps/breakdowns.
+3. **Transactional Workflows**: `Contracts`, `Payments`, and `SubmitProperty` upgraded with multi-step steppers, responsive validation, and receipt generation previews.
+4. **Administrative Hub**: `Users`, `Reference`, and `AuditLog` polished with advanced data tables, batch actions, and search indexing.

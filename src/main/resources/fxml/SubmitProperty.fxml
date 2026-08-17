@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
@@ -7,141 +8,168 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.SubmitPropertyController"
-            fitToWidth="true">
-    <VBox styleClass="content" spacing="24">
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="36" left="0"/>
+        </padding>
+
         <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
-        <VBox fx:id="contentBox" spacing="24">
-            <Label text="Submit a property" styleClass="page-title"/>
+        <VBox fx:id="contentBox" spacing="20">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="Submit a Property" styleClass="page-title"/>
+                <Label text="Enter property specifications, upload photos, and set your asking price for agent review" styleClass="hint"/>
+            </VBox>
 
-            <VBox styleClass="card" spacing="12">
-                <Label text="Basic information" styleClass="section-title"/>
+            <!-- 1. Identity & Location Card -->
+            <VBox styleClass="card" spacing="14">
+                <Label text="1. Basic Information &amp; Location" styleClass="section-title"/>
 
                 <VBox spacing="4">
-                    <Label text="Title" styleClass="label-soft"/>
-                    <TextField fx:id="titleField"/>
+                    <Label text="Property Title" styleClass="label-soft"/>
+                    <TextField fx:id="titleField" promptText="e.g. Modern 3-Bedroom Apartment with Sea View"/>
                     <Label fx:id="titleError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>
 
+                <HBox spacing="14">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="District" styleClass="label-soft"/>
+                        <ComboBox fx:id="districtCombo" maxWidth="Infinity" promptText="Select District"/>
+                        <Label fx:id="districtError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Property Type" styleClass="label-soft"/>
+                        <ComboBox fx:id="propertyTypeCombo" maxWidth="Infinity" promptText="Select Type"/>
+                        <Label fx:id="propertyTypeError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </HBox>
+
                 <VBox spacing="4">
-                    <Label text="Description" styleClass="label-soft"/>
-                    <TextArea fx:id="descriptionArea" prefRowCount="3" wrapText="true"/>
+                    <Label text="Address Line / Neighborhood" styleClass="label-soft"/>
+                    <TextField fx:id="addressLineField" promptText="e.g. Bliss Street, Ras Beirut"/>
                 </VBox>
 
                 <VBox spacing="4">
-                    <Label text="Address line" styleClass="label-soft"/>
-                    <TextField fx:id="addressLineField"/>
-                </VBox>
-
-                <VBox spacing="4">
-                    <Label text="District" styleClass="label-soft"/>
-                    <ComboBox fx:id="districtCombo" maxWidth="Infinity"/>
-                    <Label fx:id="districtError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-
-                <VBox spacing="4">
-                    <Label text="Property type" styleClass="label-soft"/>
-                    <ComboBox fx:id="propertyTypeCombo" maxWidth="Infinity"/>
-                    <Label fx:id="propertyTypeError" styleClass="field-error" managed="false" visible="false"/>
+                    <Label text="Full Description" styleClass="label-soft"/>
+                    <TextArea fx:id="descriptionArea" prefRowCount="3" wrapText="true"
+                              promptText="Describe property condition, renovations, views, and surroundings..."/>
                 </VBox>
             </VBox>
 
-            <VBox styleClass="card" spacing="12">
-                <Label text="Specifications" styleClass="section-title"/>
+            <!-- 2. Specifications Card -->
+            <VBox styleClass="card" spacing="14">
+                <Label text="2. Specifications &amp; Amenities" styleClass="section-title"/>
 
-                <VBox spacing="4">
-                    <Label text="Area (m²)" styleClass="label-soft"/>
-                    <TextField fx:id="areaField"/>
-                    <Label fx:id="areaError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                <GridPane hgap="14" vgap="12">
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="Area (m²)" styleClass="label-soft"/>
+                        <TextField fx:id="areaField" promptText="e.g. 175"/>
+                        <Label fx:id="areaError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Bedrooms" styleClass="label-soft"/>
-                    <TextField fx:id="bedroomsField"/>
-                    <Label fx:id="bedroomsError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="Bedrooms" styleClass="label-soft"/>
+                        <TextField fx:id="bedroomsField" promptText="e.g. 3"/>
+                        <Label fx:id="bedroomsError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Bathrooms" styleClass="label-soft"/>
-                    <TextField fx:id="bathroomsField"/>
-                    <Label fx:id="bathroomsError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label text="Bathrooms" styleClass="label-soft"/>
+                        <TextField fx:id="bathroomsField" promptText="e.g. 2"/>
+                        <Label fx:id="bathroomsError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Floor number" styleClass="label-soft"/>
-                    <TextField fx:id="floorNumberField"/>
-                    <Label fx:id="floorNumberError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="Floor Number" styleClass="label-soft"/>
+                        <TextField fx:id="floorNumberField" promptText="e.g. 4"/>
+                        <Label fx:id="floorNumberError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Total floors in building" styleClass="label-soft"/>
-                    <TextField fx:id="totalFloorsField"/>
-                    <Label fx:id="totalFloorsError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="Total Building Floors" styleClass="label-soft"/>
+                        <TextField fx:id="totalFloorsField" promptText="e.g. 8"/>
+                        <Label fx:id="totalFloorsError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
 
-                <VBox spacing="4">
-                    <Label text="Year built" styleClass="label-soft"/>
-                    <TextField fx:id="yearBuiltField"/>
-                    <Label fx:id="yearBuiltError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <Label text="Year Built" styleClass="label-soft"/>
+                        <TextField fx:id="yearBuiltField" promptText="e.g. 2018"/>
+                        <Label fx:id="yearBuiltError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </GridPane>
 
-                <VBox spacing="4">
-                    <Label text="Features" styleClass="label-soft"/>
-                    <HBox spacing="16">
-                        <CheckBox fx:id="parkingCheck" text="Parking"/>
+                <VBox spacing="6">
+                    <Label text="Features &amp; Amenities" styleClass="label-soft"/>
+                    <HBox spacing="20">
+                        <CheckBox fx:id="parkingCheck" text="Dedicated Parking"/>
                         <CheckBox fx:id="elevatorCheck" text="Elevator"/>
-                        <CheckBox fx:id="balconyCheck" text="Balcony"/>
+                        <CheckBox fx:id="balconyCheck" text="Balcony / Terrace"/>
                         <CheckBox fx:id="furnishedCheck" text="Furnished"/>
                     </HBox>
                 </VBox>
             </VBox>
 
-            <VBox styleClass="card" spacing="12">
-                <Label text="Deal" styleClass="section-title"/>
+            <!-- 3. Financial & Deal Terms Card -->
+            <VBox styleClass="card" spacing="14">
+                <Label text="3. Pricing &amp; Deal Terms" styleClass="section-title"/>
 
-                <VBox spacing="4">
-                    <Label text="Deal type" styleClass="label-soft"/>
-                    <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity"/>
-                </VBox>
-
-                <VBox spacing="4">
-                    <Label fx:id="askingPriceLabel" text="Asking price" styleClass="label-soft"/>
-                    <TextField fx:id="askingPriceField"/>
-                    <Label fx:id="askingPriceError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-
-                <VBox fx:id="termsBox" spacing="12">
-                    <VBox spacing="4">
-                        <Label text="Minimum lease term (months)" styleClass="label-soft"/>
-                        <TextField fx:id="minTermField"/>
-                        <Label fx:id="minTermError" styleClass="field-error" managed="false" visible="false"/>
+                <HBox spacing="14">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Deal Type" styleClass="label-soft"/>
+                        <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity"/>
                     </VBox>
 
-                    <VBox spacing="4">
-                        <Label text="Maximum lease term (months)" styleClass="label-soft"/>
-                        <TextField fx:id="maxTermField"/>
-                        <Label fx:id="maxTermError" styleClass="field-error" managed="false" visible="false"/>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label fx:id="askingPriceLabel" text="Asking Price ($ USD)" styleClass="label-soft"/>
+                        <TextField fx:id="askingPriceField" promptText="e.g. 250,000"/>
+                        <Label fx:id="askingPriceError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
-                </VBox>
-            </VBox>
-
-            <VBox styleClass="card" spacing="12">
-                <Label text="Photos" styleClass="section-title"/>
-                <HBox spacing="8">
-                    <Button text="Add photos" styleClass="button, button-secondary"
-                            onAction="#handleAddPhotos"/>
-                    <Label text="Up to 8 photos (JPG or PNG)" styleClass="hint"/>
                 </HBox>
-                <Label fx:id="photoListLabel" text="No photos chosen yet - the listing shows a
-placeholder until you add some." styleClass="hint" wrapText="true"/>
+
+                <!-- Lease Terms Box for RENT -->
+                <VBox fx:id="termsBox" spacing="12">
+                    <HBox spacing="14">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Minimum Lease Term (Months)" styleClass="label-soft"/>
+                            <TextField fx:id="minTermField" promptText="e.g. 12"/>
+                            <Label fx:id="minTermError" styleClass="field-error" managed="false" visible="false"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Maximum Lease Term (Months)" styleClass="label-soft"/>
+                            <TextField fx:id="maxTermField" promptText="e.g. 36"/>
+                            <Label fx:id="maxTermError" styleClass="field-error" managed="false" visible="false"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
             </VBox>
 
-            <Button text="Submit for review" styleClass="button, button-primary" maxWidth="Infinity"
+            <!-- 4. Photos Card -->
+            <VBox styleClass="card" spacing="12">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="4. High-Resolution Photos" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                    <Label text="Up to 8 photos (JPG, PNG)" styleClass="hint"/>
+                </HBox>
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Button text="+ Select photos from disk" styleClass="button, button-secondary"
+                            onAction="#handleAddPhotos"/>
+                    <Label fx:id="photoCountBadge" styleClass="pill, pill-neutral" text="0 / 8 photos"/>
+                </HBox>
+                <FlowPane fx:id="photosContainer" hgap="10" vgap="10"/>
+                <Label fx:id="photoListLabel" text="No photos chosen yet. High-quality photos increase buyer inquiries by 3x." styleClass="hint" wrapText="true"/>
+            </VBox>
+
+            <!-- Submit Button -->
+            <Button text="Submit Property for Review →" styleClass="button, button-primary"
+                    maxWidth="Infinity" prefHeight="44" style="-fx-font-size: 14px; -fx-font-weight: 700;"
                     onAction="#handleSubmit"/>
         </VBox>
     </VBox>

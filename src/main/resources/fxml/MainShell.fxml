@@ -3,32 +3,57 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.MainShellController">
     <left>
-        <VBox styleClass="sidebar" spacing="4">
+        <VBox styleClass="sidebar" spacing="12">
             <padding>
-                <Insets top="16" right="12" bottom="16" left="12"/>
+                <Insets top="20" right="14" bottom="16" left="14"/>
             </padding>
-            <Label text="Aqarat" styleClass="section-title"/>
-            <VBox fx:id="navItems" spacing="4">
-                <VBox.margin>
-                    <Insets top="16"/>
-                </VBox.margin>
+
+            <!-- Brand Header -->
+            <VBox spacing="2">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <ImageView fitWidth="26" fitHeight="26" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/logo-64.png"/>
+                        </image>
+                    </ImageView>
+                    <Label text="Aqarat" styleClass="section-title"/>
+                </HBox>
+                <Label text="Real Estate Management" styleClass="hint"/>
             </VBox>
-            <VBox VBox.vgrow="ALWAYS"/>
-            <Label fx:id="userNameLabel" styleClass="label-soft"/>
-            <Label fx:id="userRoleLabel" styleClass="hint"/>
-            <Button fx:id="signOutButton" text="Sign out" styleClass="button, button-secondary"
-                    maxWidth="Infinity" onAction="#handleSignOut">
-                <VBox.margin>
-                    <Insets top="8"/>
-                </VBox.margin>
-            </Button>
+
+            <!-- Nav Items in Scrollable list to guarantee responsiveness -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"
+                        style="-fx-background-color: transparent; -fx-background: transparent;">
+                <VBox fx:id="navItems" spacing="4">
+                    <padding>
+                        <Insets top="8" bottom="8"/>
+                    </padding>
+                </VBox>
+            </ScrollPane>
+
+            <!-- User Profile Bottom Card -->
+            <VBox styleClass="user-profile-card" spacing="8">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <StackPane fx:id="avatarContainer"/>
+                    <VBox spacing="1" HBox.hgrow="ALWAYS">
+                        <Label fx:id="userNameLabel" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                        <Label fx:id="userRoleLabel" styleClass="hint"/>
+                    </VBox>
+                </HBox>
+                <Button fx:id="signOutButton" text="Sign out" styleClass="button, button-secondary"
+                        maxWidth="Infinity" onAction="#handleSignOut"/>
+            </VBox>
         </VBox>
     </left>
     <center>

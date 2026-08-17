@@ -9,8 +9,11 @@ import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.model.SystemSetting;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
@@ -18,6 +21,7 @@ import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -27,9 +31,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-// Three lookup tables, one screen, the same tab-button toggle
-// ReviewQueueController and ContractsController already use rather than a
-// JavaFX TabPane class this project has never needed before.
 public class ReferenceController {
 
     @FXML
@@ -87,9 +88,9 @@ public class ReferenceController {
         districtList.setCellFactory(list -> new DistrictCard());
         typeList.setCellFactory(list -> new TypeCard());
         settingList.setCellFactory(list -> new SettingCard());
-        emptyState(districtList, "No districts yet.");
-        emptyState(typeList, "No property types yet.");
-        emptyState(settingList, "No settings found.");
+        emptyState(districtList, "No districts recorded.");
+        emptyState(typeList, "No property types found.");
+        emptyState(settingList, "No system settings found.");
         selectDistrictsTab();
     }
 
@@ -102,9 +103,7 @@ public class ReferenceController {
     }
 
     private void emptyState(ListView<?> list, String text) {
-        Label empty = new Label(text);
-        empty.getStyleClass().add("empty-state");
-        list.setPlaceholder(empty);
+        list.setPlaceholder(UIHelper.createEmptyState(text, "Use the form above to add new entries."));
     }
 
     @FXML
@@ -141,9 +140,9 @@ public class ReferenceController {
     }
 
     private void setActiveTab(Button active, Button... inactive) {
-        active.getStyleClass().setAll("button", "button-primary");
+        active.getStyleClass().setAll("tab-pill-button", "active");
         for (Button button : inactive) {
-            button.getStyleClass().setAll("button", "button-secondary");
+            button.getStyleClass().setAll("tab-pill-button");
         }
     }
 
@@ -247,7 +246,7 @@ public class ReferenceController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("District updated.");
+        AlertUtil.showInfo("District baseline rates updated.");
         loadDistricts();
     }
 
@@ -271,10 +270,6 @@ public class ReferenceController {
         loadTypes();
     }
 
-    // The valuation engine's comparables threshold and the commission rate
-    // both live here as plain numbers, so a setting that starts numeric is
-    // not allowed to become text - that would silently break the reader
-    // that parses it back out (ContractService, ValuationService).
     private void handleSaveSetting(SystemSetting setting, TextField valueField, Label valueError) {
         FieldError.clear(valueField, valueError);
         String newValue = valueField.getText().trim();
@@ -293,7 +288,7 @@ public class ReferenceController {
             return;
         }
         setting.setValue(newValue);
-        AlertUtil.showInfo("Setting updated.");
+        AlertUtil.showInfo("System setting updated.");
     }
 
     private BigDecimal requirePositivePrice(TextField field, Label errorLabel) {
@@ -334,27 +329,32 @@ public class ReferenceController {
         }
 
         private VBox buildCard(District district) {
+            HBox fields = new HBox(12);
+            fields.setAlignment(Pos.CENTER_LEFT);
+
             TextField nameField = new TextField(district.getName());
             TextField governorateField = new TextField(district.getGovernorate());
             TextField priceField = new TextField(district.getAvgPricePerSqm().toPlainString());
             HBox.setHgrow(nameField, Priority.ALWAYS);
             HBox.setHgrow(governorateField, Priority.ALWAYS);
             HBox.setHgrow(priceField, Priority.ALWAYS);
-            HBox fields = new HBox(8, nameField, governorateField, priceField);
 
             Label priceError = new Label();
             priceError.getStyleClass().add("field-error");
             priceError.setManaged(false);
             priceError.setVisible(false);
 
-            Button save = new Button("Save");
+            Button save = new Button("Save changes");
             save.getStyleClass().addAll("button", "button-secondary");
             save.setOnAction(event -> handleSaveDistrict(
                 district, nameField, governorateField, priceField, priceError));
 
-            VBox card = new VBox(8, fields, priceError, save);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            fields.getChildren().addAll(nameField, governorateField, priceField, save);
+
+            VBox card = new VBox(6, fields, priceError);
+            card.getStyleClass().addAll("card-subtle", "card-hoverable");
+            card.setPadding(new Insets(12));
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }
@@ -370,9 +370,11 @@ public class ReferenceController {
 
         private VBox buildCard(PropertyType propertyType) {
             Label name = new Label(propertyType.getName());
+            name.getStyleClass().add("section-title");
             VBox card = new VBox(name);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getStyleClass().addAll("card-subtle", "card-hoverable");
+            card.setPadding(new Insets(14));
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }
@@ -395,19 +397,24 @@ public class ReferenceController {
             description.setWrapText(true);
 
             TextField valueField = new TextField(setting.getValue());
+            HBox.setHgrow(valueField, Priority.ALWAYS);
+
             Label valueError = new Label();
             valueError.getStyleClass().add("field-error");
             valueError.setManaged(false);
             valueError.setVisible(false);
 
             Button save = new Button("Save");
-            save.getStyleClass().addAll("button", "button-secondary");
+            save.getStyleClass().addAll("button", "button-primary");
             save.setOnAction(event -> handleSaveSetting(setting, valueField, valueError));
 
-            HBox row = new HBox(8, valueField, save);
+            HBox row = new HBox(12, valueField, save);
+            row.setAlignment(Pos.CENTER_LEFT);
+
             VBox card = new VBox(8, key, description, row, valueError);
-            card.getStyleClass().add("card");
+            card.getStyleClass().addAll("card", "card-hoverable");
             card.setPadding(new Insets(16));
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }

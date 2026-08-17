@@ -16,8 +16,10 @@ import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -26,17 +28,16 @@ import java.util.Optional;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-// One list with a toggle between "Requests" and "My viewings", the same
-// shape ReviewQueueController uses for "Unassigned" and "My queue" - both
-// tabs show the same row, only which viewings and which actions differ.
 public class ViewingsController {
 
     @FXML
@@ -92,24 +93,23 @@ public class ViewingsController {
 
     private void selectRequestsTab() {
         showingRequests = true;
-        requestsTabButton.getStyleClass().setAll("button", "button-primary");
-        myViewingsTabButton.getStyleClass().setAll("button", "button-secondary");
+        requestsTabButton.getStyleClass().setAll("tab-pill-button", "active");
+        myViewingsTabButton.getStyleClass().setAll("tab-pill-button");
         loadViewings();
     }
 
     private void selectMyViewingsTab() {
         showingRequests = false;
-        requestsTabButton.getStyleClass().setAll("button", "button-secondary");
-        myViewingsTabButton.getStyleClass().setAll("button", "button-primary");
+        requestsTabButton.getStyleClass().setAll("tab-pill-button");
+        myViewingsTabButton.getStyleClass().setAll("tab-pill-button", "active");
         loadViewings();
     }
 
     private void loadViewings() {
-        Label empty = new Label(showingRequests
-            ? "No viewing requests are waiting to be confirmed."
-            : "You have no upcoming confirmed viewings.");
-        empty.getStyleClass().add("empty-state");
-        viewingList.setPlaceholder(empty);
+        viewingList.setPlaceholder(UIHelper.createEmptyState(
+            showingRequests ? "No Incoming Requests" : "No Confirmed Appointments",
+            showingRequests ? "No viewing appointments are currently awaiting agent confirmation." : "You have no upcoming confirmed appointments scheduled."
+        ));
 
         List<Viewing> results;
         try {
@@ -142,12 +142,12 @@ public class ViewingsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The viewing is confirmed.");
+        AlertUtil.showInfo("Viewing appointment confirmed.");
         loadViewings();
     }
 
     private void handleCancel(Viewing viewing) {
-        if (!AlertUtil.confirm("Cancel this viewing?")) {
+        if (!AlertUtil.confirm("Cancel this viewing appointment?")) {
             return;
         }
         try {
@@ -165,11 +165,11 @@ public class ViewingsController {
 
     private void handleOutcome(Viewing viewing, ViewingStatus outcome) {
         String prompt = outcome == ViewingStatus.NO_SHOW
-            ? "The client did not show. Add a note:"
-            : "The viewing is complete. Add a note:";
+            ? "Client did not show. Add an outcome note:"
+            : "Viewing completed. Add an outcome note:";
         TextInputDialog dialog = new TextInputDialog();
         dialog.setHeaderText(null);
-        dialog.setTitle("Record outcome");
+        dialog.setTitle("Record Appointment Outcome");
         dialog.setContentText(prompt);
         Optional<String> input = dialog.showAndWait();
         if (input.isEmpty()) {
@@ -193,7 +193,7 @@ public class ViewingsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The outcome has been recorded.");
+        AlertUtil.showInfo("The outcome has been recorded successfully.");
         loadViewings();
     }
 
@@ -219,8 +219,6 @@ public class ViewingsController {
         });
     }
 
-    // Matches the status-to-pill table in docs/UI-STYLE.md exactly - nothing
-    // on this screen is allowed to choose a colour on its own.
     private String pillClass(ViewingStatus status) {
         switch (status) {
             case CONFIRMED:
@@ -245,21 +243,28 @@ public class ViewingsController {
         }
 
         private VBox buildCard(Viewing viewing) {
-            Label title = new Label(propertyTitle(viewing.getPropertyId()));
-            Label pill = new Label(Format.enumLabel(viewing.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(viewing.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(16));
 
-            Label meta = new Label("Client: " + clientName(viewing.getClientId()) + " • "
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label title = new Label(propertyTitle(viewing.getPropertyId()));
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(viewing.getStatus()), pillClass(viewing.getStatus()));
+            header.getChildren().addAll(title, pill);
+
+            Label meta = new Label("Client: " + clientName(viewing.getClientId()) + " • Slot: "
                 + Format.dateTime(viewing.getScheduledAt()));
             meta.getStyleClass().add("label-soft");
 
-            VBox card = new VBox(8, header, meta);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta);
 
             if (viewing.getOutcomeNote() != null) {
-                Label note = new Label("Note: " + viewing.getOutcomeNote());
+                Label note = new Label("Outcome note: " + viewing.getOutcomeNote());
                 note.setWrapText(true);
                 note.getStyleClass().add("hint");
                 card.getChildren().add(note);
@@ -269,17 +274,20 @@ public class ViewingsController {
             if (!actions.getChildren().isEmpty()) {
                 card.getChildren().add(actions);
             }
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox buildActions(Viewing viewing) {
             HBox actions = new HBox(8);
+            actions.setAlignment(Pos.CENTER_LEFT);
+
             if (viewing.getStatus() == ViewingStatus.REQUESTED) {
-                addButton(actions, "Confirm", "button-primary", () -> handleConfirm(viewing));
+                addButton(actions, "Confirm appointment", "button-primary", () -> handleConfirm(viewing));
                 addButton(actions, "Decline", "button-danger", () -> handleCancel(viewing));
             }
             if (viewing.getStatus() == ViewingStatus.CONFIRMED) {
-                addButton(actions, "Mark completed", "button-secondary",
+                addButton(actions, "Mark completed", "button-primary",
                     () -> handleOutcome(viewing, ViewingStatus.COMPLETED));
                 addButton(actions, "Mark no-show", "button-secondary",
                     () -> handleOutcome(viewing, ViewingStatus.NO_SHOW));

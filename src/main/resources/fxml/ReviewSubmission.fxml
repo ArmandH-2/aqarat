@@ -1,207 +1,227 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.ReviewSubmissionController"
-            styleClass="content" fitToWidth="true" hbarPolicy="NEVER">
-    <VBox spacing="24">
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="36" left="0"/>
+        </padding>
 
         <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
-        <VBox fx:id="contentBox" spacing="24">
-            <HBox spacing="12">
-                <Button text="Back" styleClass="button, button-secondary" onAction="#handleBack"/>
+        <VBox fx:id="contentBox" spacing="20">
+            <!-- Header Bar -->
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Button text="← Back to queue" styleClass="button, button-secondary" onAction="#handleBack"/>
             </HBox>
 
-            <HBox spacing="12">
-                <Label fx:id="titleLabel" styleClass="page-title"/>
-                <Label fx:id="statusPill" styleClass="pill"/>
+            <HBox spacing="16" alignment="CENTER_LEFT">
+                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label fx:id="titleLabel" styleClass="hero-title"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label fx:id="districtSubtitle" styleClass="label-soft"/>
+                        <Label text="•" styleClass="hint"/>
+                        <Label fx:id="statusPill" styleClass="pill"/>
+                    </HBox>
+                </VBox>
+                <VBox spacing="2" alignment="CENTER_RIGHT">
+                    <Label fx:id="askingPriceCaption" styleClass="hint" text="Asking Price"/>
+                    <Label fx:id="askingPriceValue" styleClass="metric-value" style="-fx-text-fill: -c-primary;"/>
+                </VBox>
             </HBox>
 
-            <HBox spacing="24">
+            <!-- Dual-Pane Centerpiece -->
+            <HBox spacing="20">
 
-                <!-- Left column: the submission -->
-                <VBox spacing="24" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                <!-- Left Column: Submission Details & Media -->
+                <VBox spacing="20" HBox.hgrow="ALWAYS">
 
+                    <!-- Photos Gallery Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Photos" styleClass="section-title"/>
-                        <FlowPane fx:id="galleryBox" hgap="12" vgap="12"/>
+                        <Label text="Property Media" styleClass="section-title"/>
+                        <StackPane fx:id="mainPhotoContainer" prefHeight="320" maxHeight="320"
+                                   style="-fx-background-color: -c-surface-subtle; -fx-background-radius: 8px; -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;">
+                            <ImageView fx:id="mainImageView" fitHeight="320" preserveRatio="true"/>
+                        </StackPane>
+                        <ScrollPane fitToHeight="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED"
+                                    style="-fx-background-color: transparent; -fx-background: transparent;">
+                            <HBox fx:id="thumbnailStrip" spacing="10" alignment="CENTER_LEFT">
+                                <padding>
+                                    <Insets top="4" bottom="4"/>
+                                </padding>
+                            </HBox>
+                        </ScrollPane>
+                        <FlowPane fx:id="galleryBox" hgap="10" vgap="10" managed="false" visible="false"/>
                     </VBox>
 
+                    <!-- Specifications Card -->
+                    <VBox styleClass="card" spacing="14">
+                        <Label text="Specifications Overview" styleClass="section-title"/>
+
+                        <GridPane hgap="20" vgap="12">
+                            <VBox spacing="2" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="District" styleClass="hint"/>
+                                <Label fx:id="districtValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                            <VBox spacing="2" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Property Type" styleClass="hint"/>
+                                <Label fx:id="typeValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                            <VBox spacing="2" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <Label text="Deal Type" styleClass="hint"/>
+                                <Label fx:id="dealTypeValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+
+                            <VBox spacing="2" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Area" styleClass="hint"/>
+                                <Label fx:id="areaValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                            <VBox spacing="2" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Bedrooms" styleClass="hint"/>
+                                <Label fx:id="bedroomsValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                            <VBox spacing="2" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                <Label text="Bathrooms" styleClass="hint"/>
+                                <Label fx:id="bathroomsValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+
+                            <VBox spacing="2" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                <Label text="Floor Number" styleClass="hint"/>
+                                <Label fx:id="floorValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                            <VBox spacing="2" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                <Label text="Year Built" styleClass="hint"/>
+                                <Label fx:id="yearBuiltValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                            </VBox>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- Features & Amenities Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Details" styleClass="section-title"/>
+                        <Label text="Features &amp; Amenities" styleClass="section-title"/>
+                        <FlowPane fx:id="amenitiesPane" hgap="10" vgap="10"/>
+                    </VBox>
 
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="District" styleClass="label-soft"/>
-                                <Label fx:id="districtValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Property type" styleClass="label-soft"/>
-                                <Label fx:id="typeValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Deal type" styleClass="label-soft"/>
-                                <Label fx:id="dealTypeValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Area" styleClass="label-soft"/>
-                                <Label fx:id="areaValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Bedrooms" styleClass="label-soft"/>
-                                <Label fx:id="bedroomsValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Bathrooms" styleClass="label-soft"/>
-                                <Label fx:id="bathroomsValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Floor" styleClass="label-soft"/>
-                                <Label fx:id="floorValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Year built" styleClass="label-soft"/>
-                                <Label fx:id="yearBuiltValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Parking" styleClass="label-soft"/>
-                                <Label fx:id="parkingValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Elevator" styleClass="label-soft"/>
-                                <Label fx:id="elevatorValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <HBox spacing="24">
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Balcony" styleClass="label-soft"/>
-                                <Label fx:id="balconyValue"/>
-                            </VBox>
-                            <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                <Label text="Furnished" styleClass="label-soft"/>
-                                <Label fx:id="furnishedValue"/>
-                            </VBox>
-                        </HBox>
-
-                        <VBox spacing="4">
-                            <Label text="Address" styleClass="label-soft"/>
-                            <Label fx:id="addressValue" wrapText="true"/>
+                    <!-- Location & Description -->
+                    <VBox styleClass="card" spacing="12">
+                        <Label text="Property Location &amp; Description" styleClass="section-title"/>
+                        <VBox spacing="2">
+                            <Label text="Address Line" styleClass="hint"/>
+                            <Label fx:id="addressValue" styleClass="body" wrapText="true"/>
+                        </VBox>
+                        <VBox spacing="2">
+                            <Label text="Owner Description" styleClass="hint"/>
+                            <Label fx:id="descriptionValue" styleClass="body" wrapText="true"/>
                         </VBox>
                     </VBox>
 
+                    <!-- Discussion & Messages Thread -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Description" styleClass="section-title"/>
-                        <Label fx:id="descriptionValue" wrapText="true"/>
-                    </VBox>
-
-                    <VBox styleClass="card" spacing="12">
-                        <Label text="Discussion" styleClass="section-title"/>
+                        <Label text="Agent-Owner Discussion Thread" styleClass="section-title"/>
                         <VBox fx:id="discussionBox" spacing="10"/>
                     </VBox>
                 </VBox>
 
-                <!-- Right column: the valuation -->
-                <VBox spacing="24" prefWidth="380" minWidth="340" maxWidth="380">
+                <!-- Right Column: Valuation Engine & Decision Support -->
+                <VBox spacing="20" prefWidth="420" minWidth="380" maxWidth="440">
 
-                    <VBox styleClass="card" spacing="8">
-                        <Label fx:id="askingPriceCaption" styleClass="section-title"/>
-                        <Label fx:id="askingPriceValue" styleClass="page-title"/>
-                    </VBox>
-
-                    <VBox styleClass="card" spacing="12">
-                        <HBox spacing="12">
-                            <Label text="Valuation" styleClass="section-title" HBox.hgrow="ALWAYS"/>
-                            <Button text="Run new valuation" styleClass="button, button-secondary"
+                    <!-- Valuation Centerpiece Card -->
+                    <VBox styleClass="card" spacing="14" style="-fx-border-color: -c-primary; -fx-border-width: 1.5px;">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Valuation Intelligence" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                            <Button text="⚡ Re-run" styleClass="button, button-secondary"
+                                    style="-fx-font-size: 11px; -fx-pref-height: 28px;"
                                     onAction="#handleRunValuation"/>
                         </HBox>
 
                         <Label fx:id="noValuationLabel" styleClass="empty-state" wrapText="true"
                                managed="false" visible="false"/>
 
-                        <VBox fx:id="valuationContent" spacing="12">
-                            <HBox spacing="24">
-                                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                    <Label text="Estimate" styleClass="label-soft"/>
-                                    <Label fx:id="estimateValue" styleClass="section-title"/>
+                        <VBox fx:id="valuationContent" spacing="14">
+                            <HBox spacing="16" alignment="CENTER_LEFT" styleClass="card-subtle">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Estimated Market Value" styleClass="hint"/>
+                                    <Label fx:id="estimateValue" styleClass="metric-value" style="-fx-text-fill: -c-primary;"/>
                                 </VBox>
-                                <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                                    <Label text="Flag" styleClass="label-soft"/>
+                                <VBox spacing="4" alignment="CENTER_RIGHT">
+                                    <Label text="Price Flag" styleClass="hint"/>
                                     <Label fx:id="flagPill" styleClass="pill"/>
-                                    <Label fx:id="flagCaption" styleClass="hint" wrapText="true"/>
                                 </VBox>
                             </HBox>
-                            <VBox spacing="4">
-                                <Label text="Range" styleClass="label-soft"/>
-                                <Label fx:id="rangeValue"/>
-                            </VBox>
-                            <VBox spacing="4">
-                                <Label text="Price per m²" styleClass="label-soft"/>
-                                <Label fx:id="pricePerSqmValue"/>
-                            </VBox>
+
+                            <Label fx:id="flagCaption" styleClass="hint" wrapText="true"/>
+
+                            <HBox spacing="16">
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Plausible Range" styleClass="hint"/>
+                                    <Label fx:id="rangeValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                                </VBox>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <Label text="Price per m²" styleClass="hint"/>
+                                    <Label fx:id="pricePerSqmValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                                </VBox>
+                            </HBox>
+
                             <Label fx:id="evidenceLabel" styleClass="label-soft" wrapText="true"/>
                             <Label fx:id="valuationMetaLabel" styleClass="hint"/>
                         </VBox>
                     </VBox>
 
+                    <!-- Factor Breakdown Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Factor breakdown" styleClass="section-title"/>
+                        <Label text="Valuation Factor Breakdown" styleClass="section-title"/>
                         <VBox fx:id="factorsBox" spacing="8"/>
                     </VBox>
 
+                    <!-- Comparables Used Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Comparables used" styleClass="section-title"/>
-                        <VBox fx:id="comparablesBox" spacing="12"/>
+                        <Label text="District Comparables" styleClass="section-title"/>
+                        <VBox fx:id="comparablesBox" spacing="10"/>
                     </VBox>
                 </VBox>
             </HBox>
 
-            <VBox fx:id="decisionBox" styleClass="card" spacing="12">
-                <Label text="Decision" styleClass="section-title"/>
+            <!-- Bottom Decision Card -->
+            <VBox fx:id="decisionBox" styleClass="card" spacing="14">
+                <Label text="Agent Evaluation &amp; Decision" styleClass="section-title"/>
 
-                <VBox fx:id="withdrawalReasonBox" spacing="4" managed="false" visible="false">
-                    <Label text="Owner's reason" styleClass="label-soft"/>
-                    <Label fx:id="withdrawalReasonValue" wrapText="true"/>
+                <VBox fx:id="withdrawalReasonBox" spacing="4" managed="false" visible="false" styleClass="card-subtle">
+                    <Label text="Owner's Stated Reason for Withdrawal:" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                    <Label fx:id="withdrawalReasonValue" styleClass="body" wrapText="true"/>
                 </VBox>
 
                 <VBox fx:id="noteBox" spacing="4">
-                    <Label text="Note" styleClass="label-soft"/>
-                    <TextArea fx:id="noteArea" wrapText="true" prefRowCount="3"/>
+                    <Label text="Decision Note / Instructions to Owner" styleClass="label-soft"/>
+                    <TextArea fx:id="noteArea" wrapText="true" prefRowCount="3"
+                              promptText="Provide feedback or state reasons for request/rejection..."/>
                     <Label fx:id="noteError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>
 
                 <HBox fx:id="reviewActionsBox" spacing="12">
-                    <Button text="Approve and publish" styleClass="button, button-primary"
+                    <Button text="✓ Approve &amp; Publish Listing" styleClass="button, button-primary"
                             onAction="#handleApprove"/>
-                    <Button text="Request more information" styleClass="button, button-secondary"
+                    <Button text="💬 Request More Information" styleClass="button, button-secondary"
                             onAction="#handleRequestInfo"/>
-                    <Button text="Reject" styleClass="button, button-danger" onAction="#handleReject"/>
+                    <Button text="✕ Reject Submission" styleClass="button, button-danger" onAction="#handleReject"/>
                 </HBox>
 
                 <HBox fx:id="withdrawalActionsBox" spacing="12" managed="false" visible="false">
-                    <Button text="Accept removal" styleClass="button, button-danger"
+                    <Button text="Accept Removal &amp; Delist" styleClass="button, button-danger"
                             onAction="#handleAcceptRemoval"/>
-                    <Button text="Decline and keep listed" styleClass="button, button-secondary"
+                    <Button text="Decline &amp; Keep Listed" styleClass="button, button-secondary"
                             onAction="#handleDeclineRemoval"/>
                 </HBox>
             </VBox>

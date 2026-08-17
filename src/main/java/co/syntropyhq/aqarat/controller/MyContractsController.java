@@ -21,13 +21,15 @@ import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.model.ScheduleStatus;
 import co.syntropyhq.aqarat.service.AuditService;
-import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.ContractService;
+import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
@@ -39,6 +41,7 @@ import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
@@ -46,15 +49,14 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-// The client's screen (docs/DESIGN.md section 9): own contracts, payment
-// schedule, declare payment, receipts. Everything is scoped to the current
-// user's id, never filtered after fetching (DESIGN.md section 8).
 public class MyContractsController {
 
     @FXML
@@ -85,9 +87,7 @@ public class MyContractsController {
             denyAccess();
             return;
         }
-        Label empty = new Label("You have no contracts yet.");
-        empty.getStyleClass().add("empty-state");
-        contractList.setPlaceholder(empty);
+        contractList.setPlaceholder(UIHelper.createEmptyState("No Active Contracts", "You have not entered into any lease or purchase contracts yet."));
         contractList.setCellFactory(list -> new ContractCard());
         loadContracts();
     }
@@ -129,7 +129,7 @@ public class MyContractsController {
     private void openDeclareDialog(Contract contract, PaymentSchedule schedule) {
         DeclareForm form = new DeclareForm(outstanding(schedule));
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Declare payment");
+        dialog.setTitle("Declare Payment");
         dialog.getDialogPane().setContent(form.layout());
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         Optional<ButtonType> result = dialog.showAndWait();
@@ -152,27 +152,25 @@ public class MyContractsController {
         try {
             paymentService.declare(schedule.getId(), null, amount, form.method(), form.reference(),
                 form.proofPath(), clientId);
-        } catch (PaymentService.InvalidPaymentTargetException e) {
-            AlertUtil.showError(e.getMessage());
-            return;
-        } catch (PaymentService.InvalidPaymentAmountException e) {
+        } catch (PaymentService.InvalidPaymentTargetException | PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Payment declared. An agent will confirm it.");
+        AlertUtil.showInfo("Payment declared successfully. An agent will confirm it shortly.");
         loadContracts();
     }
 
     private void showReceipt(Contract contract, Payment payment) {
-        String receipt = "RECEIPT\n" + propertyTitle(contract.getPropertyId())
-            + "\nContract #" + contract.getId()
-            + "\nAmount: " + Format.paymentAmount(payment.getAmount())
-            + "\nMethod: " + Format.enumLabel(payment.getMethod())
-            + "\nPaid: " + Format.dateTime(payment.getPaidAt())
-            + "\nStatus: " + Format.enumLabel(payment.getStatus());
+        String receipt = "OFFICIAL PAYMENT RECEIPT\n\n"
+            + "Property: " + propertyTitle(contract.getPropertyId()) + "\n"
+            + "Contract Ref: #" + contract.getId() + "\n"
+            + "Amount Paid: " + Format.paymentAmount(payment.getAmount()) + "\n"
+            + "Payment Method: " + Format.enumLabel(payment.getMethod()) + "\n"
+            + "Date Confirmed: " + Format.dateTime(payment.getPaidAt()) + "\n"
+            + "Payment Status: " + Format.enumLabel(payment.getStatus());
         AlertUtil.showInfo(receipt);
     }
 
@@ -194,11 +192,9 @@ public class MyContractsController {
     private String amountText(Contract contract) {
         return contract.getContractType() == ContractType.SALE
             ? Format.salePrice(contract.getTotalAmount())
-            : Format.monthlyRent(contract.getMonthlyRent()) + " for " + contract.getTermMonths()
-                + " months";
+            : Format.monthlyRent(contract.getMonthlyRent()) + " / month (" + contract.getTermMonths() + " mos)";
     }
 
-    // Matches docs/UI-STYLE.md exactly, same mapping as ContractsController.
     private String pillClass(ContractStatus status) {
         switch (status) {
             case DRAFT:
@@ -251,8 +247,6 @@ public class MyContractsController {
         });
     }
 
-    // The declare-payment dialog's fields, built in Java - one small form,
-    // not worth a second FXML file or a builder (CLAUDE.md).
     private final class DeclareForm {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
@@ -268,13 +262,13 @@ public class MyContractsController {
 
         private GridPane layout() {
             GridPane grid = new GridPane();
-            grid.setHgap(8);
-            grid.setVgap(8);
+            grid.setHgap(12);
+            grid.setVgap(10);
             grid.setPadding(new Insets(16));
-            grid.addRow(0, new Label("Amount"), amountField);
-            grid.addRow(1, new Label("Method"), methodCombo);
-            grid.addRow(2, new Label("Reference"), referenceField);
-            grid.addRow(3, new Label("Proof (file path or reference)"), proofPathField);
+            grid.addRow(0, new Label("Payment Amount ($)"), amountField);
+            grid.addRow(1, new Label("Payment Method"), methodCombo);
+            grid.addRow(2, new Label("Transaction Reference"), referenceField);
+            grid.addRow(3, new Label("Proof Ref / File"), proofPathField);
             return grid;
         }
 
@@ -312,48 +306,76 @@ public class MyContractsController {
         }
 
         private VBox buildCard(Contract contract) {
-            Label title = new Label(propertyTitle(contract.getPropertyId()));
-            Label pill = new Label(Format.enumLabel(contract.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(contract.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            VBox card = new VBox(14);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(18));
 
-            Label meta = new Label(Format.enumLabel(contract.getContractType()) + " • "
-                + amountText(contract) + " • from " + Format.date(contract.getStartDate()));
+            // Header
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label title = new Label(propertyTitle(contract.getPropertyId()));
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(contract.getStatus()), pillClass(contract.getStatus()));
+            Label amountLabel = new Label(amountText(contract));
+            amountLabel.getStyleClass().add("section-title");
+            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+
+            header.getChildren().addAll(title, pill, amountLabel);
+
+            Label meta = new Label(Format.enumLabel(contract.getContractType())
+                + " • Start Date: " + Format.date(contract.getStartDate()));
             meta.getStyleClass().add("label-soft");
 
-            VBox card = new VBox(12, header, meta, scheduleSection(contract), paymentsSection(contract));
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta, scheduleSection(contract), paymentsSection(contract));
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private VBox scheduleSection(Contract contract) {
-            Label heading = new Label("Payment schedule");
+            VBox section = new VBox(8);
+            section.getStyleClass().add("card-subtle");
+
+            Label heading = new Label("Installment Payment Schedule");
             heading.getStyleClass().add("section-title");
+            heading.setStyle("-fx-font-size: 13px;");
+
             List<PaymentSchedule> schedule = scheduleFor(contract);
             if (schedule.isEmpty()) {
-                Label empty = new Label("No payment schedule yet.");
+                Label empty = new Label("No payment schedule items.");
                 empty.getStyleClass().add("hint");
-                return new VBox(4, heading, empty);
+                section.getChildren().addAll(heading, empty);
+                return section;
             }
-            VBox rows = new VBox(8);
+
+            VBox rows = new VBox(6);
             for (PaymentSchedule row : schedule) {
                 rows.getChildren().add(scheduleRow(contract, row));
             }
-            return new VBox(4, heading, rows);
+            section.getChildren().addAll(heading, rows);
+            return section;
         }
 
         private HBox scheduleRow(Contract contract, PaymentSchedule row) {
-            Label text = new Label("Installment " + row.getInstallmentNo() + " • due "
+            HBox line = new HBox(10);
+            line.setAlignment(Pos.CENTER_LEFT);
+            line.setPadding(new Insets(4, 0, 4, 0));
+
+            Label text = new Label("Installment #" + row.getInstallmentNo() + " • Due "
                 + Format.date(row.getDueDate()) + " • " + Format.paymentAmount(row.getAmountDue())
-                + " (paid " + Format.paymentAmount(row.getAmountPaid()) + ")");
-            text.getStyleClass().add("label-soft");
-            Label pill = new Label(Format.enumLabel(row.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(row.getStatus()));
-            HBox line = new HBox(8, text, pill);
+                + " (Paid: " + Format.paymentAmount(row.getAmountPaid()) + ")");
+            text.getStyleClass().add("body");
+            HBox.setHgrow(text, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(row.getStatus()), pillClass(row.getStatus()));
+            line.getChildren().addAll(text, pill);
+
             if (row.getStatus() != ScheduleStatus.PAID) {
                 Button declare = new Button("Declare payment");
-                declare.getStyleClass().addAll("button", "button-secondary");
+                declare.getStyleClass().addAll("button", "button-primary");
+                declare.setStyle("-fx-font-size: 11px; -fx-pref-height: 28px;");
                 declare.setOnAction(event -> openDeclareDialog(contract, row));
                 line.getChildren().add(declare);
             }
@@ -361,31 +383,45 @@ public class MyContractsController {
         }
 
         private VBox paymentsSection(Contract contract) {
-            Label heading = new Label("Payments");
+            VBox section = new VBox(8);
+            section.getStyleClass().add("card-subtle");
+
+            Label heading = new Label("Recorded Payments & Receipts");
             heading.getStyleClass().add("section-title");
+            heading.setStyle("-fx-font-size: 13px;");
+
             List<Payment> payments = paymentsFor(contract);
             if (payments.isEmpty()) {
-                Label empty = new Label("No payments recorded yet.");
+                Label empty = new Label("No recorded payments yet.");
                 empty.getStyleClass().add("hint");
-                return new VBox(4, heading, empty);
+                section.getChildren().addAll(heading, empty);
+                return section;
             }
-            VBox rows = new VBox(8);
+
+            VBox rows = new VBox(6);
             for (Payment payment : payments) {
                 rows.getChildren().add(paymentRow(contract, payment));
             }
-            return new VBox(4, heading, rows);
+            section.getChildren().addAll(heading, rows);
+            return section;
         }
 
         private HBox paymentRow(Contract contract, Payment payment) {
-            Label text = new Label(Format.paymentAmount(payment.getAmount()) + " • "
+            HBox line = new HBox(10);
+            line.setAlignment(Pos.CENTER_LEFT);
+
+            Label text = new Label(Format.paymentAmount(payment.getAmount()) + " via "
                 + Format.enumLabel(payment.getMethod()) + " • " + Format.dateTime(payment.getPaidAt()));
-            text.getStyleClass().add("label-soft");
-            Label pill = new Label(Format.enumLabel(payment.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(payment.getStatus()));
-            HBox line = new HBox(8, text, pill);
+            text.getStyleClass().add("body");
+            HBox.setHgrow(text, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(payment.getStatus()), pillClass(payment.getStatus()));
+            line.getChildren().addAll(text, pill);
+
             if (payment.getStatus() == PaymentStatus.CONFIRMED) {
                 Button receipt = new Button("Receipt");
                 receipt.getStyleClass().addAll("button", "button-secondary");
+                receipt.setStyle("-fx-font-size: 11px; -fx-pref-height: 28px;");
                 receipt.setOnAction(event -> showReceipt(contract, payment));
                 line.getChildren().add(receipt);
             }

@@ -16,6 +16,7 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReportService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
@@ -28,9 +29,6 @@ import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-// The four figures DESIGN.md section 9 asks for, plus the unassigned queue an
-// agent can claim from. Every one is a COUNT in SQL rather than a list read
-// and measured, so opening the dashboard costs five small queries.
 public class AgentDashboardController {
 
     @FXML
@@ -39,6 +37,14 @@ public class AgentDashboardController {
     private Label accessDeniedLabel;
     @FXML
     private VBox queueCard;
+    @FXML
+    private VBox unassignedCard;
+    @FXML
+    private VBox activeListingsCard;
+    @FXML
+    private VBox weekViewingsCard;
+    @FXML
+    private VBox overdueCard;
     @FXML
     private Label queueCountLabel;
     @FXML
@@ -66,9 +72,21 @@ public class AgentDashboardController {
             denyAccess();
             return;
         }
-        queueCard.setCursor(Cursor.HAND);
-        queueCard.setOnMouseClicked(event -> Router.show(Panel.REVIEW_QUEUE));
+
+        setupClickableCard(queueCard, Panel.REVIEW_QUEUE);
+        setupClickableCard(unassignedCard, Panel.REVIEW_QUEUE);
+        setupClickableCard(activeListingsCard, Panel.LISTINGS);
+        setupClickableCard(weekViewingsCard, Panel.VIEWINGS);
+        setupClickableCard(overdueCard, Panel.PAYMENTS);
+
         loadCounts(user.getId());
+    }
+
+    private void setupClickableCard(VBox card, Panel panel) {
+        if (card == null) return;
+        card.setCursor(Cursor.HAND);
+        card.setOnMouseClicked(event -> Router.show(panel));
+        AnimationUtil.addHoverLift(card);
     }
 
     private void denyAccess() {
@@ -81,16 +99,21 @@ public class AgentDashboardController {
 
     private void loadCounts(int agentId) {
         try {
-            queueCountLabel.setText(String.valueOf(countQueue(agentId)));
-            unassignedCountLabel.setText(String.valueOf(countUnassigned()));
-            activeListingsCountLabel.setText(String.valueOf(countActiveListings(agentId)));
-            weekViewingsCountLabel.setText(String.valueOf(countViewingsThisWeek(agentId)));
-            // The dashboard speaks about the agent's own portfolio, so the
-            // overdue figure is their queue. For an admin it is the agency's and
-            // the caption has to say so, or the number reads as a lie.
+            int queueCount = countQueue(agentId);
+            int unassignedCount = countUnassigned();
+            int activeListings = countActiveListings(agentId);
+            int weekViewings = countViewingsThisWeek(agentId);
+
             AppUser user = SessionManager.getCurrentUser();
             Integer scope = user.getRole() == Role.ADMIN ? null : agentId;
-            overdueCountLabel.setText(String.valueOf(reportService.overduePayments(scope).size()));
+            int overdueCount = reportService.overduePayments(scope).size();
+
+            AnimationUtil.animateCount(queueCountLabel, queueCount, 350);
+            AnimationUtil.animateCount(unassignedCountLabel, unassignedCount, 350);
+            AnimationUtil.animateCount(activeListingsCountLabel, activeListings, 350);
+            AnimationUtil.animateCount(weekViewingsCountLabel, weekViewings, 350);
+            AnimationUtil.animateCount(overdueCountLabel, overdueCount, 350);
+
             overdueCaptionLabel.setText(user.getRole() == Role.ADMIN
                 ? "Payments overdue across the agency" : "Payments overdue in your portfolio");
         } catch (SQLException e) {
@@ -98,8 +121,6 @@ public class AgentDashboardController {
         }
     }
 
-    // The database stores UTC, so the week is measured in UTC too rather than
-    // against a local midnight the stored timestamps know nothing about.
     private int countViewingsThisWeek(int agentId) throws SQLException {
         LocalDateTime from = LocalDateTime.now(ZoneOffset.UTC);
         return viewingService.findByAgentInRange(agentId, from, from.plusDays(7)).size();
@@ -123,5 +144,30 @@ public class AgentDashboardController {
         PropertySearch filters = new PropertySearch();
         filters.setAgentId(agentId);
         return propertyService.count(List.of(PropertyStatus.AVAILABLE), filters);
+    }
+
+    @FXML
+    private void handleGoReviewQueue() {
+        Router.show(Panel.REVIEW_QUEUE);
+    }
+
+    @FXML
+    private void handleGoListings() {
+        Router.show(Panel.LISTINGS);
+    }
+
+    @FXML
+    private void handleGoViewings() {
+        Router.show(Panel.VIEWINGS);
+    }
+
+    @FXML
+    private void handleGoPayments() {
+        Router.show(Panel.PAYMENTS);
+    }
+
+    @FXML
+    private void handleGoContracts() {
+        Router.show(Panel.CONTRACTS);
     }
 }

@@ -1,54 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.UsersController"
-      styleClass="content" spacing="24">
-    <Label text="Users" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.UsersController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="36" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="24" VBox.vgrow="ALWAYS">
-        <VBox styleClass="card" spacing="12">
-            <Label text="Create account" styleClass="section-title"/>
-            <HBox spacing="12">
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Full name" styleClass="label-soft"/>
-                    <TextField fx:id="fullNameField"/>
-                    <Label fx:id="fullNameError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Email" styleClass="label-soft"/>
-                    <TextField fx:id="emailField"/>
-                    <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Phone" styleClass="label-soft"/>
-                    <TextField fx:id="phoneField"/>
-                    <Label fx:id="phoneError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-            </HBox>
-            <HBox spacing="12">
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Role" styleClass="label-soft"/>
-                    <ComboBox fx:id="roleCombo" maxWidth="Infinity"/>
-                </VBox>
-                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                    <Label text="Initial password" styleClass="label-soft"/>
-                    <PasswordField fx:id="passwordField"/>
-                    <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-            </HBox>
-            <Button text="Create account" styleClass="button, button-primary" onAction="#handleCreate"/>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+        <VBox fx:id="contentBox" spacing="20">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="User Accounts &amp; Access Control" styleClass="page-title"/>
+                <Label text="Provision agent and administrator accounts, manage user roles, and adjust system permissions" styleClass="hint"/>
+            </VBox>
+
+            <!-- Create New User Form Card -->
+            <VBox styleClass="card" spacing="14">
+                <Label text="Provision New Account" styleClass="section-title"/>
+
+                <GridPane hgap="14" vgap="12">
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="Full Name" styleClass="label-soft"/>
+                        <TextField fx:id="fullNameField" promptText="e.g. Layla Haddad"/>
+                        <Label fx:id="fullNameError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="Email Address" styleClass="label-soft"/>
+                        <TextField fx:id="emailField" promptText="layla@aqarat.com"/>
+                        <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="Phone Number" styleClass="label-soft"/>
+                        <TextField fx:id="phoneField" promptText="+961 70 123456"/>
+                        <Label fx:id="phoneError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="Initial Password" styleClass="label-soft"/>
+                        <PasswordField fx:id="passwordField" promptText="Minimum 8 characters"/>
+                        <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                        <Label text="Assigned System Role" styleClass="label-soft"/>
+                        <ComboBox fx:id="roleCombo" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <HBox spacing="10" alignment="BOTTOM_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <Button text="+ Provision Account" styleClass="button, button-primary"
+                                prefHeight="36" onAction="#handleCreate"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+
+            <!-- User Accounts Directory Card -->
+            <VBox styleClass="card" spacing="12">
+                <Label text="System Accounts Directory" styleClass="section-title"/>
+                <ListView fx:id="userList" minHeight="450"/>
+            </VBox>
         </VBox>
-
-        <ListView fx:id="userList" VBox.vgrow="ALWAYS"/>
     </VBox>
-</VBox>
+</ScrollPane>

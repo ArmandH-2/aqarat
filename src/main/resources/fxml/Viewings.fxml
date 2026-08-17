@@ -1,25 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.ViewingsController"
-      styleClass="content" spacing="24">
-    <Label text="Viewings" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.ViewingsController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="28" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
-        <HBox spacing="12">
-            <Button fx:id="requestsTabButton" text="Requests" styleClass="button, button-primary"
-                    onAction="#handleRequestsTab"/>
-            <Button fx:id="myViewingsTabButton" text="My viewings" styleClass="button, button-secondary"
-                    onAction="#handleMyViewingsTab"/>
-        </HBox>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
-        <ListView fx:id="viewingList" VBox.vgrow="ALWAYS"/>
+        <VBox fx:id="contentBox" spacing="18">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="Property Viewing Appointments" styleClass="page-title"/>
+                <Label text="Manage client viewing requests, confirm upcoming schedules, and log appointment outcomes" styleClass="hint"/>
+            </VBox>
+
+            <!-- Segmented Tab Bar -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="requestsTabButton" text="Incoming Requests" styleClass="tab-pill-button, active"
+                        onAction="#handleRequestsTab"/>
+                <Button fx:id="myViewingsTabButton" text="My Confirmed Viewings" styleClass="tab-pill-button"
+                        onAction="#handleMyViewingsTab"/>
+            </HBox>
+
+            <!-- Viewings List -->
+            <ListView fx:id="viewingList" minHeight="500"/>
+        </VBox>
     </VBox>
-</VBox>
+</ScrollPane>

@@ -26,9 +26,11 @@ import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
@@ -40,6 +42,7 @@ import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
@@ -50,12 +53,10 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-// The agent's screen (docs/DESIGN.md section 9): schedules, declared
-// payments awaiting confirmation, record a payment, issue a receipt. Same
-// two-tab shape as ContractsController.
 public class PaymentsController {
 
     @FXML
@@ -86,8 +87,6 @@ public class PaymentsController {
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), auditService);
     private final ReservationService reservationService = new ReservationService(
         new ReservationDao(), new SystemSettingDao(), propertyService, auditService);
-    // No schedule generator: this panel never activates a contract, so
-    // ContractService's seam is never called from here.
     private final ContractService contractService = new ContractService(
         new ContractDao(), new ReservationDao(), propertyService, reservationService,
         new SystemSettingDao(), auditService, null);
@@ -132,8 +131,8 @@ public class PaymentsController {
     }
 
     private void selectAwaitingTab() {
-        awaitingTabButton.getStyleClass().setAll("button", "button-primary");
-        recordTabButton.getStyleClass().setAll("button", "button-secondary");
+        awaitingTabButton.getStyleClass().setAll("tab-pill-button", "active");
+        recordTabButton.getStyleClass().setAll("tab-pill-button");
         awaitingBox.setVisible(true);
         awaitingBox.setManaged(true);
         recordBox.setVisible(false);
@@ -142,8 +141,8 @@ public class PaymentsController {
     }
 
     private void selectRecordTab() {
-        awaitingTabButton.getStyleClass().setAll("button", "button-secondary");
-        recordTabButton.getStyleClass().setAll("button", "button-primary");
+        awaitingTabButton.getStyleClass().setAll("tab-pill-button");
+        recordTabButton.getStyleClass().setAll("tab-pill-button", "active");
         awaitingBox.setVisible(false);
         awaitingBox.setManaged(false);
         recordBox.setVisible(true);
@@ -151,13 +150,9 @@ public class PaymentsController {
     }
 
     private void loadDeclaredPayments() {
-        Label empty = new Label("No payments are waiting for confirmation.");
-        empty.getStyleClass().add("empty-state");
-        declaredList.setPlaceholder(empty);
+        declaredList.setPlaceholder(UIHelper.createEmptyState("No Declared Payments", "No customer-declared payments are waiting for confirmation."));
         List<Payment> results;
         try {
-            // An agent confirms payments declared against their own contracts
-            // and reservations; only an admin sees the whole agency's queue.
             AppUser user = SessionManager.getCurrentUser();
             Integer agentId = user.getRole() == Role.ADMIN ? null : user.getId();
             results = paymentService.findDeclaredAwaitingConfirmation(agentId);
@@ -184,7 +179,7 @@ public class PaymentsController {
     private void loadContractAndSchedule(int id) {
         Contract contract = fetchContract(id);
         if (contract == null) {
-            FieldError.show(contractIdField, contractError, "No contract with that id.");
+            FieldError.show(contractIdField, contractError, "No contract found with that ID.");
             return;
         }
         loadedContract = contract;
@@ -198,9 +193,6 @@ public class PaymentsController {
             if (contract == null) {
                 return null;
             }
-            // A contract is this agent's business only when it carries their
-            // id. Someone else's contract is answered with the same message
-            // as a missing id, so its existence is not even revealed.
             AppUser user = SessionManager.getCurrentUser();
             if (user.getRole() != Role.ADMIN && contract.getAgentId() != user.getId()) {
                 return null;
@@ -213,9 +205,7 @@ public class PaymentsController {
     }
 
     private void loadSchedule(int contractId) {
-        Label empty = new Label("This contract has no payment schedule yet.");
-        empty.getStyleClass().add("empty-state");
-        scheduleList.setPlaceholder(empty);
+        scheduleList.setPlaceholder(UIHelper.createEmptyState("No Payment Schedule", "This contract has no payment installments scheduled yet."));
         try {
             scheduleList.setItems(FXCollections.observableArrayList(
                 paymentService.findScheduleByContract(contractId)));
@@ -225,7 +215,7 @@ public class PaymentsController {
     }
 
     private String contractSummary(Contract contract) {
-        return propertyTitle(contract.getPropertyId()) + " • " + userName(contract.getClientId())
+        return propertyTitle(contract.getPropertyId()) + " • Client: " + userName(contract.getClientId())
             + " • " + Format.enumLabel(contract.getStatus());
     }
 
@@ -245,7 +235,7 @@ public class PaymentsController {
     }
 
     private void handleReject(Payment payment) {
-        if (!AlertUtil.confirm("Reject this payment?")) {
+        if (!AlertUtil.confirm("Reject this declared payment?")) {
             return;
         }
         int agentId = SessionManager.getCurrentUser().getId();
@@ -265,7 +255,7 @@ public class PaymentsController {
     private void openRecordDialog(PaymentSchedule schedule) {
         RecordForm form = new RecordForm(outstanding(schedule));
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Record payment");
+        dialog.setTitle("Record Direct Payment");
         dialog.getDialogPane().setContent(form.layout());
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         Optional<ButtonType> result = dialog.showAndWait();
@@ -284,10 +274,7 @@ public class PaymentsController {
         try {
             paymentService.recordConfirmedPayment(schedule.getId(), null, amount,
                 form.method(), form.reference(), form.proofPath(), agentId);
-        } catch (PaymentService.InvalidPaymentTargetException e) {
-            AlertUtil.showError(e.getMessage());
-            return;
-        } catch (PaymentService.InvalidPaymentAmountException e) {
+        } catch (PaymentService.InvalidPaymentTargetException | PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
         } catch (SQLException e) {
@@ -304,22 +291,23 @@ public class PaymentsController {
 
     private String receiptText(PaymentSchedule schedule, BigDecimal amount, PaymentMethod method,
             String status) {
-        return "RECEIPT\n"
-            + propertyTitle(loadedContract.getPropertyId()) + "\n"
-            + "Contract #" + loadedContract.getId() + " - Installment " + schedule.getInstallmentNo()
-            + "\nAmount: " + Format.paymentAmount(amount)
-            + "\nMethod: " + Format.enumLabel(method)
-            + "\nStatus: " + status;
+        return "OFFICIAL RECEIPT\n\n"
+            + "Property: " + propertyTitle(loadedContract.getPropertyId()) + "\n"
+            + "Contract Ref: #" + loadedContract.getId() + " - Installment #" + schedule.getInstallmentNo() + "\n"
+            + "Amount Paid: " + Format.paymentAmount(amount) + "\n"
+            + "Payment Method: " + Format.enumLabel(method) + "\n"
+            + "Status: " + status;
     }
 
     private String receiptText(Payment payment, String status) {
         String target = payment.getScheduleId() != null
-            ? "Installment payment" : "Reservation deposit";
-        return "RECEIPT\n" + target
-            + "\nAmount: " + Format.paymentAmount(payment.getAmount())
-            + "\nMethod: " + Format.enumLabel(payment.getMethod())
-            + "\nDeclared by: " + userName(payment.getDeclaredBy())
-            + "\nStatus: " + status;
+            ? "Installment Payment" : "Reservation Deposit";
+        return "OFFICIAL RECEIPT\n\n"
+            + "Payment Type: " + target + "\n"
+            + "Amount Paid: " + Format.paymentAmount(payment.getAmount()) + "\n"
+            + "Payment Method: " + Format.enumLabel(payment.getMethod()) + "\n"
+            + "Declared By: " + userName(payment.getDeclaredBy()) + "\n"
+            + "Status: " + status;
     }
 
     private Integer parsePositiveInt(String text) {
@@ -357,8 +345,6 @@ public class PaymentsController {
         });
     }
 
-    // Matches docs/UI-STYLE.md exactly. PENDING is not listed there, so it
-    // falls to the same neutral default DRAFT would get if it were missing.
     private String pillClass(ScheduleStatus status) {
         switch (status) {
             case PAID:
@@ -397,9 +383,6 @@ public class PaymentsController {
         });
     }
 
-    // The record-payment dialog's fields, built in Java rather than a second
-    // FXML file for one small form (CLAUDE.md: no builders or extra files
-    // for something this small).
     private final class RecordForm {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
@@ -415,13 +398,13 @@ public class PaymentsController {
 
         private GridPane layout() {
             GridPane grid = new GridPane();
-            grid.setHgap(8);
-            grid.setVgap(8);
+            grid.setHgap(12);
+            grid.setVgap(10);
             grid.setPadding(new Insets(16));
-            grid.addRow(0, new Label("Amount"), amountField);
-            grid.addRow(1, new Label("Method"), methodCombo);
-            grid.addRow(2, new Label("Reference"), referenceField);
-            grid.addRow(3, new Label("Proof path"), proofPathField);
+            grid.addRow(0, new Label("Payment Amount ($)"), amountField);
+            grid.addRow(1, new Label("Payment Method"), methodCombo);
+            grid.addRow(2, new Label("Reference Ref"), referenceField);
+            grid.addRow(3, new Label("Proof Ref / File"), proofPathField);
             return grid;
         }
 
@@ -459,36 +442,54 @@ public class PaymentsController {
         }
 
         private VBox buildCard(Payment payment) {
-            String target = payment.getScheduleId() != null
-                ? "Installment payment" : "Reservation deposit";
-            Label title = new Label(target);
-            Label pill = new Label(Format.enumLabel(payment.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(payment.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(16));
 
-            Label meta = new Label(Format.paymentAmount(payment.getAmount()) + " • "
-                + Format.enumLabel(payment.getMethod()) + " • declared by "
+            String target = payment.getScheduleId() != null
+                ? "Contract Installment Payment" : "Property Reservation Deposit";
+
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label title = new Label(target);
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(payment.getStatus()), pillClass(payment.getStatus()));
+            Label amountLabel = new Label(Format.paymentAmount(payment.getAmount()));
+            amountLabel.getStyleClass().add("section-title");
+            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+
+            header.getChildren().addAll(title, pill, amountLabel);
+
+            Label meta = new Label("Method: " + Format.enumLabel(payment.getMethod()) + " • Declared by: "
                 + userName(payment.getDeclaredBy()) + " • " + Format.dateTime(payment.getCreatedAt()));
             meta.getStyleClass().add("label-soft");
 
-            Label proof = new Label("Proof: "
-                + (payment.getProofPath() == null ? "none provided" : payment.getProofPath()));
+            Label proof = new Label("Proof reference: "
+                + (payment.getProofPath() == null ? "None provided" : payment.getProofPath()));
             proof.getStyleClass().add("hint");
 
-            VBox card = new VBox(8, header, meta, proof, actions(payment));
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta, proof, actions(payment));
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox actions(Payment payment) {
-            Button confirm = new Button("Confirm");
+            HBox actions = new HBox(8);
+            actions.setAlignment(Pos.CENTER_LEFT);
+
+            Button confirm = new Button("Confirm payment");
             confirm.getStyleClass().addAll("button", "button-primary");
             confirm.setOnAction(event -> handleConfirm(payment));
+
             Button reject = new Button("Reject");
             reject.getStyleClass().addAll("button", "button-danger");
             reject.setOnAction(event -> handleReject(payment));
-            return new HBox(8, confirm, reject);
+
+            actions.getChildren().addAll(confirm, reject);
+            return actions;
         }
     }
 
@@ -502,26 +503,37 @@ public class PaymentsController {
         }
 
         private VBox buildCard(PaymentSchedule schedule) {
-            Label title = new Label("Installment " + schedule.getInstallmentNo()
-                + " • due " + Format.date(schedule.getDueDate()));
-            Label pill = new Label(Format.enumLabel(schedule.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(schedule.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            VBox card = new VBox(8);
+            card.getStyleClass().addAll("card-subtle", "card-hoverable");
+            card.setPadding(new Insets(12));
 
-            Label meta = new Label("Due " + Format.paymentAmount(schedule.getAmountDue())
-                + " • paid " + Format.paymentAmount(schedule.getAmountPaid())
-                + " • outstanding " + Format.paymentAmount(outstanding(schedule)));
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label title = new Label("Installment #" + schedule.getInstallmentNo()
+                + " • Due " + Format.date(schedule.getDueDate()));
+            title.getStyleClass().add("section-title");
+            title.setStyle("-fx-font-size: 13px;");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(Format.enumLabel(schedule.getStatus()), pillClass(schedule.getStatus()));
+            header.getChildren().addAll(title, pill);
+
+            Label meta = new Label("Due: " + Format.paymentAmount(schedule.getAmountDue())
+                + " • Paid: " + Format.paymentAmount(schedule.getAmountPaid())
+                + " • Outstanding: " + Format.paymentAmount(outstanding(schedule)));
             meta.getStyleClass().add("label-soft");
 
-            VBox card = new VBox(8, header, meta);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta);
+
             if (schedule.getStatus() != ScheduleStatus.PAID) {
                 Button record = new Button("Record payment");
                 record.getStyleClass().addAll("button", "button-primary");
+                record.setStyle("-fx-font-size: 11px; -fx-pref-height: 28px;");
                 record.setOnAction(event -> openRecordDialog(schedule));
                 card.getChildren().add(new HBox(8, record));
             }
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }

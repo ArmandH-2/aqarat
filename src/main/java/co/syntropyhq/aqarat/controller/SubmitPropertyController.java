@@ -6,8 +6,8 @@ import co.syntropyhq.aqarat.dao.PropertyDao;
 import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertyTypeDao;
-import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.AppUser;
+import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.NewPhoto;
 import co.syntropyhq.aqarat.model.Property;
@@ -17,6 +17,7 @@ import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
@@ -33,12 +34,20 @@ import java.util.List;
 import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
@@ -115,6 +124,10 @@ public class SubmitPropertyController {
     @FXML
     private Label maxTermError;
     @FXML
+    private FlowPane photosContainer;
+    @FXML
+    private Label photoCountBadge;
+    @FXML
     private Label photoListLabel;
 
     private final List<Path> selectedPhotos = new ArrayList<>();
@@ -126,9 +139,6 @@ public class SubmitPropertyController {
 
     @FXML
     private void initialize() {
-        // Only customers own property to submit. An agent or admin has no
-        // use for this form, and a guest would fail on the null session
-        // the form reads for owner_id - so the panel refuses both up front.
         AppUser user = SessionManager.getCurrentUser();
         if (user == null || user.getRole() != Role.CUSTOMER) {
             denyAccess();
@@ -163,12 +173,9 @@ public class SubmitPropertyController {
         setLabelConverter(propertyTypeCombo, PropertyType::getName);
     }
 
-    // The term fields only mean something for a lease (ck_property_terms_sale),
-    // and the price field carries two different meanings depending on deal
-    // type (DESIGN.md section 8), so both are driven from one place.
     private void updateDealTypeUi(DealType dealType) {
         boolean isRent = dealType == DealType.RENT;
-        askingPriceLabel.setText(isRent ? "Monthly rent" : "Asking price");
+        askingPriceLabel.setText(isRent ? "Monthly Rent ($ USD / month)" : "Asking Price ($ USD)");
         termsBox.setVisible(isRent);
         termsBox.setManaged(isRent);
         if (!isRent) {
@@ -203,7 +210,7 @@ public class SubmitPropertyController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your submission is now awaiting review.");
+        AlertUtil.showInfo("Your submission is now awaiting review by our agents.");
         Router.show(Panel.MY_PROPERTIES);
     }
 
@@ -212,15 +219,64 @@ public class SubmitPropertyController {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Choose property photos");
         chooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Photos", "*.jpg", "*.jpeg", "*.png"));
+            new FileChooser.ExtensionFilter("Images (*.jpg, *.jpeg, *.png)", "*.jpg", "*.jpeg", "*.png"));
         List<File> chosen = chooser.showOpenMultipleDialog(null);
         if (chosen == null || chosen.isEmpty()) {
             return;
         }
+
         for (File file : chosen) {
-            selectedPhotos.add(file.toPath());
+            if (selectedPhotos.size() < 8) {
+                selectedPhotos.add(file.toPath());
+            }
         }
-        photoListLabel.setText(selectedPhotos.size() + " photo(s) chosen.");
+        refreshPhotoChips();
+    }
+
+    private void refreshPhotoChips() {
+        if (photosContainer == null) return;
+        photosContainer.getChildren().clear();
+        photoCountBadge.setText(selectedPhotos.size() + " / 8 photos");
+
+        if (selectedPhotos.isEmpty()) {
+            photoListLabel.setText("No photos chosen yet. High-quality photos increase buyer inquiries by 3x.");
+            return;
+        }
+        photoListLabel.setText(selectedPhotos.size() + " photo(s) selected ready to upload.");
+
+        for (int i = 0; i < selectedPhotos.size(); i++) {
+            Path path = selectedPhotos.get(i);
+            final int index = i;
+
+            HBox chip = new HBox(6);
+            chip.setAlignment(Pos.CENTER_LEFT);
+            chip.setStyle("-fx-background-color: -c-surface-subtle; -fx-padding: 4 8 4 8; -fx-background-radius: 8px; -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;");
+
+            try {
+                ImageView thumb = new ImageView(new Image(path.toUri().toString(), 36, 28, false, true));
+                Rectangle clip = new Rectangle(36, 28);
+                clip.setArcWidth(6);
+                clip.setArcHeight(6);
+                thumb.setClip(clip);
+                chip.getChildren().add(thumb);
+            } catch (Exception ignored) {
+            }
+
+            Label nameLabel = new Label(path.getFileName().toString());
+            nameLabel.getStyleClass().add("hint");
+            nameLabel.setStyle("-fx-font-weight: 500; -fx-max-width: 140px;");
+
+            Button removeBtn = new Button("×");
+            removeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -c-bad; -fx-font-weight: bold; -fx-padding: 0 4 0 4; -fx-cursor: hand;");
+            removeBtn.setOnAction(e -> {
+                selectedPhotos.remove(index);
+                refreshPhotoChips();
+            });
+
+            chip.getChildren().addAll(nameLabel, removeBtn);
+            AnimationUtil.addHoverLift(chip);
+            photosContainer.getChildren().add(chip);
+        }
     }
 
     private boolean collectBasicFields(Property property) {
@@ -258,9 +314,6 @@ public class SubmitPropertyController {
             && isValid(floorNumberError) && isValid(totalFloorsError) && isValid(yearBuiltError);
     }
 
-    // Term months are only ever parsed for a lease, so a sale carries them as
-    // null unconditionally - this is what keeps ck_property_terms_sale from
-    // ever being violated, regardless of what is left over in a hidden field.
     private boolean collectDealFields(Property property) {
         DealType dealType = dealTypeCombo.getValue();
         property.setDealType(dealType);
@@ -318,7 +371,6 @@ public class SubmitPropertyController {
         }
     }
 
-    // Bedrooms and bathrooms mirror the column default: left blank, they are 0.
     private int parseCount(TextField field, Label errorLabel) {
         String text = field.getText().trim();
         if (text.isEmpty()) {
@@ -337,8 +389,6 @@ public class SubmitPropertyController {
         }
     }
 
-    // Floor number, total floors, year built and lease terms are all nullable
-    // columns - left blank, they stay null rather than becoming zero.
     private Integer parseOptionalInt(TextField field, Label errorLabel) {
         String text = field.getText().trim();
         if (text.isEmpty()) {

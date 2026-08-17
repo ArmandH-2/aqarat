@@ -10,36 +10,47 @@ import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
+import co.syntropyhq.aqarat.util.UIHelper;
+import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.util.StringConverter;
 
 public class BrowseListingsController {
 
-    // 2000 seeded rows behind a scrolling card list - 20 keeps a page short
-    // enough to read without paging through a hundred screens for it.
-    private static final int PAGE_SIZE = 20;
+    private static final int PAGE_SIZE = 12;
 
     @FXML
     private TextField titleField;
@@ -68,6 +79,10 @@ public class BrowseListingsController {
     @FXML
     private Label maxAreaError;
     @FXML
+    private Label resultsCountLabel;
+    @FXML
+    private Label pageIndicatorLabel;
+    @FXML
     private VBox resultsBox;
     @FXML
     private Button previousButton;
@@ -79,9 +94,8 @@ public class BrowseListingsController {
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
 
-    // Cards show a district name, not an id, and a page holds twenty of them.
-    // Looking the name up from a map filled once beats twenty queries.
     private final Map<Integer, District> districtsById = new HashMap<>();
+    private final Map<Integer, PropertyType> typesById = new HashMap<>();
 
     private PropertySearch currentFilters = new PropertySearch();
     private int currentOffset = 0;
@@ -99,7 +113,7 @@ public class BrowseListingsController {
             List<District> districts = referenceService.findAllDistricts();
             districtCombo.getItems().add(null);
             districtCombo.getItems().addAll(districts);
-            districtCombo.setConverter(anyOr("Any district", District::getName));
+            districtCombo.setConverter(anyOr("All Districts", District::getName));
             for (District district : districts) {
                 districtsById.put(district.getId(), district);
             }
@@ -107,7 +121,10 @@ public class BrowseListingsController {
             List<PropertyType> types = referenceService.findAllPropertyTypes();
             typeCombo.getItems().add(null);
             typeCombo.getItems().addAll(types);
-            typeCombo.setConverter(anyOr("Any type", PropertyType::getName));
+            typeCombo.setConverter(anyOr("All Property Types", PropertyType::getName));
+            for (PropertyType type : types) {
+                typesById.put(type.getId(), type);
+            }
         } catch (SQLException e) {
             AlertUtil.showError("Could not load districts and property types.");
         }
@@ -115,17 +132,14 @@ public class BrowseListingsController {
 
     private void configureDealTypeCombo() {
         dealTypeCombo.getItems().addAll(null, DealType.SALE, DealType.RENT);
-        dealTypeCombo.setConverter(anyOr("Any", Format::enumLabel));
+        dealTypeCombo.setConverter(anyOr("Sale & Rent", Format::enumLabel));
     }
 
     private void configureBedroomsCombo() {
         bedroomsCombo.getItems().addAll(null, 0, 1, 2, 3, 4, 5);
-        bedroomsCombo.setConverter(anyOr("Any", String::valueOf));
+        bedroomsCombo.setConverter(anyOr("Any Bedrooms", val -> val == 0 ? "Studio (0 bed)" : val + "+ Bedrooms"));
     }
 
-    // Every dropdown carries a null entry meaning "no filter", so all four
-    // converters differ only in the word shown for null and how a value is
-    // labelled. fromString is never called: these dropdowns are not editable.
     private static <T> StringConverter<T> anyOr(String anyLabel, Function<T, String> label) {
         return new StringConverter<T>() {
             @Override
@@ -211,9 +225,6 @@ public class BrowseListingsController {
         }
     }
 
-    // An empty box and an unreadable one both come back null, so the caller
-    // asks the error labels whether anything was rejected rather than trying
-    // to tell those two apart from the return value.
     private BigDecimal readAmount(TextField field, Label errorLabel) {
         String text = field.getText() == null ? "" : field.getText().trim();
         if (text.isEmpty()) {
@@ -247,46 +258,134 @@ public class BrowseListingsController {
         }
         currentOffset = offset;
         renderResults(results);
+
+        int currentPage = (currentOffset / PAGE_SIZE) + 1;
+        pageIndicatorLabel.setText("Page " + currentPage);
         previousButton.setDisable(currentOffset == 0);
         nextButton.setDisable(results.size() < PAGE_SIZE);
     }
 
     private void renderResults(List<Property> results) {
         resultsBox.getChildren().clear();
+        resultsCountLabel.setText(results.size() + (results.size() == 1 ? " property" : " properties"));
+
         if (results.isEmpty()) {
-            Label empty = new Label("No listings match these filters.");
-            empty.getStyleClass().add("empty-state");
-            resultsBox.getChildren().add(empty);
+            resultsBox.getChildren().add(
+                UIHelper.createEmptyState("No listings match these filters", "Try expanding your search parameters or clearing filters.")
+            );
             return;
         }
-        for (Property property : results) {
-            resultsBox.getChildren().add(buildCard(property));
+
+        Node[] cards = new Node[results.size()];
+        for (int i = 0; i < results.size(); i++) {
+            Node card = buildRichPropertyCard(results.get(i));
+            cards[i] = card;
+            resultsBox.getChildren().add(card);
         }
+        AnimationUtil.staggerIn(cards, 40);
     }
 
-    private Node buildCard(Property property) {
-        VBox card = new VBox(8);
-        card.getStyleClass().add("card");
+    private Node buildRichPropertyCard(Property property) {
+        HBox card = new HBox(16);
+        card.getStyleClass().addAll("card", "card-hoverable");
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(14));
         card.setCursor(Cursor.HAND);
+
+        // Photo Thumbnail
+        StackPane photoContainer = new StackPane();
+        photoContainer.setPrefSize(140, 100);
+        photoContainer.setMinSize(140, 100);
+        photoContainer.setMaxSize(140, 100);
+        photoContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 8px; -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;");
+
+        ImageView thumbnail = new ImageView();
+        thumbnail.setFitWidth(140);
+        thumbnail.setFitHeight(100);
+        thumbnail.setPreserveRatio(false);
+
+        Rectangle clip = new Rectangle(140, 100);
+        clip.setArcWidth(16);
+        clip.setArcHeight(16);
+        thumbnail.setClip(clip);
+
+        try {
+            List<PropertyPhoto> photos = propertyService.findPhotos(property.getId());
+            if (!photos.isEmpty()) {
+                File photoFile = new File("uploads/" + photos.get(0).getFilePath());
+                if (photoFile.exists()) {
+                    thumbnail.setImage(new Image(photoFile.toURI().toString(), 140, 100, false, true));
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        if (thumbnail.getImage() != null) {
+            photoContainer.getChildren().add(thumbnail);
+        } else {
+            Label placeholder = new Label("🏠");
+            placeholder.setStyle("-fx-font-size: 28px; -fx-opacity: 0.6;");
+            photoContainer.getChildren().add(placeholder);
+        }
+
+        // Details Container
+        VBox details = new VBox(6);
+        HBox.setHgrow(details, Priority.ALWAYS);
+
+        // Title and Deal Type Badge
+        HBox header = new HBox(8);
+        header.setAlignment(Pos.CENTER_LEFT);
 
         Label title = new Label(property.getTitle());
         title.getStyleClass().add("section-title");
+        HBox.setHgrow(title, Priority.ALWAYS);
 
+        Label dealBadge = new Label(Format.enumLabel(property.getDealType()));
+        dealBadge.getStyleClass().addAll("pill", property.getDealType() == DealType.SALE ? "pill-good" : "pill-info");
+
+        header.getChildren().addAll(title, dealBadge);
+
+        // Location & Type line
         District district = districtsById.get(property.getDistrictId());
-        String districtName = district == null ? "" : district.getName();
-        Label subtitle = new Label(districtName + " · " + Format.enumLabel(property.getDealType()));
+        PropertyType type = typesById.get(property.getPropertyTypeId());
+        String locationStr = (district != null ? district.getName() : "Lebanon")
+            + " • " + (type != null ? type.getName() : "Property");
+        Label subtitle = new Label(locationStr);
         subtitle.getStyleClass().add("label-soft");
 
-        String specsText = property.getBedrooms() + " bed · " + property.getBathrooms()
-            + " bath · " + Format.area(property.getAreaSqm());
-        Label specs = new Label(specsText);
-        specs.getStyleClass().add("hint");
+        // Spec chips
+        HBox specChips = new HBox(8);
+        specChips.setAlignment(Pos.CENTER_LEFT);
+        specChips.getChildren().add(UIHelper.createSpecChip(property.getBedrooms() + " Beds"));
+        specChips.getChildren().add(UIHelper.createSpecChip(property.getBathrooms() + " Baths"));
+        specChips.getChildren().add(UIHelper.createSpecChip(Format.area(property.getAreaSqm())));
+        if (property.isHasParking()) {
+            specChips.getChildren().add(UIHelper.createSpecChip("Parking"));
+        }
+
+        details.getChildren().addAll(header, subtitle, specChips);
+
+        // Price Callout Box
+        VBox priceBox = new VBox(2);
+        priceBox.setAlignment(Pos.CENTER_RIGHT);
+        priceBox.setPrefWidth(160);
 
         Label price = new Label(formatPrice(property));
         price.getStyleClass().add("section-title");
+        price.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: -c-primary;");
 
-        card.getChildren().addAll(title, subtitle, specs, price);
+        BigDecimal pricePerSqm = BigDecimal.ZERO;
+        if (property.getAreaSqm() != null && property.getAreaSqm().compareTo(BigDecimal.ZERO) > 0 && property.getAskingPrice() != null) {
+            pricePerSqm = property.getAskingPrice().divide(property.getAreaSqm(), 0, RoundingMode.HALF_UP);
+        }
+        Label pricePerSqmLabel = new Label("$" + pricePerSqm + "/m²");
+        pricePerSqmLabel.getStyleClass().add("hint");
+
+        priceBox.getChildren().addAll(price, pricePerSqmLabel);
+
+        card.getChildren().addAll(photoContainer, details, priceBox);
         card.setOnMouseClicked(event -> Router.show(Panel.PROPERTY_DETAILS, property.getId()));
+        AnimationUtil.addHoverLift(card);
         return card;
     }
 

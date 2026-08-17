@@ -1,141 +1,534 @@
+/* ==========================================================================
+   AQARAT DESIGN SYSTEM - MODERN LUXURY THEME
+   British Racing Green & Editorial High-Contrast Desktop Experience
+   ========================================================================== */
+
 .root {
-    -c-bg:            #F8F8F6;
-    -c-surface:       #FFFFFF;
-    -c-surface-alt:   #F1F1EE;
-    -c-border:        #D7D8D5;
-    -c-border-strong: #BFC0BC;
-    -c-text:          #1F2320;
-    -c-text-soft:     #5B5B57;
-    -c-text-mute:     #70706B;
-    -c-accent:        #004225;
-    -c-accent-dark:   #00301B;
-    -c-accent-soft:   #E6EEE9;
-    -c-on-accent:     #FFFFFF;
-    -c-stone:         #8B8680;
+    /* Surfaces */
+    -c-bg:             #F4F5F4;
+    -c-surface:        #FFFFFF;
+    -c-surface-subtle: #F8F9F8;
+    -c-surface-hover:  #EDF0EE;
+    -c-surface-active: #E3E8E4;
 
-    -c-good:          #26682B;  -c-good-bg:    #E8F3E8;
-    -c-warn:          #8F5800;  -c-warn-bg:    #FDF1DF;
-    -c-bad:           #B3261E;  -c-bad-bg:     #FBEAE9;
-    -c-info:          #255C99;  -c-info-bg:    #E8F0F7;
-    -c-neutral:       #5B5B57;  -c-neutral-bg: #EFEFEB;
+    /* Borders */
+    -c-border-subtle:  #E2E5E2;
+    -c-border-medium:  #CDD2CD;
+    -c-border-strong:  #9FA7A0;
 
-    -fx-font-family: "Inter", "Segoe UI", "Arial", sans-serif;
+    /* Typography */
+    -c-text-primary:   #141A16;
+    -c-text-secondary: #4F5952;
+    -c-text-muted:     #78837B;
+    -c-text-disabled:  #A6B0A8;
+
+    /* Legacy mapping for full compatibility */
+    -c-text:           #141A16;
+    -c-text-soft:      #4F5952;
+    -c-text-mute:      #78837B;
+    -c-border:         #E2E5E2;
+    -c-surface-alt:    #F8F9F8;
+
+    /* Brand Accents */
+    -c-primary:        #004225;
+    -c-primary-light:  #0B5D36;
+    -c-primary-dark:   #002E19;
+    -c-primary-tint:   #E6EFEA;
+    -c-primary-subtle: #F0F6F2;
+    -c-on-primary:     #FFFFFF;
+    -c-accent:         #004225;
+    -c-accent-dark:    #002E19;
+    -c-accent-soft:    #E6EFEA;
+    -c-on-accent:      #FFFFFF;
+    -c-stone:          #8B8680;
+
+    /* Status Tokens */
+    -c-good:           #1B6E32;  -c-good-bg:    #E8F5EC;  -c-good-border:    #BCE6C8;
+    -c-warn:           #9A5B00;  -c-warn-bg:    #FEF5E7;  -c-warn-border:    #FBD89F;
+    -c-bad:            #C5221F;  -c-bad-bg:     #FDECEB;  -c-bad-border:     #F8BCBA;
+    -c-info:           #1A65B8;  -c-info-bg:    #EBF3FC;  -c-info-border:    #BCD8F8;
+    -c-neutral:        #525D56;  -c-neutral-bg: #EFF2F0;  -c-neutral-border: #D5DDD7;
+
+    -fx-font-family: "Inter", "Segoe UI", -apple-system, sans-serif;
     -fx-font-size: 13px;
     -fx-background-color: -c-bg;
-    -fx-text-fill: -c-text;
+    -fx-text-fill: -c-text-primary;
 }
 
-/* Modena gives every Label its own #333333 fill, which beats the -fx-text-fill
-   inherited from .root. Without this the palette's text colour never applies.
-   It comes first so the rules below still win. */
-.label { -fx-text-fill: -c-text; }
+.label {
+    -fx-text-fill: -c-text-primary;
+}
 
-.page-title    { -fx-font-size: 20px; -fx-font-weight: 600; }
-.section-title { -fx-font-size: 15px; -fx-font-weight: 600; }
-.label-soft    { -fx-font-size: 12px; -fx-font-weight: 500; -fx-text-fill: -c-text-soft; }
-.hint          { -fx-font-size: 11px; -fx-text-fill: -c-text-mute; }
+/* ==========================================================================
+   TYPOGRAPHY HIERARCHY
+   ========================================================================== */
 
-/* The sidebar carries the identity: the green rail from the brand, not a gray one.
-   Text on it uses the light green tint (9.85:1 on the green) so it still reads. */
-.sidebar { -fx-background-color: -c-accent; -fx-pref-width: 220px; }
-.sidebar .section-title { -fx-text-fill: -c-on-accent; }
-.sidebar .label-soft, .sidebar .hint { -fx-text-fill: -c-accent-soft; }
-.nav-item        { -fx-background-radius: 8px; -fx-padding: 8 12 8 12;
-                   -fx-text-fill: -c-accent-soft; -fx-cursor: hand; }
-.nav-item:hover  { -fx-background-color: derive(-c-accent, 8%);
-                   -fx-text-fill: -c-on-accent; }
-.nav-item.active { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-accent;
-                   -fx-font-weight: 600; }
+.hero-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -c-text-primary;
+}
 
-/* Modena's hyperlink is its own blue and ignores the palette. */
-.hyperlink          { -fx-text-fill: -c-accent; -fx-border-color: transparent;
-                      -fx-padding: 0; -fx-cursor: hand; }
-.hyperlink:visited  { -fx-text-fill: -c-accent; }
-.hyperlink:hover    { -fx-text-fill: -c-accent-dark; -fx-underline: true; }
+.page-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -c-text-primary;
+}
 
-.content { -fx-padding: 24px; -fx-background-color: -c-bg; }
+.section-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-text-primary;
+}
 
-.card { -fx-background-color: -c-surface; -fx-background-radius: 6px;
-        -fx-border-color: -c-border; -fx-border-radius: 6px; -fx-padding: 16px; }
+.metric-value {
+    -fx-font-size: 26px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -c-text-primary;
+}
 
-/* Review discussion on a property card or submission page. */
-.thread { -fx-background-color: -c-surface-alt; -fx-background-radius: 6px;
-          -fx-padding: 10px; }
+.label-soft {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -c-text-secondary;
+}
 
-.button           { -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
-                    -fx-pref-height: 32px; -fx-cursor: hand; -fx-font-size: 13px; }
-.button-primary         { -fx-background-color: -c-accent; -fx-text-fill: -c-on-accent; }
-.button-primary:hover   { -fx-background-color: -c-accent-dark; }
-.button-primary:pressed { -fx-background-color: derive(-c-accent, -10%); }
-.button-secondary { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
-                    -fx-border-color: -c-border-strong; -fx-border-radius: 6px; }
-.button-secondary:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
-.button-danger    { -fx-background-color: -c-surface; -fx-text-fill: -c-bad;
-                    -fx-border-color: -c-bad; -fx-border-radius: 6px; }
-.button-danger:hover { -fx-background-color: -c-bad-bg; }
+.hint {
+    -fx-font-size: 11px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -c-text-muted;
+}
+
+.tag-label {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-text-muted;
+    -fx-text-transform: uppercase;
+}
+
+/* ==========================================================================
+   SIDEBAR & APP FRAME
+   ========================================================================== */
+
+.sidebar {
+    -fx-background-color: -c-primary;
+    -fx-pref-width: 250px;
+    -fx-min-width: 250px;
+}
+
+.sidebar .section-title {
+    -fx-text-fill: -c-on-primary;
+    -fx-font-weight: 700;
+    -fx-font-size: 18px;
+}
+
+.sidebar .sidebar-category {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: derive(-c-primary, 60%);
+    -fx-padding: 10 4 4 4;
+}
+
+.sidebar .label-soft {
+    -fx-text-fill: -c-primary-tint;
+}
+
+.sidebar .hint {
+    -fx-text-fill: derive(-c-primary-tint, -15%);
+}
+
+.nav-item {
+    -fx-background-radius: 8px;
+    -fx-padding: 8 12 8 12;
+    -fx-text-fill: -c-primary-tint;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}
+
+.nav-item:hover {
+    -fx-background-color: derive(-c-primary, 15%);
+    -fx-text-fill: #FFFFFF;
+}
+
+.nav-item.active {
+    -fx-background-color: -c-primary-tint;
+    -fx-text-fill: -c-primary;
+    -fx-font-weight: 600;
+}
+
+.user-profile-card {
+    -fx-background-color: derive(-c-primary, 8%);
+    -fx-background-radius: 10px;
+    -fx-padding: 10 12 10 12;
+    -fx-border-color: derive(-c-primary, 18%);
+    -fx-border-radius: 10px;
+}
+
+.avatar-circle {
+    -fx-fill: -c-primary-tint;
+}
+
+.avatar-text {
+    -fx-font-weight: 700;
+    -fx-text-fill: -c-primary;
+}
+
+/* ==========================================================================
+   CONTENT CONTAINER & CARDS
+   ========================================================================== */
+
+.content {
+    -fx-padding: 24px;
+    -fx-background-color: -c-bg;
+}
+
+.card {
+    -fx-background-color: -c-surface;
+    -fx-background-radius: 10px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 10px;
+    -fx-padding: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 8, 0, 0, 2);
+}
+
+.card-subtle {
+    -fx-background-color: -c-surface-subtle;
+    -fx-background-radius: 8px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 8px;
+    -fx-padding: 14px;
+}
+
+.card-hoverable {
+    -fx-background-color: -c-surface;
+    -fx-background-radius: 10px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 10px;
+    -fx-padding: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 8, 0, 0, 2);
+    -fx-cursor: hand;
+}
+
+.card-hoverable:hover {
+    -fx-border-color: -c-border-medium;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 14, 0, 0, 4);
+}
+
+.stat-tile {
+    -fx-background-color: -c-surface;
+    -fx-background-radius: 10px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 10px;
+    -fx-padding: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.03), 6, 0, 0, 2);
+}
+
+.stat-tile:hover {
+    -fx-border-color: -c-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 66, 37, 0.12), 10, 0, 0, 3);
+}
+
+/* Discussion / Thread Box */
+.thread {
+    -fx-background-color: -c-surface-subtle;
+    -fx-background-radius: 8px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 8px;
+    -fx-padding: 12px;
+}
+
+/* ==========================================================================
+   BUTTONS & ACTIONS
+   ========================================================================== */
+
+.button {
+    -fx-background-radius: 6px;
+    -fx-padding: 7 16 7 16;
+    -fx-pref-height: 34px;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}
+
+.button-primary {
+    -fx-background-color: -c-primary;
+    -fx-text-fill: -c-on-primary;
+}
+
+.button-primary:hover {
+    -fx-background-color: -c-primary-light;
+    -fx-effect: dropshadow(gaussian, rgba(0, 66, 37, 0.25), 8, 0, 0, 2);
+}
+
+.button-primary:pressed {
+    -fx-background-color: -c-primary-dark;
+}
+
+.button-secondary {
+    -fx-background-color: -c-surface;
+    -fx-text-fill: -c-text-primary;
+    -fx-border-color: -c-border-medium;
+    -fx-border-radius: 6px;
+}
+
+.button-secondary:hover {
+    -fx-border-color: -c-primary;
+    -fx-text-fill: -c-primary;
+    -fx-background-color: -c-surface-subtle;
+}
+
+.button-danger {
+    -fx-background-color: -c-bad-bg;
+    -fx-text-fill: -c-bad;
+    -fx-border-color: -c-bad-border;
+    -fx-border-radius: 6px;
+}
+
+.button-danger:hover {
+    -fx-background-color: -c-bad;
+    -fx-text-fill: #FFFFFF;
+}
+
+.button-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -c-text-secondary;
+    -fx-border-color: transparent;
+}
+
+.button-ghost:hover {
+    -fx-background-color: -c-surface-hover;
+    -fx-text-fill: -c-text-primary;
+}
+
+.tab-pill-button {
+    -fx-background-radius: 20px;
+    -fx-padding: 5 14 5 14;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-background-color: -c-surface;
+    -fx-text-fill: -c-text-secondary;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 20px;
+}
+
+.tab-pill-button:hover {
+    -fx-background-color: -c-surface-hover;
+    -fx-text-fill: -c-text-primary;
+}
+
+.tab-pill-button.active {
+    -fx-background-color: -c-primary;
+    -fx-text-fill: -c-on-primary;
+    -fx-border-color: -c-primary;
+}
+
+/* Hyperlinks */
+.hyperlink {
+    -fx-text-fill: -c-primary;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-font-weight: 500;
+}
+.hyperlink:visited { -fx-text-fill: -c-primary; }
+.hyperlink:hover   { -fx-text-fill: -c-primary-light; -fx-underline: true; }
+
+/* ==========================================================================
+   INPUTS & FORM CONTROLS
+   ========================================================================== */
 
 .text-field, .text-area, .combo-box, .date-picker {
-    -fx-background-color: -c-surface; -fx-background-radius: 4px;
-    -fx-border-color: -c-border; -fx-border-radius: 4px;
-    -fx-pref-height: 32px; -fx-padding: 0 8 0 8;
+    -fx-background-color: -c-surface;
+    -fx-background-radius: 6px;
+    -fx-border-color: -c-border-medium;
+    -fx-border-radius: 6px;
+    -fx-pref-height: 34px;
+    -fx-padding: 0 10 0 10;
+    -fx-font-size: 13px;
+    -fx-text-fill: -c-text-primary;
 }
+
 .text-field:hover, .text-area:hover, .combo-box:hover, .date-picker:hover {
     -fx-border-color: -c-border-strong;
 }
+
 .text-field:focused, .text-area:focused, .combo-box:focused, .date-picker:focused {
-    -fx-border-color: -c-accent;
+    -fx-border-color: -c-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 66, 37, 0.18), 5, 0, 0, 1);
 }
-.field-invalid { -fx-border-color: -c-bad; }
-.field-error   { -fx-font-size: 12px; -fx-text-fill: -c-bad; }
 
-.check-box .box { -fx-background-color: -c-surface; -fx-border-color: -c-border-strong;
-                  -fx-border-radius: 3px; -fx-background-radius: 3px; }
-.check-box:selected .box { -fx-background-color: -c-accent; -fx-border-color: -c-accent; }
-.check-box:selected .mark { -fx-background-color: -c-on-accent; }
+.field-invalid {
+    -fx-border-color: -c-bad;
+    -fx-effect: dropshadow(gaussian, rgba(197, 34, 31, 0.15), 4, 0, 0, 1);
+}
 
-/* Modena's default scrollbars are a bluish gray from another theme entirely. */
+.field-error {
+    -fx-font-size: 12px;
+    -fx-text-fill: -c-bad;
+    -fx-font-weight: 500;
+}
+
+/* Checkboxes */
+.check-box .box {
+    -fx-background-color: -c-surface;
+    -fx-border-color: -c-border-medium;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+.check-box:selected .box {
+    -fx-background-color: -c-primary;
+    -fx-border-color: -c-primary;
+}
+.check-box:selected .mark {
+    -fx-background-color: -c-on-primary;
+}
+
+/* ==========================================================================
+   STATUS PILLS & SPEC CHIPS
+   ========================================================================== */
+
+.pill {
+    -fx-background-radius: 12px;
+    -fx-padding: 3 10 3 10;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-alignment: center;
+}
+
+.pill-good    { -fx-background-color: -c-good-bg;    -fx-text-fill: -c-good;    -fx-border-color: -c-good-border;    -fx-border-radius: 12px; }
+.pill-warn    { -fx-background-color: -c-warn-bg;    -fx-text-fill: -c-warn;    -fx-border-color: -c-warn-border;    -fx-border-radius: 12px; }
+.pill-bad     { -fx-background-color: -c-bad-bg;     -fx-text-fill: -c-bad;     -fx-border-color: -c-bad-border;     -fx-border-radius: 12px; }
+.pill-info    { -fx-background-color: -c-info-bg;    -fx-text-fill: -c-info;    -fx-border-color: -c-info-border;    -fx-border-radius: 12px; }
+.pill-neutral { -fx-background-color: -c-neutral-bg; -fx-text-fill: -c-neutral; -fx-border-color: -c-neutral-border; -fx-border-radius: 12px; }
+
+.spec-chip {
+    -fx-background-color: -c-surface-subtle;
+    -fx-background-radius: 6px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 6px;
+    -fx-padding: 3 8 3 8;
+}
+
+/* ==========================================================================
+   TABLES & LISTS
+   ========================================================================== */
+
+.list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 4 0 4 0;
+}
+
+.list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.table-view {
+    -fx-background-color: -c-surface;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.table-view .column-header {
+    -fx-background-color: -c-surface-subtle;
+    -fx-pref-height: 38px;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+}
+
+.table-view .column-header .label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -c-text-secondary;
+    -fx-font-weight: 600;
+    -fx-alignment: center-left;
+}
+
+.table-row-cell {
+    -fx-pref-height: 42px;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+}
+
+.table-row-cell:hover    { -fx-background-color: -c-surface-hover; }
+.table-row-cell:selected { -fx-background-color: -c-primary-tint; -fx-text-fill: -c-text-primary; }
+.numeric { -fx-alignment: center-right; }
+
+/* ==========================================================================
+   SCROLLBARS & EMPTY STATES
+   ========================================================================== */
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
 .scroll-bar { -fx-background-color: transparent; }
-.scroll-bar .thumb { -fx-background-color: -c-border-strong; -fx-background-radius: 4px; }
+.scroll-bar .thumb {
+    -fx-background-color: -c-border-medium;
+    -fx-background-radius: 6px;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: -c-border-strong;
+}
 .scroll-bar .track { -fx-background-color: transparent; }
 .scroll-bar .increment-button, .scroll-bar .decrement-button {
-    -fx-background-color: transparent; -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }
 .scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: " "; -fx-padding: 0; }
 
-.list-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
-             -fx-border-radius: 6px; -fx-background-radius: 6px; }
-.list-view .list-cell { -fx-padding: 8 12 8 12; }
-.list-view .list-cell:hover { -fx-background-color: -c-surface-alt; }
-.list-view .list-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
+.empty-state {
+    -fx-text-fill: -c-text-muted;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+}
 
-.table-view { -fx-background-color: -c-surface; -fx-border-color: -c-border;
-              -fx-border-radius: 6px; -fx-background-radius: 6px; }
-.table-view .column-header { -fx-background-color: -c-accent-soft; -fx-pref-height: 36px; }
-.table-view .column-header .label { -fx-font-size: 12px; -fx-text-fill: -c-accent;
-                                    -fx-font-weight: 600; -fx-alignment: center-left; }
-.table-row-cell { -fx-pref-height: 40px; -fx-border-color: transparent transparent -c-border transparent; }
-.table-row-cell:hover    { -fx-background-color: -c-surface-alt; }
-.table-row-cell:selected { -fx-background-color: -c-accent-soft; -fx-text-fill: -c-text; }
-.numeric { -fx-alignment: center-right; }
+.empty-state-box {
+    -fx-padding: 36 24 36 24;
+    -fx-alignment: center;
+    -fx-background-color: -c-surface;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
 
-/* Alert and confirmation dialogs otherwise keep Modena's light gray panels. */
-.dialog-pane { -fx-background-color: -c-surface; }
+/* ==========================================================================
+   MODERN DIALOGS & ALERTS
+   ========================================================================== */
+
+.dialog-pane {
+    -fx-background-color: -c-surface;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 24, 0, 0, 8);
+}
 .dialog-pane .header-panel { -fx-background-color: -c-surface; }
-.dialog-pane .header-panel .label { -fx-text-fill: -c-text; -fx-font-size: 15px;
-                                    -fx-font-weight: 600; }
-.dialog-pane .content { -fx-padding: 16px; }
-.dialog-pane .button { -fx-background-color: -c-surface; -fx-text-fill: -c-text;
-                       -fx-border-color: -c-border-strong; -fx-border-radius: 6px;
-                       -fx-background-radius: 6px; -fx-padding: 6 14 6 14;
-                       -fx-pref-height: 32px; -fx-cursor: hand; }
-.dialog-pane .button:hover { -fx-border-color: -c-accent; -fx-text-fill: -c-accent; }
-
-.pill        { -fx-background-radius: 4px; -fx-padding: 3 8 3 8; -fx-font-size: 11px;
-               -fx-font-weight: 500; }
-.pill-good   { -fx-background-color: -c-good-bg;    -fx-text-fill: -c-good; }
-.pill-warn   { -fx-background-color: -c-warn-bg;    -fx-text-fill: -c-warn; }
-.pill-bad    { -fx-background-color: -c-bad-bg;     -fx-text-fill: -c-bad; }
-.pill-info   { -fx-background-color: -c-info-bg;    -fx-text-fill: -c-info; }
-.pill-neutral{ -fx-background-color: -c-neutral-bg; -fx-text-fill: -c-neutral; }
-
-.empty-state { -fx-text-fill: -c-text-soft; -fx-font-size: 13px; -fx-alignment: center; }
+.dialog-pane .header-panel .label {
+    -fx-text-fill: -c-text-primary;
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+}
+.dialog-pane .content { -fx-padding: 18px; }
+.dialog-pane .button {
+    -fx-background-color: -c-surface;
+    -fx-text-fill: -c-text-primary;
+    -fx-border-color: -c-border-medium;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 6 14 6 14;
+    -fx-pref-height: 32px;
+    -fx-cursor: hand;
+}
+.dialog-pane .button:hover {
+    -fx-border-color: -c-primary;
+    -fx-text-fill: -c-primary;
+}

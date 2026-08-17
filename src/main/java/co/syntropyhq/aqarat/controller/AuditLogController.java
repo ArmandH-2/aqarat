@@ -12,6 +12,7 @@ import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -36,8 +37,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
-// Admin-only (DESIGN.md section 5): filter, page and export the trail every
-// write in the system leaves behind (DESIGN.md section 1).
 public class AuditLogController {
 
     private static final int PAGE_SIZE = 20;
@@ -79,11 +78,7 @@ public class AuditLogController {
             return;
         }
         buildColumns();
-        Label empty = new Label("No audit entries match these filters.");
-        empty.getStyleClass().add("empty-state");
-        auditTable.setPlaceholder(empty);
-        // Otherwise the columns keep their own widths and leave a dead strip
-        // down the right of the table.
+        auditTable.setPlaceholder(UIHelper.createEmptyState("No Audit Records Found", "No system audit log entries match the selected filters."));
         auditTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         runSearch(0);
     }
@@ -129,11 +124,6 @@ public class AuditLogController {
         nextButton.setDisable(results.size() < PAGE_SIZE);
     }
 
-    // Blank fields mean "no filter" throughout - the same optional-filter
-    // idiom PropertySearch uses, just read from text fields instead of
-    // combos. A bad user id is the one field that can actually be wrong
-    // (not just empty), so it gets the field-level error UI-STYLE.md
-    // requires instead of a dialog.
     private AuditSearch readFilters() {
         FieldError.clear(userIdField, userIdError);
         AuditSearch filters = new AuditSearch();
@@ -165,9 +155,6 @@ public class AuditLogController {
         return date == null ? null : Format.toUtc(date.atTime(23, 59, 59));
     }
 
-    // Exports every row matching the current filters, not just the page on
-    // screen - an admin filtering to one month and exporting should get the
-    // whole month, not twenty rows of it.
     @FXML
     private void handleExport() {
         AuditSearch filters = readFilters();
@@ -191,9 +178,9 @@ public class AuditLogController {
 
     private File chooseExportFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Export audit log");
+        chooser.setTitle("Export Audit Log to CSV");
         chooser.setInitialFileName("audit-log.csv");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files (*.csv)", "*.csv"));
         Window window = auditTable.getScene().getWindow();
         return chooser.showSaveDialog(window);
     }
@@ -205,7 +192,7 @@ public class AuditLogController {
                 writer.println(csvRow(row));
             }
         } catch (IOException e) {
-            AlertUtil.showError("Could not write the export file. Check the location and try again.");
+            AlertUtil.showError("Could not write export file. Check permissions.");
             return;
         }
         AlertUtil.showInfo("Exported " + rows.size() + " audit entries to " + target.getName() + ".");
@@ -222,10 +209,6 @@ public class AuditLogController {
             csvField(row.getNewValue()));
     }
 
-    // RFC 4180: a field containing a comma, a quote or a line break is
-    // wrapped in quotes, and any quote inside it is doubled. Without this an
-    // old/new value that happens to contain a comma would split into the
-    // wrong number of columns and corrupt the row after it.
     private String csvField(String value) {
         if (value == null) {
             return "";
@@ -253,17 +236,17 @@ public class AuditLogController {
     }
 
     private void buildColumns() {
-        addColumn(auditTable, "When", 150, row -> Format.dateTime(row.getCreatedAt()));
-        addColumn(auditTable, "Who", 140, row -> userName(row.getUserId()));
-        addColumn(auditTable, "Entity", 160,
+        addColumn(auditTable, "Timestamp", 160, row -> Format.dateTime(row.getCreatedAt()));
+        addColumn(auditTable, "User / Actor", 150, row -> userName(row.getUserId()));
+        addColumn(auditTable, "Target Entity", 160,
             row -> row.getEntityType() + (row.getEntityId() == null ? "" : " #" + row.getEntityId()));
-        addColumn(auditTable, "Action", 140, AuditLog::getAction);
-        addColumn(auditTable, "Old value", 200, row -> valueOrDash(row.getOldValue()));
-        addColumn(auditTable, "New value", 200, row -> valueOrDash(row.getNewValue()));
+        addColumn(auditTable, "Operation", 130, AuditLog::getAction);
+        addColumn(auditTable, "Prior State", 210, row -> valueOrDash(row.getOldValue()));
+        addColumn(auditTable, "New State", 210, row -> valueOrDash(row.getNewValue()));
     }
 
     private String valueOrDash(String value) {
-        return value == null ? "-" : value;
+        return value == null ? "—" : value;
     }
 
     private void addColumn(TableView<AuditLog> table, String header, double width,

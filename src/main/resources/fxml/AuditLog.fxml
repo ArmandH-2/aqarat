@@ -1,60 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.AuditLogController"
-      styleClass="content" spacing="24">
-    <Label text="Audit log" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.AuditLogController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="36" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
-        <VBox styleClass="card" spacing="12">
-            <Label text="Filters" styleClass="section-title"/>
-            <HBox spacing="12">
-                <VBox spacing="4">
-                    <Label text="Entity type" styleClass="label-soft"/>
-                    <TextField fx:id="entityTypeField" promptText="e.g. contract"/>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+
+        <VBox fx:id="contentBox" spacing="18">
+            <!-- Header -->
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label text="Security &amp; Audit Trail" styleClass="page-title"/>
+                    <Label text="Immutable audit record of all administrative operations, price modifications, and state transitions" styleClass="hint"/>
                 </VBox>
-                <VBox spacing="4">
-                    <Label text="Action" styleClass="label-soft"/>
-                    <TextField fx:id="actionField" promptText="e.g. ACTIVATE"/>
-                </VBox>
-                <VBox spacing="4">
-                    <Label text="User id" styleClass="label-soft"/>
-                    <TextField fx:id="userIdField"/>
-                    <Label fx:id="userIdError" styleClass="field-error" managed="false" visible="false"/>
-                </VBox>
-                <VBox spacing="4">
-                    <Label text="From" styleClass="label-soft"/>
-                    <DatePicker fx:id="fromDatePicker"/>
-                </VBox>
-                <VBox spacing="4">
-                    <Label text="To" styleClass="label-soft"/>
-                    <DatePicker fx:id="toDatePicker"/>
-                </VBox>
+                <Button text="📥 Export CSV Log" styleClass="button, button-secondary" onAction="#handleExport"/>
             </HBox>
-            <HBox spacing="8">
-                <Button text="Apply filters" styleClass="button, button-primary"
-                        onAction="#handleApplyFilters"/>
-                <Button text="Export CSV" styleClass="button, button-secondary"
-                        onAction="#handleExport"/>
+
+            <!-- Filter Controls Card -->
+            <VBox styleClass="card" spacing="12">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Entity Type" styleClass="label-soft"/>
+                        <TextField fx:id="entityTypeField" promptText="e.g. PROPERTY, USER"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Action" styleClass="label-soft"/>
+                        <TextField fx:id="actionField" promptText="e.g. CREATE, UPDATE"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="User ID" styleClass="label-soft"/>
+                        <TextField fx:id="userIdField" promptText="e.g. 101"/>
+                        <Label fx:id="userIdError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="From Date" styleClass="label-soft"/>
+                        <DatePicker fx:id="fromDatePicker" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="To Date" styleClass="label-soft"/>
+                        <DatePicker fx:id="toDatePicker" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" alignment="BOTTOM_LEFT">
+                        <Label text="" styleClass="label-soft"/>
+                        <Button text="Apply Filters" styleClass="button, button-primary" prefHeight="36" onAction="#handleApplyFilters"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- Audit Records Table -->
+            <TableView fx:id="auditTable" minHeight="480"/>
+
+            <!-- Pagination Controls -->
+            <HBox spacing="16" alignment="CENTER">
+                <Button fx:id="previousButton" text="← Previous" styleClass="button, button-secondary"
+                        onAction="#handlePrevious"/>
+                <Button fx:id="nextButton" text="Next →" styleClass="button, button-secondary"
+                        onAction="#handleNext"/>
             </HBox>
         </VBox>
-
-        <TableView fx:id="auditTable" VBox.vgrow="ALWAYS"/>
-
-        <HBox spacing="8">
-            <Button fx:id="previousButton" text="Previous" styleClass="button, button-secondary"
-                    onAction="#handlePrevious"/>
-            <Button fx:id="nextButton" text="Next" styleClass="button, button-secondary"
-                    onAction="#handleNext"/>
-        </HBox>
     </VBox>
-</VBox>
+</ScrollPane>

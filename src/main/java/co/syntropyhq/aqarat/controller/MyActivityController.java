@@ -19,8 +19,12 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.Panel;
+import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -28,15 +32,15 @@ import java.util.Map;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-// This panel is the client's own viewings and reservations (DESIGN.md
-// section 9).
 public class MyActivityController {
 
     @FXML
@@ -60,25 +64,19 @@ public class MyActivityController {
             denyAccess();
             return;
         }
-        // placeholder text and other setup continues below
-        Label emptyReservations = new Label("You have no reservations yet.");
-        emptyReservations.getStyleClass().add("empty-state");
-        reservationList.setPlaceholder(emptyReservations);
+
+        reservationList.setPlaceholder(UIHelper.createEmptyState("No Active Reservations", "You haven't reserved any properties yet."));
         reservationList.setCellFactory(list -> new ReservationCard());
         loadReservations();
 
-        Label emptyViewings = new Label("You have not requested any viewings yet.");
-        emptyViewings.getStyleClass().add("empty-state");
-        viewingList.setPlaceholder(emptyViewings);
+        viewingList.setPlaceholder(UIHelper.createEmptyState("No Viewing Appointments", "You have not requested any viewings yet."));
         viewingList.setCellFactory(list -> new ViewingCard());
         loadViewings();
     }
 
     private void denyAccess() {
-        Label denied = new Label("Only customers can see their activity here.");
-        denied.getStyleClass().add("empty-state");
-        reservationList.setPlaceholder(denied);
-        viewingList.setPlaceholder(denied);
+        reservationList.setPlaceholder(UIHelper.createEmptyState("Access Restricted", "Only customers can view activity."));
+        viewingList.setPlaceholder(UIHelper.createEmptyState("Access Restricted", "Only customers can view activity."));
         reservationList.setItems(FXCollections.observableArrayList());
         viewingList.setItems(FXCollections.observableArrayList());
     }
@@ -92,8 +90,7 @@ public class MyActivityController {
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
         } catch (PropertyService.InvalidTransitionException e) {
-            AlertUtil.showError("A reservation could not be moved back to available. "
-                + "Ask an agent to look into it.");
+            AlertUtil.showError("A reservation could not be moved back to available.");
         }
     }
 
@@ -136,8 +133,7 @@ public class MyActivityController {
             AlertUtil.showError("This reservation can no longer be cancelled.");
             return;
         } catch (PropertyService.InvalidTransitionException e) {
-            AlertUtil.showError("The property could not be returned to available. "
-                + "Ask an agent to look into it.");
+            AlertUtil.showError("The property could not be returned to available.");
             return;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
@@ -148,7 +144,7 @@ public class MyActivityController {
     }
 
     private void handleCancelViewing(Viewing viewing) {
-        if (!AlertUtil.confirm("Cancel this viewing?")) {
+        if (!AlertUtil.confirm("Cancel this viewing appointment?")) {
             return;
         }
         try {
@@ -160,13 +156,10 @@ public class MyActivityController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The viewing has been cancelled.");
+        AlertUtil.showInfo("The viewing appointment has been cancelled.");
         loadViewings();
     }
 
-    // Maps each status to the one pill style docs/UI-STYLE.md assigns it.
-    // CONVERTED is now listed there alongside COMPLETED as a successful
-    // outcome (docs/UI-STYLE.md, status colours table).
     private String pillClass(ReservationStatus status) {
         switch (status) {
             case ACTIVE:
@@ -178,7 +171,6 @@ public class MyActivityController {
         }
     }
 
-    // Same mapping, for a viewing's status.
     private String pillClass(ViewingStatus status) {
         switch (status) {
             case CONFIRMED:
@@ -208,25 +200,42 @@ public class MyActivityController {
                 : property.getTitle();
 
             Label titleLabel = new Label(title);
-            Label pill = new Label(Format.enumLabel(reservation.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(reservation.getStatus()));
-            HBox header = new HBox(8, titleLabel, pill);
+            titleLabel.getStyleClass().add("section-title");
+            HBox.setHgrow(titleLabel, Priority.ALWAYS);
 
-            Label meta = new Label("Deposit " + Format.paymentAmount(reservation.getDepositAmount())
-                + " • Reserved " + Format.dateTime(reservation.getReservedAt())
-                + " • Expires " + Format.dateTime(reservation.getExpiresAt()));
+            Label pill = UIHelper.createPill(Format.enumLabel(reservation.getStatus()), pillClass(reservation.getStatus()));
+            Label depositLabel = new Label("Deposit: " + Format.paymentAmount(reservation.getDepositAmount()));
+            depositLabel.getStyleClass().add("section-title");
+            depositLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-size: 14px;");
+
+            HBox header = new HBox(12, titleLabel, pill, depositLabel);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label meta = new Label("Reserved on " + Format.dateTime(reservation.getReservedAt())
+                + " • Lock Expires " + Format.dateTime(reservation.getExpiresAt()));
             meta.getStyleClass().add("label-soft");
 
             VBox card = new VBox(8, header, meta);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getStyleClass().addAll("card-subtle", "card-hoverable");
+            card.setPadding(new Insets(12));
+
+            HBox actions = new HBox(8);
+            actions.setAlignment(Pos.CENTER_LEFT);
+
+            Button viewBtn = new Button("View property");
+            viewBtn.getStyleClass().addAll("button", "button-secondary");
+            viewBtn.setOnAction(e -> Router.show(Panel.PROPERTY_DETAILS, reservation.getPropertyId()));
+            actions.getChildren().add(viewBtn);
 
             if (reservation.getStatus() == ReservationStatus.ACTIVE) {
-                Button cancel = new Button("Cancel");
+                Button cancel = new Button("Cancel reservation");
                 cancel.getStyleClass().addAll("button", "button-danger");
                 cancel.setOnAction(event -> handleCancel(reservation));
-                card.getChildren().add(new HBox(8, cancel));
+                actions.getChildren().add(cancel);
             }
+
+            card.getChildren().add(actions);
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }
@@ -246,25 +255,39 @@ public class MyActivityController {
                 : property.getTitle();
 
             Label titleLabel = new Label(title);
-            Label pill = new Label(Format.enumLabel(viewing.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(viewing.getStatus()));
-            HBox header = new HBox(8, titleLabel, pill);
+            titleLabel.getStyleClass().add("section-title");
+            HBox.setHgrow(titleLabel, Priority.ALWAYS);
 
-            Label meta = new Label("Scheduled " + Format.dateTime(viewing.getScheduledAt()));
+            Label pill = UIHelper.createPill(Format.enumLabel(viewing.getStatus()), pillClass(viewing.getStatus()));
+            HBox header = new HBox(12, titleLabel, pill);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            Label meta = new Label("Appointment Slot: " + Format.dateTime(viewing.getScheduledAt()));
             meta.getStyleClass().add("label-soft");
 
             VBox card = new VBox(8, header, meta);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getStyleClass().addAll("card-subtle", "card-hoverable");
+            card.setPadding(new Insets(12));
+
+            HBox actions = new HBox(8);
+            actions.setAlignment(Pos.CENTER_LEFT);
+
+            Button viewBtn = new Button("View property");
+            viewBtn.getStyleClass().addAll("button", "button-secondary");
+            viewBtn.setOnAction(e -> Router.show(Panel.PROPERTY_DETAILS, viewing.getPropertyId()));
+            actions.getChildren().add(viewBtn);
 
             boolean canCancel = viewing.getStatus() == ViewingStatus.REQUESTED
                 || viewing.getStatus() == ViewingStatus.CONFIRMED;
             if (canCancel) {
-                Button cancel = new Button("Cancel");
+                Button cancel = new Button("Cancel appointment");
                 cancel.getStyleClass().addAll("button", "button-danger");
                 cancel.setOnAction(event -> handleCancelViewing(viewing));
-                card.getChildren().add(new HBox(8, cancel));
+                actions.getChildren().add(cancel);
             }
+
+            card.getChildren().add(actions);
+            AnimationUtil.addHoverLift(card);
             return card;
         }
     }

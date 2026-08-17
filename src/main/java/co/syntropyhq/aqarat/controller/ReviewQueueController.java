@@ -18,10 +18,12 @@ import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -29,21 +31,18 @@ import java.util.Map;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-// One list with a toggle between "Unassigned" and "My queue" rather than two
-// ListViews side by side - both queries return the same row shape and the
-// agent only ever wants to look at one of them at a time, so a toggle keeps
-// the panel to one card list instead of duplicating it (CLAUDE.md, one
-// vertical slice, boring version).
 public class ReviewQueueController {
 
-    private static final int PAGE_SIZE = 20;
+    private static final int PAGE_SIZE = 15;
 
     @FXML
     private VBox contentBox;
@@ -116,15 +115,15 @@ public class ReviewQueueController {
 
     private void selectUnassignedTab() {
         showingUnassigned = true;
-        unassignedTabButton.getStyleClass().setAll("button", "button-primary");
-        myQueueTabButton.getStyleClass().setAll("button", "button-secondary");
+        unassignedTabButton.getStyleClass().setAll("tab-pill-button", "active");
+        myQueueTabButton.getStyleClass().setAll("tab-pill-button");
         runSearch(0);
     }
 
     private void selectMyQueueTab() {
         showingUnassigned = false;
-        unassignedTabButton.getStyleClass().setAll("button", "button-secondary");
-        myQueueTabButton.getStyleClass().setAll("button", "button-primary");
+        unassignedTabButton.getStyleClass().setAll("tab-pill-button");
+        myQueueTabButton.getStyleClass().setAll("tab-pill-button", "active");
         runSearch(0);
     }
 
@@ -139,17 +138,16 @@ public class ReviewQueueController {
     }
 
     private void runSearch(int offset) {
-        Label empty = new Label(showingUnassigned
-            ? "No submissions are waiting to be claimed."
-            : "You have not claimed any submissions.");
-        empty.getStyleClass().add("empty-state");
-        propertyList.setPlaceholder(empty);
+        propertyList.setPlaceholder(UIHelper.createEmptyState(
+            showingUnassigned ? "No Unassigned Submissions" : "Your Review Queue is Empty",
+            showingUnassigned ? "All incoming properties have been claimed." : "Claim a property from the Unassigned tab to start review."
+        ));
 
         List<Property> results;
         try {
             results = propertyService.searchForStaff(searchStatuses(), searchFilters(), offset, PAGE_SIZE);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load the review queue. Check that SQL Server is running.");
+            AlertUtil.showError("Could not load review queue. Check that SQL Server is running.");
             return;
         }
         currentOffset = offset;
@@ -195,24 +193,10 @@ public class ReviewQueueController {
         Router.show(Panel.REVIEW_SUBMISSION, property.getId());
     }
 
-    private String pillClass(PropertyStatus status) {
-        switch (status) {
-            case PENDING_REVIEW:
-            case NEEDS_INFO:
-            case WITHDRAWAL_REQUESTED:
-                return "pill-warn";
-            default:
-                return "pill-neutral";
-        }
-    }
-
-    // A withdrawal request is not a new submission, so the row says so
-    // instead of reusing submittedAt - that timestamp is stale once the
-    // owner has asked for the listing to come down.
     private String waitingText(Property property) {
         return property.getStatus() == PropertyStatus.WITHDRAWAL_REQUESTED
-            ? "Owner has asked to remove this listing"
-            : "Submitted " + Format.dateTime(property.getSubmittedAt());
+            ? "Owner requested listing withdrawal"
+            : "Submitted on " + Format.dateTime(property.getSubmittedAt());
     }
 
     private String priceText(Property property) {
@@ -227,11 +211,10 @@ public class ReviewQueueController {
         String districtName = district == null ? "-" : district.getName();
         String typeName = type == null ? "-" : type.getName();
         return districtName + " • " + typeName + " • " + Format.enumLabel(property.getDealType())
-            + " • " + priceText(property) + " • " + Format.area(property.getAreaSqm());
+            + " • " + Format.area(property.getAreaSqm())
+            + " • " + property.getBedrooms() + " beds";
     }
 
-    // One card per submission, matching the shape MyPropertiesController
-    // already established for a list of properties with per-row actions.
     private final class SubmissionCard extends ListCell<Property> {
 
         @Override
@@ -242,10 +225,24 @@ public class ReviewQueueController {
         }
 
         private VBox buildCard(Property property) {
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(16));
+
+            // Header
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
             Label title = new Label(property.getTitle());
-            Label pill = new Label(Format.enumLabel(property.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(property.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createStatusPill(property.getStatus());
+            Label price = new Label(priceText(property));
+            price.getStyleClass().add("section-title");
+            price.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+
+            header.getChildren().addAll(title, pill, price);
 
             Label meta = new Label(metaLine(property));
             meta.getStyleClass().add("label-soft");
@@ -255,22 +252,23 @@ public class ReviewQueueController {
 
             HBox actions = buildActions(property);
 
-            VBox card = new VBox(8, header, meta, waiting, actions);
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            card.getChildren().addAll(header, meta, waiting, actions);
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox buildActions(Property property) {
             HBox actions = new HBox(8);
-            Button open = new Button("Open");
-            open.getStyleClass().addAll("button", "button-secondary");
+            actions.setAlignment(Pos.CENTER_LEFT);
+
+            Button open = new Button("Review submission →");
+            open.getStyleClass().addAll("button", "button-primary");
             open.setOnAction(event -> handleOpen(property));
             actions.getChildren().add(open);
 
             if (showingUnassigned) {
-                Button claim = new Button("Claim");
-                claim.getStyleClass().addAll("button", "button-primary");
+                Button claim = new Button("Claim to my queue");
+                claim.getStyleClass().addAll("button", "button-secondary");
                 claim.setOnAction(event -> handleClaim(property));
                 actions.getChildren().add(claim);
             }

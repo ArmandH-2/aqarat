@@ -11,6 +11,7 @@ import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.model.Role;
@@ -18,12 +19,16 @@ import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
+import co.syntropyhq.aqarat.util.UIHelper;
+import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +38,7 @@ import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -40,16 +46,18 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.util.StringConverter;
 
-// The agent's-eye view of every listing: the same filters BrowseListings
-// uses, but searched across every status instead of only AVAILABLE
-// (DESIGN.md section 9).
 public class ListingsController {
 
-    private static final int PAGE_SIZE = 20;
+    private static final int PAGE_SIZE = 15;
 
     @FXML
     private VBox contentBox;
@@ -101,16 +109,12 @@ public class ListingsController {
 
     @FXML
     private void initialize() {
-        AppUser currentUser = SessionManager.getCurrentUser();
-        if (currentUser == null
-                || (currentUser.getRole() != Role.AGENT && currentUser.getRole() != Role.ADMIN)) {
+        AppUser user = SessionManager.getCurrentUser();
+        if (user == null || (user.getRole() != Role.AGENT && user.getRole() != Role.ADMIN)) {
             denyAccess();
             return;
         }
-        Label empty = new Label("No listings match these filters.");
-        empty.getStyleClass().add("empty-state");
-        propertyList.setPlaceholder(empty);
-        propertyList.setCellFactory(list -> new ListingCard());
+        propertyList.setCellFactory(list -> new PropertyCard());
         loadReferenceData();
         configureDealTypeCombo();
         configureBedroomsCombo();
@@ -130,7 +134,7 @@ public class ListingsController {
             List<District> districts = referenceService.findAllDistricts();
             districtCombo.getItems().add(null);
             districtCombo.getItems().addAll(districts);
-            districtCombo.setConverter(anyOr("Any district", District::getName));
+            districtCombo.setConverter(anyOr("All districts", District::getName));
             for (District district : districts) {
                 districtsById.put(district.getId(), district);
             }
@@ -138,23 +142,23 @@ public class ListingsController {
             List<PropertyType> types = referenceService.findAllPropertyTypes();
             typeCombo.getItems().add(null);
             typeCombo.getItems().addAll(types);
-            typeCombo.setConverter(anyOr("Any type", PropertyType::getName));
+            typeCombo.setConverter(anyOr("All types", PropertyType::getName));
             for (PropertyType type : types) {
                 typesById.put(type.getId(), type);
             }
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load districts and property types.");
+            AlertUtil.showError("Could not load reference data. Check that SQL Server is running.");
         }
     }
 
     private void configureDealTypeCombo() {
         dealTypeCombo.getItems().addAll(null, DealType.SALE, DealType.RENT);
-        dealTypeCombo.setConverter(anyOr("Any", Format::enumLabel));
+        dealTypeCombo.setConverter(anyOr("Sale & Rent", Format::enumLabel));
     }
 
     private void configureBedroomsCombo() {
         bedroomsCombo.getItems().addAll(null, 0, 1, 2, 3, 4, 5);
-        bedroomsCombo.setConverter(anyOr("Any", String::valueOf));
+        bedroomsCombo.setConverter(anyOr("Any bedrooms", val -> val == 0 ? "Studio (0)" : val + "+ Beds"));
     }
 
     private static <T> StringConverter<T> anyOr(String anyLabel, Function<T, String> label) {
@@ -266,10 +270,13 @@ public class ListingsController {
     }
 
     private void runSearch(int offset) {
+        propertyList.setPlaceholder(UIHelper.createEmptyState("No Listings Match Filters", "Try widening search criteria or clearing filter fields."));
+
         List<Property> results;
         try {
             results = propertyService.searchForStaff(
-                List.of(PropertyStatus.values()), currentFilters, offset, PAGE_SIZE);
+                List.of(PropertyStatus.AVAILABLE, PropertyStatus.RESERVED, PropertyStatus.UNDER_CONTRACT, PropertyStatus.CLOSED),
+                currentFilters, offset, PAGE_SIZE);
         } catch (SQLException e) {
             AlertUtil.showError("Could not load listings. Check that SQL Server is running.");
             return;
@@ -278,61 +285,6 @@ public class ListingsController {
         propertyList.setItems(FXCollections.observableArrayList(results));
         previousButton.setDisable(currentOffset == 0);
         nextButton.setDisable(results.size() < PAGE_SIZE);
-    }
-
-    private void handleOpen(Property property) {
-        Router.show(Panel.PROPERTY_DETAILS, property.getId());
-    }
-
-    // An agent takes a listing down in one move. The two-step road through
-    // WITHDRAWAL_REQUESTED is the owner's, where the request is the whole
-    // point; using it here would record the owner asking for something they
-    // never asked for, and could strand the listing mid-way.
-    private void handleTakeDown(Property property) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText(null);
-        dialog.setTitle("Take down listing");
-        dialog.setContentText("Reason for taking this listing down:");
-        Optional<String> input = dialog.showAndWait();
-        if (input.isEmpty()) {
-            return;
-        }
-        String reason = input.get().trim();
-        if (reason.isEmpty()) {
-            AlertUtil.showError("A reason is required to take a listing down.");
-            return;
-        }
-        try {
-            propertyService.review(property.getId(), PropertyStatus.WITHDRAWN, reason);
-        } catch (PropertyService.InvalidTransitionException e) {
-            AlertUtil.showError(e.getMessage());
-            return;
-        } catch (SQLException e) {
-            AlertUtil.showError("Could not reach the database. Try again.");
-            return;
-        }
-        AlertUtil.showInfo("The listing has been taken down.");
-        runSearch(currentOffset);
-    }
-
-    // Matches the status-to-pill table in docs/UI-STYLE.md exactly.
-    private String pillClass(PropertyStatus status) {
-        switch (status) {
-            case AVAILABLE:
-                return "pill-good";
-            case PENDING_REVIEW:
-            case NEEDS_INFO:
-            case WITHDRAWAL_REQUESTED:
-                return "pill-warn";
-            case REJECTED:
-                return "pill-bad";
-            case RESERVED:
-            case UNDER_CONTRACT:
-            case DRAFT:
-                return "pill-info";
-            default:
-                return "pill-neutral";
-        }
     }
 
     private String priceText(Property property) {
@@ -347,17 +299,11 @@ public class ListingsController {
         String districtName = district == null ? "-" : district.getName();
         String typeName = type == null ? "-" : type.getName();
         return districtName + " • " + typeName + " • " + Format.enumLabel(property.getDealType())
-            + " • " + priceText(property) + " • " + Format.area(property.getAreaSqm());
+            + " • " + Format.area(property.getAreaSqm())
+            + " • " + property.getBedrooms() + " beds";
     }
 
-    private void clearFieldErrors() {
-        FieldError.clear(minPriceField, minPriceError);
-        FieldError.clear(maxPriceField, maxPriceError);
-        FieldError.clear(minAreaField, minAreaError);
-        FieldError.clear(maxAreaField, maxAreaError);
-    }
-
-    private final class ListingCard extends ListCell<Property> {
+    private final class PropertyCard extends ListCell<Property> {
 
         @Override
         protected void updateItem(Property property, boolean empty) {
@@ -367,34 +313,51 @@ public class ListingsController {
         }
 
         private VBox buildCard(Property property) {
+            VBox card = new VBox(10);
+            card.getStyleClass().addAll("card", "card-hoverable");
+            card.setPadding(new Insets(16));
+
+            HBox header = new HBox(12);
+            header.setAlignment(Pos.CENTER_LEFT);
+
             Label title = new Label(property.getTitle());
-            Label pill = new Label(Format.enumLabel(property.getStatus()));
-            pill.getStyleClass().addAll("pill", pillClass(property.getStatus()));
-            HBox header = new HBox(8, title, pill);
+            title.getStyleClass().add("section-title");
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label pill = UIHelper.createStatusPill(property.getStatus());
+            Label price = new Label(priceText(property));
+            price.getStyleClass().add("section-title");
+            price.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+
+            header.getChildren().addAll(title, pill, price);
 
             Label meta = new Label(metaLine(property));
             meta.getStyleClass().add("label-soft");
 
-            VBox card = new VBox(8, header, meta, buildActions(property));
-            card.getStyleClass().add("card");
-            card.setPadding(new Insets(16));
+            HBox actions = buildActions(property);
+
+            card.getChildren().addAll(header, meta, actions);
+            AnimationUtil.addHoverLift(card);
             return card;
         }
 
         private HBox buildActions(Property property) {
             HBox actions = new HBox(8);
-            Button open = new Button("Open");
-            open.getStyleClass().addAll("button", "button-secondary");
-            open.setOnAction(event -> handleOpen(property));
-            actions.getChildren().add(open);
+            actions.setAlignment(Pos.CENTER_LEFT);
 
-            if (property.getStatus() == PropertyStatus.AVAILABLE) {
-                Button takeDown = new Button("Take down");
-                takeDown.getStyleClass().addAll("button", "button-danger");
-                takeDown.setOnAction(event -> handleTakeDown(property));
-                actions.getChildren().add(takeDown);
-            }
+            Button view = new Button("View details");
+            view.getStyleClass().addAll("button", "button-secondary");
+            view.setOnAction(event -> Router.show(Panel.PROPERTY_DETAILS, property.getId()));
+            actions.getChildren().add(view);
+
             return actions;
         }
+    }
+
+    private void clearFieldErrors() {
+        FieldError.clear(minPriceField, minPriceError);
+        FieldError.clear(maxPriceField, maxPriceError);
+        FieldError.clear(minAreaField, minAreaError);
+        FieldError.clear(maxAreaField, maxAreaError);
     }
 }

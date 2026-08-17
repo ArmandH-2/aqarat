@@ -4,54 +4,69 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.ReportsController"
-      styleClass="content" spacing="24">
-    <Label text="Reports" styleClass="page-title"/>
-    <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.ReportsController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="36" left="0"/>
+        </padding>
 
-    <VBox fx:id="contentBox" spacing="16" VBox.vgrow="ALWAYS">
-        <HBox spacing="12">
-            <Button fx:id="revenueTabButton" text="Revenue and commission"
-                    styleClass="button, button-primary" onAction="#handleRevenueTab"/>
-            <Button fx:id="overdueTabButton" text="Overdue payments"
-                    styleClass="button, button-secondary" onAction="#handleOverdueTab"/>
-            <Button fx:id="marketTabButton" text="Time on market"
-                    styleClass="button, button-secondary" onAction="#handleMarketTab"/>
-        </HBox>
+        <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
-        <VBox fx:id="revenueBox" spacing="16" VBox.vgrow="ALWAYS">
-            <VBox styleClass="card" spacing="12">
-                <Label text="Period" styleClass="section-title"/>
-                <HBox spacing="12">
-                    <VBox spacing="4">
-                        <Label text="From" styleClass="label-soft"/>
-                        <DatePicker fx:id="revenueFromPicker"/>
-                    </VBox>
-                    <VBox spacing="4">
-                        <Label text="To" styleClass="label-soft"/>
-                        <DatePicker fx:id="revenueToPicker"/>
-                    </VBox>
-                    <Button text="Run" styleClass="button, button-primary" onAction="#handleRunRevenue">
-                        <HBox.margin>
-                            <Insets top="20"/>
-                        </HBox.margin>
-                    </Button>
-                </HBox>
+        <VBox fx:id="contentBox" spacing="18">
+            <!-- Header -->
+            <VBox spacing="2">
+                <Label text="Executive Business Reports &amp; Analytics" styleClass="page-title"/>
+                <Label text="Monitor monthly agency commissions, overdue portfolio collections, and valuation accuracy benchmarks" styleClass="hint"/>
             </VBox>
-            <TableView fx:id="revenueTable" VBox.vgrow="ALWAYS"/>
-        </VBox>
 
-        <VBox fx:id="overdueBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
-            <TableView fx:id="overdueTable" VBox.vgrow="ALWAYS"/>
-        </VBox>
+            <!-- Segmented Tab Bar -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="revenueTabButton" text="Revenue &amp; Commission" styleClass="tab-pill-button, active"
+                        onAction="#handleRevenueTab"/>
+                <Button fx:id="overdueTabButton" text="Overdue Collections" styleClass="tab-pill-button"
+                        onAction="#handleOverdueTab"/>
+                <Button fx:id="marketTabButton" text="Time on Market &amp; Valuation Accuracy" styleClass="tab-pill-button"
+                        onAction="#handleMarketTab"/>
+            </HBox>
 
-        <VBox fx:id="marketBox" spacing="16" VBox.vgrow="ALWAYS" visible="false" managed="false">
-            <TableView fx:id="marketTable" VBox.vgrow="ALWAYS"/>
+            <!-- Revenue Report Tab -->
+            <VBox fx:id="revenueBox" spacing="14">
+                <VBox styleClass="card" spacing="10">
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="From Period" styleClass="label-soft"/>
+                            <DatePicker fx:id="revenueFromPicker" maxWidth="Infinity"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="To Period" styleClass="label-soft"/>
+                            <DatePicker fx:id="revenueToPicker" maxWidth="Infinity"/>
+                        </VBox>
+                        <VBox spacing="4" alignment="BOTTOM_LEFT">
+                            <Label text="" styleClass="label-soft"/>
+                            <Button text="Generate Report" styleClass="button, button-primary" prefHeight="36" onAction="#handleRunRevenue"/>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <TableView fx:id="revenueTable" minHeight="450"/>
+            </VBox>
+
+            <!-- Overdue Collections Tab -->
+            <VBox fx:id="overdueBox" spacing="14" managed="false" visible="false">
+                <TableView fx:id="overdueTable" minHeight="500"/>
+            </VBox>
+
+            <!-- Market Time & Valuation Accuracy Tab -->
+            <VBox fx:id="marketBox" spacing="14" managed="false" visible="false">
+                <TableView fx:id="marketTable" minHeight="500"/>
+            </VBox>
         </VBox>
     </VBox>
-</VBox>
+</ScrollPane>

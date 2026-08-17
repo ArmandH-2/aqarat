@@ -1,17 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="co.syntropyhq.aqarat.controller.MyActivityController"
-      styleClass="content" spacing="24">
-    <Label text="My activity" styleClass="page-title"/>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.MyActivityController"
+            fitToWidth="true" hbarPolicy="NEVER">
+    <VBox spacing="20">
+        <padding>
+            <Insets top="0" right="6" bottom="28" left="0"/>
+        </padding>
 
-    <Label text="Reservations" styleClass="section-title"/>
-    <ListView fx:id="reservationList" VBox.vgrow="ALWAYS"/>
+        <!-- Header -->
+        <VBox spacing="2">
+            <Label text="My Activity" styleClass="page-title"/>
+            <Label text="Track your active reservations and scheduled property viewing appointments" styleClass="hint"/>
+        </VBox>
 
-    <Label text="Viewings" styleClass="section-title"/>
-    <ListView fx:id="viewingList" VBox.vgrow="ALWAYS"/>
-</VBox>
+        <!-- Active Reservations Section -->
+        <VBox styleClass="card" spacing="12">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Active &amp; Past Reservations" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                <Label text="48h exclusivity lock" styleClass="hint"/>
+            </HBox>
+            <ListView fx:id="reservationList" prefHeight="220" minHeight="180"/>
+        </VBox>
+
+        <!-- Scheduled Viewings Section -->
+        <VBox styleClass="card" spacing="12">
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Scheduled Viewings" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                <Label text="Accompanied by licensed agents" styleClass="hint"/>
+            </HBox>
+            <ListView fx:id="viewingList" prefHeight="260" minHeight="200"/>
+        </VBox>
+    </VBox>
+</ScrollPane>
