@@ -15,6 +15,7 @@ import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AppIcons;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SceneCapture;
@@ -155,6 +156,7 @@ public class LoginController {
             stage.setMinWidth(1100);
             stage.setMinHeight(700);
             stage.setScene(scene);
+            AppIcons.apply(stage);
             SceneCapture.install(scene);
             stage.show();
             return true;

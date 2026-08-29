@@ -2,44 +2,81 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-echo =========================================
-echo              Aqarat Launcher             
-echo =========================================
+echo =================================================
+echo                 Aqarat Launcher                 
+echo =================================================
 echo.
 
-:: 1. Check if Java is available
+:: 1. Smart Java 21 Discovery
+set "JAVA_FOUND=0"
+
+:: 1.1 Check if java command is available
 where java >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Java is not detected on your system.
-    echo Running setup to help install requirements...
+if %ERRORLEVEL% equ 0 (
+    set "JAVA_FOUND=1"
+)
+
+:: 1.2 If not found in PATH, check JAVA_HOME
+if %JAVA_FOUND% equ 0 (
+    if defined JAVA_HOME (
+        if exist "%JAVA_HOME%\bin\java.exe" (
+            set "PATH=%JAVA_HOME%\bin;%PATH%"
+            set "JAVA_FOUND=1"
+        )
+    )
+)
+
+:: 1.3 If still not found, probe standard Windows JDK 21 paths
+if %JAVA_FOUND% equ 0 (
+    for /d %%D in ("C:\Program Files\Microsoft\jdk-21*" "C:\Program Files\Eclipse Adoptium\jdk-21*" "C:\Program Files\Java\jdk-21*" "C:\Program Files\BellSoft\LibericaJDK-21*" "C:\Program Files\Amazon Corretto\jdk21*") do (
+        if exist "%%D\bin\java.exe" (
+            set "JAVA_HOME=%%D"
+            set "PATH=%%D\bin;!PATH!"
+            set "JAVA_FOUND=1"
+            echo [INFO] Detected Java 21 at: %%D
+            goto java_ready
+        )
+    )
+)
+
+:java_ready
+:: 1.4 If Java 21 or config is completely missing, trigger automated setup
+if %JAVA_FOUND% equ 0 (
+    echo [WARNING] Java 21 is not detected on your system.
+    echo Launching automated setup to configure requirements...
     echo.
     call "%~dp0setup.bat"
     goto end
 )
 
-:: 2. Ensure config/local.properties exists
 if not exist "config\local.properties" (
-    if exist "config\local.properties.example" (
-        echo [INFO] Creating config/local.properties from example...
-        copy "config\local.properties.example" "config\local.properties" >nul
-    )
+    echo [INFO] config\local.properties missing. Running setup...
+    echo.
+    call "%~dp0setup.bat"
+    goto end
 )
 
-:: 3. Ensure upload directories exist
+:: 2. Ensure upload directories exist
 if not exist "uploads\images" mkdir "uploads\images"
 if not exist "uploads\proofs" mkdir "uploads\proofs"
 
-:: 4. Run application using Maven Wrapper
-echo [INFO] Starting Aqarat JavaFX Application...
+:: 3. Launch application via Maven Wrapper
+echo [INFO] Starting Aqarat Desktop Application...
 echo.
 call "%~dp0mvnw.cmd" javafx:run
 
 if %ERRORLEVEL% neq 0 (
     echo.
-    echo [ERROR] Application closed with an error.
-    echo Please make sure your database server (SQL Server) is running and config/local.properties is configured properly.
+    echo =================================================
+    echo [ERROR] Application exited with an error.
+    echo.
+    echo If this is your first time running, please run setup.bat:
+    echo   1. Double-click setup.bat (or run in PowerShell)
+    echo   2. Ensure SQL Server is running
+    echo =================================================
     echo.
     pause
 )
 
 :end
+

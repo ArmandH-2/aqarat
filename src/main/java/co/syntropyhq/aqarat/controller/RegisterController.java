@@ -4,6 +4,7 @@ import co.syntropyhq.aqarat.dao.UserDao;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AppIcons;
 import co.syntropyhq.aqarat.util.FieldError;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -111,6 +112,7 @@ public class RegisterController {
             stage.setMinWidth(1100);
             stage.setMinHeight(700);
             stage.setScene(scene);
+            AppIcons.apply(stage);
             stage.show();
         } catch (IOException e) {
             AlertUtil.showError("Could not open the window.");

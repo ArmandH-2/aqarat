@@ -3,6 +3,7 @@ package co.syntropyhq.aqarat.controller;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.AppIcons;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
@@ -162,6 +163,7 @@ public class MainShellController {
             stage.setMinWidth(1100);
             stage.setMinHeight(700);
             stage.setScene(scene);
+            AppIcons.apply(stage);
             stage.show();
         } catch (IOException e) {
             AlertUtil.showError("Could not open the sign-in window.");
