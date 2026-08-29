@@ -385,7 +385,10 @@ public class DiscoverController {
      * the grid is always flush and never drops a column by a hair.
      */
     private void applyCardWidths() {
-        double available = resultsGrid.getWidth();
+        // A couple of pixels are held back: the pane reports its full width, but
+        // rounding and the scrollbar leave slightly less to lay out in, and
+        // overshooting by one pixel costs a whole column.
+        double available = resultsGrid.getWidth() - 4;
         if (available <= 0) {
             return;
         }
