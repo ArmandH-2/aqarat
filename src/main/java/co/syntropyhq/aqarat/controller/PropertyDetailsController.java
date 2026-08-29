@@ -69,17 +69,15 @@ public class PropertyDetailsController implements NeedsId {
     @FXML
     private Label pricePerSqmLabel;
     @FXML
+    private StackPane mainPhotoContainer;
+    @FXML
     private ImageView mainImageView;
+    @FXML
+    private Label unavailableNote;
     @FXML
     private HBox thumbnailStrip;
     @FXML
     private Label descriptionValue;
-    @FXML
-    private Label districtValue;
-    @FXML
-    private Label typeValue;
-    @FXML
-    private Label dealTypeValue;
     @FXML
     private Label bedroomsValue;
     @FXML
@@ -125,6 +123,19 @@ public class PropertyDetailsController implements NeedsId {
         for (int hour = 9; hour <= 18; hour++) {
             viewingTimeCombo.getItems().add(String.format("%02d:00", hour));
         }
+
+        // The frame's height is fixed and its width comes from the scroll pane,
+        // so the photograph can follow it without feeding a size back upwards.
+        mainPhotoContainer.setMinWidth(0);
+        mainImageView.fitWidthProperty().bind(mainPhotoContainer.widthProperty());
+        mainImageView.fitHeightProperty().bind(mainPhotoContainer.heightProperty());
+
+        Rectangle heroClip = new Rectangle();
+        heroClip.widthProperty().bind(mainPhotoContainer.widthProperty());
+        heroClip.heightProperty().bind(mainPhotoContainer.heightProperty());
+        heroClip.setArcWidth(28);
+        heroClip.setArcHeight(28);
+        mainImageView.setClip(heroClip);
     }
 
     @Override
@@ -151,13 +162,17 @@ public class PropertyDetailsController implements NeedsId {
 
         String districtName = lookupDistrictName(property.getDistrictId());
         String typeName = lookupTypeName(property.getPropertyTypeId());
-        districtSubtitle.setText(districtName + " • " + typeName);
+        districtSubtitle.setText(
+            (districtName + " · " + typeName + " · " + Format.enumLabel(property.getDealType()))
+                .toUpperCase());
 
         BigDecimal pricePerSqm = BigDecimal.ZERO;
         if (property.getAreaSqm() != null && property.getAreaSqm().compareTo(BigDecimal.ZERO) > 0 && property.getAskingPrice() != null) {
             pricePerSqm = property.getAskingPrice().divide(property.getAreaSqm(), 0, RoundingMode.HALF_UP);
         }
-        pricePerSqmLabel.setText("$" + pricePerSqm + "/m² estimated rate");
+        pricePerSqmLabel.setText(property.getDealType() == DealType.SALE
+            ? Format.pricePerSqm(pricePerSqm) + " · Sale"
+            : "Per month · Lease");
 
         descriptionValue.setText(property.getDescription() == null || property.getDescription().isBlank()
             ? "No detailed description provided." : property.getDescription());
@@ -176,6 +191,19 @@ public class PropertyDetailsController implements NeedsId {
             && property.getStatus() == PropertyStatus.AVAILABLE;
         actionsBox.setVisible(canAct);
         actionsBox.setManaged(canAct);
+
+        String note = null;
+        if (isOwner) {
+            note = "This is your listing. Manage it from your portfolio.";
+        } else if (property.getStatus() != PropertyStatus.AVAILABLE) {
+            note = "This property is " + Format.enumLabel(property.getStatus()).toLowerCase()
+                + ", so viewings and reservations are closed.";
+        } else if (!isCustomer) {
+            note = "Sign in as a customer to request a viewing or reserve this property.";
+        }
+        unavailableNote.setText(note == null ? "" : note);
+        unavailableNote.setVisible(note != null);
+        unavailableNote.setManaged(note != null);
     }
 
     private void renderGallery(int propertyId) {
@@ -200,18 +228,19 @@ public class PropertyDetailsController implements NeedsId {
         // Populate thumbnail strip
         for (PropertyPhoto photo : photos) {
             StackPane thumbContainer = new StackPane();
-            thumbContainer.setPrefSize(70, 50);
-            thumbContainer.setMinSize(70, 50);
-            thumbContainer.setMaxSize(70, 50);
-            thumbContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 6px; -fx-border-color: -c-border-subtle; -fx-border-radius: 6px;");
+            thumbContainer.setPrefSize(104, 72);
+            thumbContainer.setMinSize(104, 72);
+            thumbContainer.setMaxSize(104, 72);
+            thumbContainer.getStyleClass().add("thumb");
             thumbContainer.setCursor(Cursor.HAND);
 
             Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
             if (Files.exists(path)) {
-                ImageView thumbView = new ImageView(new Image(path.toUri().toString(), 70, 50, false, true));
-                Rectangle clip = new Rectangle(70, 50);
-                clip.setArcWidth(10);
-                clip.setArcHeight(10);
+                ImageView thumbView = new ImageView(
+                    new Image(path.toUri().toString(), 104, 72, false, true, true));
+                Rectangle clip = new Rectangle(104, 72);
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
                 thumbView.setClip(clip);
                 thumbContainer.getChildren().add(thumbView);
             } else {
@@ -222,6 +251,18 @@ public class PropertyDetailsController implements NeedsId {
             thumbContainer.setOnMouseClicked(e -> setMainPhoto(photo));
             AnimationUtil.addHoverLift(thumbContainer);
             thumbnailStrip.getChildren().add(thumbContainer);
+        }
+        if (!thumbnailStrip.getChildren().isEmpty()) {
+            markActiveThumb(thumbnailStrip.getChildren().get(0));
+        }
+    }
+
+    private void markActiveThumb(javafx.scene.Node active) {
+        for (javafx.scene.Node node : thumbnailStrip.getChildren()) {
+            node.getStyleClass().remove("thumb-active");
+        }
+        if (!active.getStyleClass().contains("thumb-active")) {
+            active.getStyleClass().add("thumb-active");
         }
     }
 
@@ -241,13 +282,10 @@ public class PropertyDetailsController implements NeedsId {
     }
 
     private void renderSpecs(Property property, String districtName, String typeName) {
-        districtValue.setText(districtName);
-        typeValue.setText(typeName);
-        dealTypeValue.setText(Format.enumLabel(property.getDealType()));
         areaValue.setText(Format.area(property.getAreaSqm()));
         bedroomsValue.setText(String.valueOf(property.getBedrooms()));
         bathroomsValue.setText(String.valueOf(property.getBathrooms()));
-        floorValue.setText(formatNullableInt(property.getFloorNumber()));
+        floorValue.setText(formatFloor(property));
         yearBuiltValue.setText(formatNullableInt(property.getYearBuilt()));
         addressValue.setText(property.getAddressLine() == null || property.getAddressLine().isBlank()
             ? "Address on file" : property.getAddressLine());
@@ -256,25 +294,26 @@ public class PropertyDetailsController implements NeedsId {
     private void renderAmenities(Property property) {
         amenitiesPane.getChildren().clear();
         addAmenityChip("Parking", property.isHasParking());
-        addAmenityChip("Elevator", property.isHasElevator());
+        addAmenityChip("Lift", property.isHasElevator());
         addAmenityChip("Balcony", property.isHasBalcony());
         addAmenityChip("Furnished", property.isFurnished());
     }
 
+    /* A feature the property does not have is still worth stating — "no lift"
+       matters to a buyer — but it is set back rather than marked with a cross. */
     private void addAmenityChip(String name, boolean active) {
-        HBox chip = new HBox(6);
-        chip.setAlignment(Pos.CENTER_LEFT);
-        chip.setStyle(active
-            ? "-fx-background-color: -c-primary-tint; -fx-padding: 6 12 6 12; -fx-background-radius: 20px; -fx-border-color: -c-primary; -fx-border-radius: 20px;"
-            : "-fx-background-color: -c-surface-subtle; -fx-padding: 6 12 6 12; -fx-background-radius: 20px; -fx-border-color: -c-border-subtle; -fx-border-radius: 20px; -fx-opacity: 0.6;");
-
-        Label label = new Label((active ? "✓ " : "✕ ") + name);
-        label.setStyle(active
-            ? "-fx-font-weight: 600; -fx-text-fill: -c-primary;"
-            : "-fx-font-weight: 500; -fx-text-fill: -c-text-muted;");
-
-        chip.getChildren().add(label);
+        Label chip = new Label(active ? name : "No " + name.toLowerCase());
+        chip.getStyleClass().add(active ? "amenity-chip" : "amenity-chip-absent");
         amenitiesPane.getChildren().add(chip);
+    }
+
+    private String formatFloor(Property property) {
+        if (property.getFloorNumber() == null) {
+            return "—";
+        }
+        return property.getTotalFloors() == null
+            ? String.valueOf(property.getFloorNumber())
+            : property.getFloorNumber() + " of " + property.getTotalFloors();
     }
 
     private String formatNullableInt(Integer value) {
@@ -302,25 +341,25 @@ public class PropertyDetailsController implements NeedsId {
     private void applyStatusPill(PropertyStatus status) {
         statusPill.setText(Format.enumLabel(status));
         statusPill.getStyleClass().removeAll(
-            "pill-good", "pill-warn", "pill-bad", "pill-info", "pill-neutral");
-        statusPill.getStyleClass().add(pillClassFor(status));
+            "tone-good", "tone-warn", "tone-bad", "tone-info", "tone-neutral");
+        statusPill.getStyleClass().add(toneClassFor(status));
     }
 
-    private String pillClassFor(PropertyStatus status) {
+    private String toneClassFor(PropertyStatus status) {
         switch (status) {
             case AVAILABLE:
-                return "pill-good";
+                return "tone-good";
             case PENDING_REVIEW:
             case NEEDS_INFO:
-                return "pill-warn";
+                return "tone-warn";
             case REJECTED:
-                return "pill-bad";
+                return "tone-bad";
             case RESERVED:
             case UNDER_CONTRACT:
             case DRAFT:
-                return "pill-info";
+                return "tone-info";
             default:
-                return "pill-neutral";
+                return "tone-neutral";
         }
     }
 

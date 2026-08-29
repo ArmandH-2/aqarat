@@ -400,17 +400,22 @@ SET IDENTITY_INSERT dbo.property OFF;
 DBCC CHECKIDENT ('dbo.property', RESEED) WITH NO_INFOMSGS;
 GO
 
-/* One primary photo per property, matched to its type so a villa does not
-   open with an apartment thumbnail. The files ship with the app under
-   uploads/images; the path stored in the row is relative to that root. */
+/* Four photos per property, matched to its type so a villa does not open with
+   an apartment thumbnail. The files ship with the app under uploads/images;
+   the path stored in the row is relative to that root.
+
+   Photo 1 is the primary and is what a listing card shows. The rest exist so
+   the property detail gallery has something to be a gallery of. */
 
 INSERT INTO dbo.property_photo (property_id, file_path, is_primary, sort_order)
 SELECT p.id,
-    'images/seed/' + LOWER(REPLACE(pt.name, ' ', '-')) + '-1.jpg',
-    1,
-    0
+    'images/seed/' + LOWER(REPLACE(pt.name, ' ', '-'))
+        + '-' + CAST(n.sort_order + 1 AS VARCHAR(2)) + '.jpg',
+    CASE WHEN n.sort_order = 0 THEN 1 ELSE 0 END,
+    n.sort_order
 FROM dbo.property p
-JOIN dbo.property_type pt ON pt.id = p.property_type_id;
+JOIN dbo.property_type pt ON pt.id = p.property_type_id
+CROSS JOIN (VALUES (0), (1), (2), (3)) AS n(sort_order);
 GO
 
 /* --------------------------------------------------------------------------
