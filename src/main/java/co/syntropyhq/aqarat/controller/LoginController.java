@@ -1,13 +1,28 @@
 package co.syntropyhq.aqarat.controller;
 
+import co.syntropyhq.aqarat.dao.AuditDao;
+import co.syntropyhq.aqarat.dao.DistrictDao;
+import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyMessageDao;
+import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
+import co.syntropyhq.aqarat.dao.PropertySearch;
+import co.syntropyhq.aqarat.dao.PropertyTypeDao;
 import co.syntropyhq.aqarat.dao.UserDao;
 import co.syntropyhq.aqarat.model.AppUser;
+import co.syntropyhq.aqarat.model.PropertyStatus;
+import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.AuthService;
+import co.syntropyhq.aqarat.service.PropertyService;
+import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.SceneCapture;
 import co.syntropyhq.aqarat.util.SessionManager;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -29,8 +44,45 @@ public class LoginController {
     private Label passwordError;
     @FXML
     private Label formError;
+    @FXML
+    private Label listingCountLabel;
+    @FXML
+    private Label districtCountLabel;
 
     private final AuthService authService = new AuthService(new UserDao());
+    private final PropertyService propertyService = new PropertyService(
+        new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(),
+        new AuditService(new AuditDao()));
+    private final ReferenceService referenceService =
+        new ReferenceService(new DistrictDao(), new PropertyTypeDao());
+
+    @FXML
+    private void initialize() {
+        loadCatalogueSize();
+    }
+
+    /* Decorative counts. They run off the UI thread so a slow or absent
+       database never delays the sign-in form, and a failure leaves the
+       placeholder dashes rather than interrupting someone trying to log in. */
+    private void loadCatalogueSize() {
+        Task<int[]> task = new Task<>() {
+            @Override
+            protected int[] call() throws SQLException {
+                int listings = propertyService.count(
+                    List.of(PropertyStatus.AVAILABLE), new PropertySearch());
+                int districts = referenceService.findAllDistricts().size();
+                return new int[] {listings, districts};
+            }
+        };
+        task.setOnSucceeded(event -> {
+            int[] counts = task.getValue();
+            listingCountLabel.setText(Format.count(counts[0]));
+            districtCountLabel.setText(Format.count(counts[1]));
+        });
+        Thread worker = new Thread(task, "login-catalogue-size");
+        worker.setDaemon(true);
+        worker.start();
+    }
 
     @FXML
     private void handleSignIn() {
@@ -103,6 +155,7 @@ public class LoginController {
             stage.setMinWidth(1100);
             stage.setMinHeight(700);
             stage.setScene(scene);
+            SceneCapture.install(scene);
             stage.show();
             return true;
         } catch (IOException e) {

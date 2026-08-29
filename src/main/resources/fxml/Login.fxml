@@ -6,53 +6,101 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="co.syntropyhq.aqarat.controller.LoginController"
-           styleClass="content" alignment="CENTER">
-    <VBox styleClass="card" spacing="16" maxWidth="400" alignment="TOP_CENTER">
-        <padding>
-            <Insets top="32" right="28" bottom="28" left="28"/>
-        </padding>
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.LoginController">
 
-        <ImageView fitWidth="160" preserveRatio="true">
-            <image>
-                <Image url="@../images/lockup.png"/>
-            </image>
-        </ImageView>
+    <!-- ============ Brand panel ============ -->
+    <StackPane fx:id="brandPane" styleClass="auth-brand" minWidth="380" prefWidth="640"
+               HBox.hgrow="ALWAYS">
 
-        <VBox spacing="2" alignment="CENTER">
-            <Label text="Welcome back" styleClass="page-title"/>
-            <Label text="Sign in to manage listings, viewings, and contracts" styleClass="hint" wrapText="true" alignment="CENTER"/>
+        <Region styleClass="auth-scrim"/>
+
+        <VBox spacing="0">
+            <padding>
+                <Insets top="46" right="52" bottom="46" left="52"/>
+            </padding>
+
+            <Label text="Aqarat" styleClass="brand-word"/>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <VBox spacing="18" maxWidth="500">
+                <Label styleClass="auth-statement" wrapText="true"
+                       text="Every number here can be traced to where it came from."/>
+                <Label styleClass="auth-supporting" wrapText="true"
+                       text="Valuations show their range, their reasoning, and the properties they compared against. The system advises. A person decides. Both are on the record."/>
+
+                <HBox spacing="26" alignment="CENTER_LEFT">
+                    <padding>
+                        <Insets top="10"/>
+                    </padding>
+                    <VBox spacing="0">
+                        <Label fx:id="listingCountLabel" text="—" styleClass="auth-stat-value"/>
+                        <Label text="LISTINGS" styleClass="auth-stat-label"/>
+                    </VBox>
+                    <Region styleClass="rule-v" minHeight="32" prefHeight="32" maxHeight="32"/>
+                    <VBox spacing="0">
+                        <Label fx:id="districtCountLabel" text="—" styleClass="auth-stat-value"/>
+                        <Label text="DISTRICTS" styleClass="auth-stat-label"/>
+                    </VBox>
+                    <Region styleClass="rule-v" minHeight="32" prefHeight="32" maxHeight="32"/>
+                    <VBox spacing="0">
+                        <Label text="USD" styleClass="auth-stat-value"/>
+                        <Label text="ALL PRICES" styleClass="auth-stat-label"/>
+                    </VBox>
+                </HBox>
+            </VBox>
         </VBox>
+    </StackPane>
 
-        <VBox spacing="14" maxWidth="Infinity">
-            <VBox spacing="4">
-                <Label text="Email address" styleClass="label-soft"/>
-                <TextField fx:id="emailField" promptText="name@example.com"/>
-                <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+    <!-- ============ Form ============ -->
+    <StackPane styleClass="auth-form-side" minWidth="440" prefWidth="500" alignment="CENTER">
+        <VBox spacing="26" maxWidth="396" alignment="TOP_LEFT">
+
+            <VBox spacing="6">
+                <Label text="Welcome back" styleClass="display-title"/>
+                <Label styleClass="hint" wrapText="true"
+                       text="Sign in to manage your properties, viewings and contracts."/>
             </VBox>
 
-            <VBox spacing="4">
-                <Label text="Password" styleClass="label-soft"/>
-                <PasswordField fx:id="passwordField" promptText="Enter your password"/>
-                <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+            <VBox spacing="16">
+                <VBox spacing="6">
+                    <Label text="Email address" styleClass="label-soft"/>
+                    <TextField fx:id="emailField" promptText="name@example.com"/>
+                    <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Password" styleClass="label-soft"/>
+                    <PasswordField fx:id="passwordField" promptText="Enter your password"/>
+                    <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
             </VBox>
+
+            <Label fx:id="formError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
+
+            <VBox spacing="12">
+                <Button text="Sign in" styleClass="button, button-primary" maxWidth="Infinity"
+                        defaultButton="true" onAction="#handleSignIn"/>
+                <HBox spacing="4" alignment="CENTER">
+                    <Label text="New here?" styleClass="hint"/>
+                    <Hyperlink text="Create an account" onAction="#handleRegisterLink"/>
+                </HBox>
+            </VBox>
+
+            <HBox spacing="14" alignment="CENTER">
+                <Region styleClass="rule-h" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                <Label text="OR" styleClass="hint"/>
+                <Region styleClass="rule-h" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            </HBox>
+
+            <Button text="Browse listings as a guest" styleClass="button, button-secondary"
+                    maxWidth="Infinity" onAction="#handleBrowseAsGuest"/>
         </VBox>
-
-        <Label fx:id="formError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
-
-        <Button text="Sign in" styleClass="button, button-primary" maxWidth="Infinity"
-                onAction="#handleSignIn"/>
-
-        <VBox spacing="6" alignment="CENTER">
-            <Hyperlink text="Don't have an account? Register" onAction="#handleRegisterLink"/>
-            <Hyperlink text="Browse listings without signing in →" onAction="#handleBrowseAsGuest"/>
-        </VBox>
-    </VBox>
-</StackPane>
+    </StackPane>
+</HBox>

@@ -27,6 +27,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
 
+        <!-- Empty by default. Set on the command line to have the running
+             application write PNGs of its own scene for design review:
+             ./mvnw javafx:run -Daqarat.capture.dir=C:/tmp/shots -->
+        <aqarat.capture.dir></aqarat.capture.dir>
+
         <javafx.version>21.0.8</javafx.version>
         <mssql.version>12.10.1.jre11</mssql.version>
         <hikari.version>5.1.0</hikari.version>
@@ -148,6 +153,9 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>${main.class}</mainClass>
+                    <options>
+                        <option>-Daqarat.capture.dir=${aqarat.capture.dir}</option>
+                    </options>
                 </configuration>
             </plugin>
 

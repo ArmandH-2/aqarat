@@ -35,6 +35,11 @@ public final class Format {
         return "$" + format.format(amount);
     }
 
+    /** A plain grouped count — "1,847". Not money, so it carries no symbol. */
+    public static String count(int value) {
+        return NumberFormat.getIntegerInstance(Locale.US).format(value);
+    }
+
     public static String area(BigDecimal areaSqm) {
         return wholeNumber(areaSqm) + " m²";
     }
