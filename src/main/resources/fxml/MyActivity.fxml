@@ -7,19 +7,13 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane styleClass="panel" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.MyActivityController"
             fitToWidth="true" hbarPolicy="NEVER">
     <VBox spacing="20">
         <padding>
             <Insets top="0" right="6" bottom="28" left="0"/>
         </padding>
-
-        <!-- Header -->
-        <VBox spacing="2">
-            <Label text="My Activity" styleClass="page-title"/>
-            <Label text="Track your active reservations and scheduled property viewing appointments" styleClass="hint"/>
-        </VBox>
 
         <!-- Active Reservations Section -->
         <VBox styleClass="card" spacing="12">

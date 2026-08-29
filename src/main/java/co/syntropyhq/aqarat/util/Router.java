@@ -28,6 +28,28 @@ public final class Router {
         show(panel, Integer.valueOf(id));
     }
 
+    /**
+     * Loads a panel's view for a host panel to embed, without routing to it.
+     *
+     * <p>Portfolio is one nav destination presenting three existing panels as
+     * segments. It needs their views inside its own content area rather than in
+     * the shell's, and {@code Router} stays the only class in the project that
+     * touches {@link FXMLLoader}, so the loading lives here.
+     *
+     * <p>The embedded panel is not pushed onto the history stack: it is part of
+     * the host's screen, so {@code back()} should leave the host, not step
+     * between its segments.
+     */
+    public static Parent load(Panel panel) {
+        String path = "/fxml/" + panel.getFxml();
+        FXMLLoader loader = new FXMLLoader(Router.class.getResource(path));
+        try {
+            return loader.load();
+        } catch (IOException e) {
+            throw new PanelLoadException(panel, e);
+        }
+    }
+
     public static void back() {
         if (history.isEmpty()) {
             return;

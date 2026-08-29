@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane styleClass="panel" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.MyContractsController"
             fitToWidth="true" hbarPolicy="NEVER">
     <VBox spacing="20">
@@ -18,12 +18,6 @@
         <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
 
         <VBox fx:id="contentBox" spacing="20">
-            <!-- Header -->
-            <VBox spacing="2">
-                <Label text="My Contracts &amp; Payments" styleClass="page-title"/>
-                <Label text="Review signed contracts, upcoming installment schedules, and declare direct payments" styleClass="hint"/>
-            </VBox>
-
             <!-- Contracts List -->
             <ListView fx:id="contractList" minHeight="500"/>
         </VBox>

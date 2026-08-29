@@ -375,6 +375,16 @@
 .attention-card.overdue  { -fx-border-color: -c-bad-border; }
 .attention-card.informal { -fx-border-color: -c-info-border; }
 
+.attention-eyebrow {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 600;
+}
+
+.segment-bar {
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
 /* ==========================================================================
    DISCOVER
    The search band sits on surface rather than the canvas so it reads as
