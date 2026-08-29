@@ -326,8 +326,19 @@ public class PriceEstimator {
         return 1.0 + shortfall * (ZERO_COMPARABLES_WIDTH_MULTIPLIER - 1.0);
     }
 
+    /**
+     * The flag judges the asking price, not the estimate.
+     *
+     * <p>A property being valued before its owner has decided what to ask for it
+     * has no asking price to judge, so there is no verdict: the result carries a
+     * null flag rather than claiming the absent price is acceptable. Callers that
+     * may value a draft must handle that; a saved property always has a price.
+     */
     private ValuationFlag computeFlag(BigDecimal askingPrice, BigDecimal lowerBound, BigDecimal upperBound,
             double blendedEstimate, BigDecimal implausibleThresholdPercent) {
+        if (askingPrice == null) {
+            return null;
+        }
         if (askingPrice.compareTo(lowerBound) >= 0 && askingPrice.compareTo(upperBound) <= 0) {
             return ValuationFlag.OK;
         }

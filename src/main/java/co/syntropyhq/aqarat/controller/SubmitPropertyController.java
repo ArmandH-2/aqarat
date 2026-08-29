@@ -16,6 +16,12 @@ import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.service.ValuationService;
+import co.syntropyhq.aqarat.dao.ValuationDao;
+import co.syntropyhq.aqarat.dao.SystemSettingDao;
+import co.syntropyhq.aqarat.valuation.ComparableProperty;
+import co.syntropyhq.aqarat.valuation.ValuationResult;
+import co.syntropyhq.aqarat.model.ValuationFlag;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
@@ -31,7 +37,13 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import javafx.animation.PauseTransition;
+import javafx.concurrent.Task;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.Priority;
+import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -130,12 +142,41 @@ public class SubmitPropertyController {
     @FXML
     private Label photoListLabel;
 
+    @FXML
+    private VBox valuationPanel;
+    @FXML
+    private Label estimateValue;
+    @FXML
+    private Label estimateState;
+    @FXML
+    private VBox estimateDetail;
+    @FXML
+    private Label plausibilityPill;
+    @FXML
+    private HBox rangeTrack;
+    @FXML
+    private Label lowerBoundLabel;
+    @FXML
+    private Label upperBoundLabel;
+    @FXML
+    private VBox factorsBox;
+    @FXML
+    private Label comparablesHeading;
+    @FXML
+    private VBox comparablesBox;
+
     private final List<Path> selectedPhotos = new ArrayList<>();
 
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
     private final PropertyService propertyService =
         new PropertyService(new PropertyDao(), new PropertyPhotoDao(), new PropertyMessageDao(), new AuditService(new AuditDao()));
+    private final ValuationService valuationService = new ValuationService(
+        new PropertyDao(), new ValuationDao(), new SystemSettingDao(), new DistrictDao());
+
+    /* Typing an area should not fire a valuation per keystroke, so edits settle
+       for a moment before the estimate is recomputed. */
+    private final PauseTransition valuationDebounce = new PauseTransition(Duration.millis(450));
 
     @FXML
     private void initialize() {
@@ -150,7 +191,286 @@ public class SubmitPropertyController {
         dealTypeCombo.getSelectionModel().select(DealType.SALE);
         dealTypeCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateDealTypeUi(newValue));
         updateDealTypeUi(DealType.SALE);
+        wireLiveValuation();
     }
+
+    // -------------------------------------------------------------- valuation
+
+    private void wireLiveValuation() {
+        valuationDebounce.setOnFinished(event -> refreshEstimate());
+        Runnable schedule = valuationDebounce::playFromStart;
+
+        districtCombo.valueProperty().addListener((obs, was, now) -> schedule.run());
+        propertyTypeCombo.valueProperty().addListener((obs, was, now) -> schedule.run());
+        dealTypeCombo.valueProperty().addListener((obs, was, now) -> schedule.run());
+        areaField.textProperty().addListener((obs, was, now) -> schedule.run());
+        bedroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
+        bathroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
+        yearBuiltField.textProperty().addListener((obs, was, now) -> schedule.run());
+        askingPriceField.textProperty().addListener((obs, was, now) -> schedule.run());
+        parkingCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
+        elevatorCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
+        balconyCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
+        furnishedCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
+    }
+
+    /**
+     * Values whatever has been typed so far, without saving anything.
+     *
+     * <p>The estimate needs a district, a type and an area; until all three are
+     * present the panel says so rather than showing a number it cannot justify.
+     */
+    private void refreshEstimate() {
+        Property draft = draftForValuation();
+        if (draft == null) {
+            showEstimateMessage("Enter a district, property type and area, and an estimate appears here.");
+            return;
+        }
+
+        Task<ValuationResult> task = new Task<>() {
+            @Override
+            protected ValuationResult call() throws Exception {
+                return valuationService.previewValue(draft);
+            }
+        };
+        task.setOnSucceeded(event -> renderEstimate(task.getValue(), draft));
+        task.setOnFailed(event -> {
+            Throwable cause = task.getException();
+            System.err.println("Aqarat valuation preview failed: "
+                + (cause == null ? "unknown" : cause.getClass().getSimpleName() + " - " + cause.getMessage()));
+            showEstimateMessage(
+                "Not enough comparable properties in this district yet to estimate a price.");
+        });
+
+        Thread worker = new Thread(task, "submit-valuation-preview");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private Property draftForValuation() {
+        District district = districtCombo.getValue();
+        PropertyType type = propertyTypeCombo.getValue();
+        BigDecimal area = parseDecimal(areaField.getText());
+        if (district == null || type == null || area == null || area.signum() <= 0) {
+            return null;
+        }
+
+        Property draft = new Property();
+        draft.setDistrictId(district.getId());
+        draft.setPropertyTypeId(type.getId());
+        draft.setAreaSqm(area);
+        draft.setDealType(dealTypeCombo.getValue() == null ? DealType.SALE : dealTypeCombo.getValue());
+        draft.setBedrooms(parseInt(bedroomsField.getText(), 0));
+        draft.setBathrooms(parseInt(bathroomsField.getText(), 0));
+        draft.setYearBuilt(parseNullableInt(yearBuiltField.getText()));
+        draft.setHasParking(parkingCheck.isSelected());
+        draft.setHasElevator(elevatorCheck.isSelected());
+        draft.setHasBalcony(balconyCheck.isSelected());
+        draft.setFurnished(furnishedCheck.isSelected());
+        draft.setAskingPrice(parseDecimal(askingPriceField.getText()));
+        return draft;
+    }
+
+    private void renderEstimate(ValuationResult result, Property draft) {
+        estimateValue.setText(Format.salePrice(result.getEstimatedValue()));
+        estimateState.setText(Format.pricePerSqm(result.getPricePerSqm()) + " estimated");
+        estimateDetail.setVisible(true);
+        estimateDetail.setManaged(true);
+
+        renderPlausibility(result, draft.getAskingPrice());
+        renderRange(result, draft.getAskingPrice());
+        renderFactors(result);
+        renderComparables(result);
+        AnimationUtil.fadeIn(estimateDetail, 200);
+    }
+
+    /* The flag is only meaningful once an asking price has been entered - before
+       that there is nothing to judge the estimate against. */
+    private void renderPlausibility(ValuationResult result, BigDecimal askingPrice) {
+        boolean hasAsk = askingPrice != null && askingPrice.signum() > 0;
+        plausibilityPill.setVisible(hasAsk);
+        plausibilityPill.setManaged(hasAsk);
+        if (!hasAsk) {
+            return;
+        }
+
+        plausibilityPill.getStyleClass().removeAll(
+            "pill-good", "pill-warn", "pill-bad", "pill-info", "pill-neutral");
+        switch (result.getFlag()) {
+            case ABOVE_MARKET -> {
+                plausibilityPill.setText("Above the market rate");
+                plausibilityPill.getStyleClass().add("pill-warn");
+            }
+            case IMPLAUSIBLE -> {
+                plausibilityPill.setText("Implausible for this property");
+                plausibilityPill.getStyleClass().add("pill-bad");
+            }
+            default -> {
+                plausibilityPill.setText("Your price is plausible");
+                plausibilityPill.getStyleClass().add("pill-good");
+            }
+        }
+    }
+
+    /**
+     * Draws the confidence range with the asking price marked on it.
+     *
+     * <p>Two filler regions either side of the marker rather than absolute
+     * positioning, so the bar stretches with the panel instead of drifting
+     * away from the labels beneath it.
+     */
+    private void renderRange(ValuationResult result, BigDecimal askingPrice) {
+        lowerBoundLabel.setText(Format.salePrice(result.getLowerBound()));
+        upperBoundLabel.setText(Format.salePrice(result.getUpperBound()));
+        rangeTrack.getChildren().clear();
+
+        BigDecimal low = result.getLowerBound();
+        BigDecimal high = result.getUpperBound();
+        if (low == null || high == null || high.compareTo(low) <= 0) {
+            return;
+        }
+
+        double fraction = 0.5;
+        if (askingPrice != null && askingPrice.signum() > 0) {
+            double span = high.subtract(low).doubleValue();
+            fraction = askingPrice.subtract(low).doubleValue() / span;
+            fraction = Math.max(0, Math.min(1, fraction));
+        }
+
+        Region before = new Region();
+        Region marker = new Region();
+        Region after = new Region();
+        marker.getStyleClass().add(askingPrice != null && askingPrice.signum() > 0
+            ? "range-asking-mark" : "range-estimate-mark");
+        before.setMinWidth(0);
+        after.setMinWidth(0);
+        HBox.setHgrow(before, Priority.ALWAYS);
+        HBox.setHgrow(after, Priority.ALWAYS);
+        before.setPrefWidth(fraction * 100);
+        after.setPrefWidth((1 - fraction) * 100);
+        rangeTrack.getChildren().addAll(before, marker, after);
+    }
+
+    private void renderFactors(ValuationResult result) {
+        factorsBox.getChildren().clear();
+        Map<String, BigDecimal> factors = result.getFactorContributions();
+        if (factors == null || factors.isEmpty()) {
+            factorsBox.getChildren().add(mutedLine("Only one method produced a usable number."));
+            return;
+        }
+        factors.entrySet().stream()
+            .filter(entry -> entry.getValue() != null && entry.getValue().signum() != 0)
+            .forEach(entry -> factorsBox.getChildren().add(factorRow(entry.getKey(), entry.getValue())));
+    }
+
+    private HBox factorRow(String name, BigDecimal estimate) {
+        Label label = new Label(methodName(name));
+        label.getStyleClass().add("hint");
+        label.setMinWidth(150);
+        label.setPrefWidth(150);
+        label.setWrapText(true);
+
+        Label amount = new Label(Format.salePrice(estimate));
+        amount.getStyleClass().add("body-medium");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        HBox row = new HBox(8, label, spacer, amount);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
+    }
+
+    /* The engine reports each method it tried, not a signed adjustment, so these
+       are named as the routes to a number rather than as things that moved it. */
+    private String methodName(String key) {
+        return switch (key) {
+            case "comparablesEstimate" -> "From comparable sales";
+            case "regressionEstimate" -> "From the price model";
+            case "districtAverageFallback" -> "From the district average";
+            default -> humanise(key);
+        };
+    }
+
+    private void renderComparables(ValuationResult result) {
+        comparablesBox.getChildren().clear();
+        List<ComparableProperty> comparables = result.getComparables();
+        if (comparables == null || comparables.isEmpty()) {
+            comparablesHeading.setText("Reasoned from the district average");
+            comparablesBox.getChildren().add(mutedLine("No close comparable sales were available."));
+            return;
+        }
+
+        comparablesHeading.setText("Reasoned from " + comparables.size()
+            + (comparables.size() == 1 ? " comparable" : " comparables"));
+
+        int shown = Math.min(3, comparables.size());
+        for (int i = 0; i < shown; i++) {
+            Property comparable = comparables.get(i).getProperty();
+            Label what = new Label(Format.area(comparable.getAreaSqm())
+                + " · " + comparable.getBedrooms() + " bed");
+            what.getStyleClass().add("hint");
+
+            Label price = new Label(Format.salePrice(comparable.getAskingPrice()));
+            price.getStyleClass().add("body-medium");
+
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+
+            HBox row = new HBox(8, what, spacer, price);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.getStyleClass().add("comparable-row");
+            comparablesBox.getChildren().add(row);
+        }
+    }
+
+    private Label mutedLine(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("hint");
+        label.setWrapText(true);
+        return label;
+    }
+
+    private String humanise(String key) {
+        String spaced = key.replaceAll("([a-z])([A-Z])", "$1 $2")
+            .replace('_', ' ').replace('.', ' ').trim().toLowerCase();
+        return spaced.isEmpty() ? key : Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    private void showEstimateMessage(String message) {
+        estimateValue.setText("—");
+        estimateState.setText(message);
+        estimateDetail.setVisible(false);
+        estimateDetail.setManaged(false);
+    }
+
+    private BigDecimal parseDecimal(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(text.trim().replace(",", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private int parseInt(String text, int fallback) {
+        Integer value = parseNullableInt(text);
+        return value == null ? fallback : value;
+    }
+
+    private Integer parseNullableInt(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(text.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
 
     private void denyAccess() {
         contentBox.setVisible(false);

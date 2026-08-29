@@ -92,6 +92,37 @@ public class ValuationService {
         }
     }
 
+    /**
+     * Values a property that has not been saved yet, without recording anything.
+     *
+     * <p>An owner filling in the submission form should see what the system
+     * thinks their property is worth while they are still deciding what to ask
+     * for it — that is the point of publishing the reasoning rather than a
+     * number. The draft has no id, so nothing is written to the valuation table
+     * and nothing is excluded from the comparable set as "itself"; the estimate
+     * that counts is the one taken when the submission is actually made.
+     *
+     * @param draft a property carrying at least area, district, type and deal
+     *              type; it need not exist in the database
+     */
+    public ValuationResult previewValue(Property draft) throws SQLException, CannotValueException {
+        try (Connection connection = Db.get()) {
+            BigDecimal areaTolerance = requireDecimalSetting(connection, "comparable_area_tolerance_percent");
+            int minComparableCount = requireIntSetting(connection, "comparable_min_count");
+            BigDecimal aboveMarketThreshold = requireDecimalSetting(connection, "above_market_threshold_percent");
+            BigDecimal implausibleThreshold = requireDecimalSetting(connection, "implausible_threshold_percent");
+
+            List<Property> comparables = findComparables(connection, draft, areaTolerance);
+            List<Property> regressionDataset = findRegressionDataset(connection, draft.getDealType());
+            Map<Integer, BigDecimal> districtAverages = loadDistrictAverages(connection);
+
+            // Id 0 matches no stored property, so nothing is filtered out of the
+            // comparable set and no row is written.
+            return estimate(draft, 0, comparables, regressionDataset, districtAverages,
+                minComparableCount, aboveMarketThreshold, implausibleThreshold);
+        }
+    }
+
     /** What the review screen shows on open - the most recent estimate, or null if none yet. */
     public Valuation findLatest(int propertyId) throws SQLException {
         return valuationDao.findLatestByProperty(propertyId);

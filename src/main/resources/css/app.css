@@ -850,6 +850,12 @@
     -fx-pref-width: 18px; -fx-pref-height: 18px;
 }
 
+.comparable-row {
+    -fx-background-color: -c-surface-subtle;
+    -fx-background-radius: 8px;
+    -fx-padding: 9 11 9 11;
+}
+
 .factor-track {
     -fx-background-color: -c-surface-sunken;
     -fx-background-radius: 3px;
