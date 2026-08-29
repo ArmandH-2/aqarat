@@ -31,7 +31,146 @@ public final class UIHelper {
     private static final int THUMB_WIDTH = 140;
     private static final int THUMB_HEIGHT = 100;
 
+    /** Narrowest a listing card may be before the grid drops a column. */
+    public static final double CARD_MIN_WIDTH = 268;
+
+    /** Gutter between listing cards, horizontally and vertically. */
+    public static final double CARD_GAP = 22;
+
+    /** Photographs are 3:2, matching how the seed images are cropped. */
+    private static final double CARD_PHOTO_RATIO = 2.0 / 3.0;
+
     private UIHelper() {
+    }
+
+    /**
+     * A grid card led by its photograph.
+     *
+     * <p>The list card this replaces put a 140px thumbnail beside three lines of
+     * text across the full window width, which fits three properties on a
+     * 1080-tall screen and makes a catalogue of eleven hundred homes feel like a
+     * table. Leading with the image is what lets a row of three sit side by side
+     * and what makes browsing feel like shopping rather than querying.
+     */
+    public static Node createListingCard(Property property, District district, PropertyType type,
+            String photoPath) {
+        VBox card = new VBox();
+        card.getStyleClass().add("listing-card");
+        card.setCursor(Cursor.HAND);
+
+        card.getChildren().addAll(
+            buildCardPhoto(card, photoPath, property.getStatus()),
+            buildCardBody(property, district, type));
+
+        card.setOnMouseClicked(event -> Router.show(Panel.PROPERTY_DETAILS, property.getId()));
+        AnimationUtil.addHoverLift(card);
+        return card;
+    }
+
+    /*
+     * The photograph tracks the card's width so the grid can widen its columns
+     * to fill whatever window it is given. Everything here is driven from the
+     * card's width — never the other way round — so no size feeds back upwards.
+     */
+    private static StackPane buildCardPhoto(VBox card, String photoPath, PropertyStatus status) {
+        StackPane frame = new StackPane();
+        frame.getStyleClass().add("listing-photo");
+        frame.setAlignment(Pos.TOP_LEFT);
+        frame.setMinWidth(0);
+        frame.minHeightProperty().bind(card.widthProperty().multiply(CARD_PHOTO_RATIO));
+        frame.prefHeightProperty().bind(card.widthProperty().multiply(CARD_PHOTO_RATIO));
+        frame.maxHeightProperty().bind(card.widthProperty().multiply(CARD_PHOTO_RATIO));
+
+        File file = photoPath == null ? null : new File("uploads/" + photoPath);
+        if (file != null && file.exists()) {
+            // Decoded once at a generous width; JavaFX scales it down to fit.
+            ImageView photo = new ImageView(new Image(
+                file.toURI().toString(), 600, 400, false, true, true));
+            photo.setPreserveRatio(false);
+            photo.fitWidthProperty().bind(frame.widthProperty());
+            photo.fitHeightProperty().bind(frame.heightProperty());
+
+            // Only the top corners are rounded: the photo meets the body flush.
+            Rectangle clip = new Rectangle();
+            clip.widthProperty().bind(frame.widthProperty());
+            clip.heightProperty().bind(frame.heightProperty());
+            clip.setArcWidth(24);
+            clip.setArcHeight(24);
+            photo.setClip(clip);
+            frame.getChildren().add(photo);
+        }
+
+        if (status != null) {
+            Label badge = new Label(Format.enumLabel(status));
+            badge.getStyleClass().addAll("pill-on-photo", statusToneClass(status));
+            StackPane.setMargin(badge, new Insets(12, 0, 0, 12));
+            frame.getChildren().add(badge);
+        }
+        return frame;
+    }
+
+    private static VBox buildCardBody(Property property, District district, PropertyType type) {
+        VBox body = new VBox(9);
+        body.getStyleClass().add("listing-body");
+
+        // Both deal types show a bare amount; the unit beside it carries the
+        // difference, so the two prices stay the same visual weight in a grid.
+        Label price = new Label(Format.salePrice(property.getAskingPrice()));
+        price.getStyleClass().add("price-display");
+
+        Label priceUnit = new Label(property.getDealType() == DealType.RENT
+            ? "per month"
+            : perSquareMetre(property));
+        priceUnit.getStyleClass().add("hint");
+
+        HBox priceRow = new HBox(8, price, priceUnit);
+        priceRow.setAlignment(Pos.BASELINE_LEFT);
+
+        Label title = new Label(property.getTitle());
+        title.getStyleClass().add("body-medium");
+        title.setWrapText(false);
+
+        String districtName = district == null ? "—" : district.getName();
+        String typeName = type == null ? "" : " · " + type.getName();
+        Label where = new Label(districtName + " · " + Format.enumLabel(property.getDealType()) + typeName);
+        where.getStyleClass().add("hint");
+
+        VBox naming = new VBox(2, title, where);
+
+        // Bedrooms and bathrooms are primitives: a warehouse or a plot of land
+        // legitimately has zero of both, and a chip reading "0 bed" is noise.
+        HBox specs = new HBox(7);
+        if (property.getBedrooms() > 0) {
+            specs.getChildren().add(createSpecChip(property.getBedrooms() + " bed"));
+        }
+        if (property.getBathrooms() > 0) {
+            specs.getChildren().add(createSpecChip(property.getBathrooms() + " bath"));
+        }
+        if (property.getAreaSqm() != null) {
+            specs.getChildren().add(createSpecChip(Format.area(property.getAreaSqm())));
+        }
+
+        body.getChildren().addAll(priceRow, naming, specs);
+        return body;
+    }
+
+    private static String perSquareMetre(Property property) {
+        BigDecimal area = property.getAreaSqm();
+        BigDecimal price = property.getAskingPrice();
+        if (area == null || price == null || area.signum() <= 0) {
+            return "";
+        }
+        return Format.pricePerSqm(price.divide(area, 0, RoundingMode.HALF_UP));
+    }
+
+    private static String statusToneClass(PropertyStatus status) {
+        return switch (status) {
+            case AVAILABLE -> "tone-good";
+            case RESERVED, UNDER_CONTRACT -> "tone-info";
+            case PENDING_REVIEW, NEEDS_INFO -> "tone-warn";
+            case REJECTED -> "tone-bad";
+            default -> "tone-neutral";
+        };
     }
 
     /**

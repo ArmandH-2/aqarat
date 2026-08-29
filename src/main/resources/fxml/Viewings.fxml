@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<ScrollPane styleClass="panel" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.ViewingsController"
             fitToWidth="true" hbarPolicy="NEVER">
     <VBox spacing="20">

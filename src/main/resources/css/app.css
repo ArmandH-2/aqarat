@@ -173,6 +173,12 @@
     -fx-text-fill: -c-on-primary;
 }
 
+.sidebar-brand-place {
+    -fx-font-size: 10px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -c-side-text-dim;
+}
+
 .sidebar-category {
     -fx-font-size: 10px;
     -fx-font-weight: 600;
@@ -223,10 +229,15 @@
     -fx-text-fill: -c-on-primary;
 }
 
+/* The shell contributes no padding: a panel that wants a full-bleed band —
+   Discover's search header, the sign-in photograph — has to be able to reach
+   the window edge. Panels that want the old inset carry .panel instead. */
 .content {
     -fx-background-color: -c-bg;
-    -fx-padding: 30 40 0 40;
+    -fx-padding: 0;
 }
+
+.panel { -fx-padding: 30 40 0 40; }
 
 /* ==========================================================================
    AUTHENTICATION
@@ -365,6 +376,30 @@
 .attention-card.informal { -fx-border-color: -c-info-border; }
 
 /* ==========================================================================
+   DISCOVER
+   The search band sits on surface rather than the canvas so it reads as
+   chrome, and the results scroll underneath it on the stone ground.
+   ========================================================================== */
+
+.discover-root { -fx-background-color: -c-bg; }
+
+.discover-band {
+    -fx-background-color: -c-surface;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 26 40 20 40;
+}
+
+.filter-panel {
+    -fx-background-color: -c-surface-subtle;
+    -fx-background-radius: 10px;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 10px;
+    -fx-border-width: 1px;
+    -fx-padding: 16px;
+}
+
+/* ==========================================================================
    BUTTONS
    ========================================================================== */
 
@@ -456,7 +491,8 @@
 .pill-neutral { -fx-background-color: -c-neutral-bg; -fx-border-color: -c-neutral-border; -fx-text-fill: -c-neutral; }
 
 /* Status pill floating over a photograph needs its own opaque ground,
-   because the photo underneath is not a known colour. */
+   because the photo underneath is not a known colour. Only the text carries
+   the status tone — a tinted ground would fight the image. */
 .pill-on-photo {
     -fx-background-color: rgba(255, 254, 252, 0.94);
     -fx-background-radius: 20px;
@@ -465,6 +501,12 @@
     -fx-font-size: 10.5px;
     -fx-font-weight: 600;
 }
+
+.tone-good    { -fx-text-fill: -c-good; }
+.tone-warn    { -fx-text-fill: -c-warn; }
+.tone-bad     { -fx-text-fill: -c-bad; }
+.tone-info    { -fx-text-fill: -c-info; }
+.tone-neutral { -fx-text-fill: -c-neutral; }
 
 .spec-chip {
     -fx-background-color: -c-surface-subtle;

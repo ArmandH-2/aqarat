@@ -2,8 +2,13 @@ package co.syntropyhq.aqarat.util;
 
 public enum Panel {
 
-    BROWSE_LISTINGS("BrowseListings.fxml"),
+    /* Discover replaces the separate Browse Listings and Assistant panels:
+       they were two entrances to the same catalogue. */
+    DISCOVER("Discover.fxml"),
     PROPERTY_DETAILS("PropertyDetails.fxml"),
+    /* Portfolio replaces My properties, My contracts and My activity. Those
+       three split one person's own business along database table boundaries. */
+    PORTFOLIO("Portfolio.fxml"),
     MY_PROPERTIES("MyProperties.fxml"),
     SUBMIT_PROPERTY("SubmitProperty.fxml"),
     MY_CONTRACTS("MyContracts.fxml"),
@@ -18,8 +23,7 @@ public enum Panel {
     USERS("Users.fxml"),
     REFERENCE("Reference.fxml"),
     AUDIT_LOG("AuditLog.fxml"),
-    REPORTS("Reports.fxml"),
-    ASSISTANT("Assistant.fxml");
+    REPORTS("Reports.fxml");
 
     private final String fxml;
 

@@ -1,6 +1,5 @@
 package co.syntropyhq.aqarat.controller;
 
-import co.syntropyhq.aqarat.ai.ChatClient;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.util.AlertUtil;
@@ -11,7 +10,9 @@ import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -25,12 +26,9 @@ import javafx.stage.Stage;
 public class MainShellController {
 
     private static final NavEntry[] NAV_ENTRIES = {
-        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", "DISCOVER", Role.CUSTOMER),
-        new NavEntry(Panel.ASSISTANT, "Assistant", "DISCOVER", Role.CUSTOMER, Role.AGENT, Role.ADMIN),
-        new NavEntry(Panel.MY_PROPERTIES, "My properties", "PORTFOLIO", Role.CUSTOMER),
-        new NavEntry(Panel.SUBMIT_PROPERTY, "Submit a property", "PORTFOLIO", Role.CUSTOMER),
-        new NavEntry(Panel.MY_CONTRACTS, "My contracts", "PORTFOLIO", Role.CUSTOMER),
-        new NavEntry(Panel.MY_ACTIVITY, "My activity", "PORTFOLIO", Role.CUSTOMER),
+        new NavEntry(Panel.DISCOVER, "Discover", "BROWSE", Role.CUSTOMER, Role.AGENT, Role.ADMIN),
+        new NavEntry(Panel.PORTFOLIO, "Portfolio", "MINE", Role.CUSTOMER),
+        new NavEntry(Panel.SUBMIT_PROPERTY, "Submit a property", "MINE", Role.CUSTOMER),
         new NavEntry(Panel.AGENT_DASHBOARD, "Dashboard", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
         new NavEntry(Panel.REVIEW_QUEUE, "Review queue", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
         new NavEntry(Panel.LISTINGS, "Listings", "AGENT OPERATIONS", Role.AGENT, Role.ADMIN),
@@ -44,7 +42,7 @@ public class MainShellController {
     };
 
     private static final NavEntry GUEST_ENTRY =
-        new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", "DISCOVER");
+        new NavEntry(Panel.DISCOVER, "Discover", "BROWSE");
 
     @FXML
     private VBox navItems;
@@ -60,6 +58,7 @@ public class MainShellController {
     private Button signOutButton;
 
     private final List<Label> navLabels = new ArrayList<>();
+    private final Map<Label, Panel> panelsByLabel = new HashMap<>();
 
     @FXML
     private void initialize() {
@@ -71,11 +70,12 @@ public class MainShellController {
             userRoleLabel.setText("Browsing Catalog");
             signOutButton.setText("Sign in");
             avatarContainer.getChildren().setAll(UIHelper.createAvatar("Guest", 16));
-            // The assistant is not offered to guests. Every conversation spends
-            // money against the agency's API key, so it is kept behind a name we
-            // can attribute the spend to. Guests still have the full filter
-            // search on Browse listings.
+            // A guest gets Discover, but its assistant stays behind sign-in:
+            // every conversation spends money against the agency's API key, so
+            // it is kept behind a name the spend can be attributed to. The
+            // keyword search and the whole filter set are still available.
             addNavItem(GUEST_ENTRY);
+            openFirstPanel();
             return;
         }
 
@@ -85,9 +85,6 @@ public class MainShellController {
 
         String currentCategory = null;
         for (NavEntry entry : NAV_ENTRIES) {
-            if (entry.panel == Panel.ASSISTANT && !ChatClient.isEnabled()) {
-                continue;
-            }
             if (entry.appliesTo(user.getRole())) {
                 if (currentCategory == null || !currentCategory.equals(entry.category)) {
                     currentCategory = entry.category;
@@ -96,6 +93,19 @@ public class MainShellController {
                     navItems.getChildren().add(catLabel);
                 }
                 addNavItem(entry);
+            }
+        }
+        openFirstPanel();
+    }
+
+    /* Landing in an empty content area asks the visitor to guess where to
+       start. The first panel their role can see is the answer, so it opens. */
+    private void openFirstPanel() {
+        for (Label label : navLabels) {
+            if (!label.isDisabled()) {
+                setActiveNav(label);
+                Router.show(panelsByLabel.get(label));
+                return;
             }
         }
     }
@@ -114,6 +124,7 @@ public class MainShellController {
         });
 
         navLabels.add(label);
+        panelsByLabel.put(label, entry.panel);
         navItems.getChildren().add(label);
     }
 

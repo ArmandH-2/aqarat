@@ -19,17 +19,11 @@
                 <Insets top="20" right="14" bottom="16" left="14"/>
             </padding>
 
-            <!-- Brand Header -->
-            <VBox spacing="2">
-                <HBox spacing="8" alignment="CENTER_LEFT">
-                    <ImageView fitWidth="26" fitHeight="26" preserveRatio="true">
-                        <image>
-                            <Image url="@../images/logo-64.png"/>
-                        </image>
-                    </ImageView>
-                    <Label text="Aqarat" styleClass="section-title"/>
-                </HBox>
-                <Label text="Real Estate Management" styleClass="hint"/>
+            <!-- Brand. The logo mark is drawn in brand green, which disappears
+                 against the green sidebar, so the wordmark carries it alone. -->
+            <VBox spacing="1">
+                <Label text="Aqarat" styleClass="brand-word"/>
+                <Label text="BEIRUT" styleClass="sidebar-brand-place"/>
             </VBox>
 
             <!-- Nav Items in Scrollable list to guarantee responsiveness -->

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.DiscoverController"
+      styleClass="discover-root">
+
+    <!-- ================= Search band =================
+         One field instead of eight controls. What used to be a permanently
+         expanded filter form now lives behind "All filters", because most
+         searches are one sentence and the rest are rare. -->
+    <VBox styleClass="discover-band" spacing="15">
+
+        <VBox spacing="2">
+            <Label fx:id="catalogueLabel" styleClass="eyebrow" text="LOADING THE CATALOGUE"/>
+            <Label text="Find the one" styleClass="display-title"/>
+        </VBox>
+
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" styleClass="search-hero" HBox.hgrow="ALWAYS"
+                       maxWidth="Infinity" onAction="#handleSearch"
+                       promptText="Sea view, three bedrooms, Achrafieh, under $400,000"/>
+            <Button fx:id="searchButton" text="Search" styleClass="button, button-primary"
+                    onAction="#handleSearch"/>
+            <Button fx:id="filtersButton" text="All filters" styleClass="button, button-secondary"
+                    onAction="#handleToggleFilters"/>
+        </HBox>
+
+        <!-- Parsed intent. The assistant says what it did with the sentence, and
+             every filter it inferred can be removed individually. The whole row
+             is unmanaged while nothing is filtered, so an untouched search band
+             carries no empty gap. -->
+        <VBox fx:id="readingRow" spacing="8" managed="false" visible="false">
+            <Label fx:id="readingLabel" styleClass="hint" wrapText="true"/>
+            <FlowPane fx:id="chipBar" hgap="8" vgap="8" maxWidth="Infinity"/>
+        </VBox>
+
+        <!-- Structured filters, collapsed by default -->
+        <VBox fx:id="filterPanel" styleClass="filter-panel" spacing="13" managed="false" visible="false">
+            <GridPane hgap="12" vgap="12">
+                <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="District" styleClass="label-soft"/>
+                    <ComboBox fx:id="districtCombo" maxWidth="Infinity" prefWidth="210"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="Property type" styleClass="label-soft"/>
+                    <ComboBox fx:id="typeCombo" maxWidth="Infinity" prefWidth="210"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                    <Label text="Deal type" styleClass="label-soft"/>
+                    <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity" prefWidth="210"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                    <Label text="Bedrooms" styleClass="label-soft"/>
+                    <ComboBox fx:id="bedroomsCombo" maxWidth="Infinity" prefWidth="210"/>
+                </VBox>
+
+                <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label text="Min price ($)" styleClass="label-soft"/>
+                    <TextField fx:id="minPriceField" promptText="100,000"/>
+                    <Label fx:id="minPriceError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label text="Max price ($)" styleClass="label-soft"/>
+                    <TextField fx:id="maxPriceField" promptText="500,000"/>
+                    <Label fx:id="maxPriceError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                    <Label text="Min area (m²)" styleClass="label-soft"/>
+                    <TextField fx:id="minAreaField" promptText="80"/>
+                    <Label fx:id="minAreaError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+                <VBox spacing="5" GridPane.columnIndex="3" GridPane.rowIndex="1">
+                    <Label text="Max area (m²)" styleClass="label-soft"/>
+                    <TextField fx:id="maxAreaField" promptText="300"/>
+                    <Label fx:id="maxAreaError" styleClass="field-error" managed="false" visible="false"/>
+                </VBox>
+            </GridPane>
+
+            <HBox spacing="9">
+                <Button text="Apply filters" styleClass="button, button-primary" onAction="#handleApplyFilters"/>
+                <Button text="Clear all" styleClass="button, button-ghost" onAction="#handleClearFilters"/>
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <!-- ================= Results ================= -->
+    <ScrollPane fx:id="resultsScroll" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+        <VBox spacing="16">
+            <padding>
+                <Insets top="22" right="40" bottom="28" left="40"/>
+            </padding>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label fx:id="resultsCountLabel" styleClass="body"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="pageIndicatorLabel" styleClass="hint"/>
+                <Button fx:id="previousButton" text="Previous" styleClass="button, button-secondary"
+                        onAction="#handlePrevious"/>
+                <Button fx:id="nextButton" text="Next" styleClass="button, button-secondary"
+                        onAction="#handleNext"/>
+            </HBox>
+
+            <VBox fx:id="statusBox" managed="false" visible="false"/>
+
+            <FlowPane fx:id="resultsGrid" hgap="22" vgap="22" maxWidth="Infinity" prefWrapLength="0"/>
+        </VBox>
+    </ScrollPane>
+</VBox>
