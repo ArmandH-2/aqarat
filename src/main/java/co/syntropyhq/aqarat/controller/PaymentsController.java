@@ -215,8 +215,8 @@ public class PaymentsController {
     }
 
     private String contractSummary(Contract contract) {
-        return propertyTitle(contract.getPropertyId()) + " • Client: " + userName(contract.getClientId())
-            + " • " + Format.enumLabel(contract.getStatus());
+        return propertyTitle(contract.getPropertyId()) + " • " + userName(contract.getClientId())
+            + " · " + Format.enumLabel(contract.getStatus());
     }
 
     private void handleConfirm(Payment payment) {
@@ -464,7 +464,7 @@ public class PaymentsController {
             header.getChildren().addAll(title, pill, amountLabel);
 
             Label meta = new Label("Method: " + Format.enumLabel(payment.getMethod()) + " • Declared by: "
-                + userName(payment.getDeclaredBy()) + " • " + Format.dateTime(payment.getCreatedAt()));
+                + userName(payment.getDeclaredBy()) + " · " + Format.dateTime(payment.getCreatedAt()));
             meta.getStyleClass().add("label-soft");
 
             Label proof = new Label("Proof reference: "

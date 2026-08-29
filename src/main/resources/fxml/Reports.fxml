@@ -21,18 +21,19 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Executive Business Reports &amp; Analytics" styleClass="page-title"/>
-                <Label text="Monitor monthly agency commissions, overdue portfolio collections, and valuation accuracy benchmarks" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="ADMINISTRATION" styleClass="eyebrow"/>
+                <Label text="Revenue, arrears and accuracy" styleClass="display-title"/>
+                <Label text="Commission booked by month, what is overdue, and how close the estimator has been to the prices that were actually agreed." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="revenueTabButton" text="Revenue &amp; Commission" styleClass="tab-pill-button, active"
+                <Button fx:id="revenueTabButton" text="Revenue" styleClass="tab-pill-button, active"
                         onAction="#handleRevenueTab"/>
-                <Button fx:id="overdueTabButton" text="Overdue Collections" styleClass="tab-pill-button"
+                <Button fx:id="overdueTabButton" text="Arrears" styleClass="tab-pill-button"
                         onAction="#handleOverdueTab"/>
-                <Button fx:id="marketTabButton" text="Time on Market &amp; Valuation Accuracy" styleClass="tab-pill-button"
+                <Button fx:id="marketTabButton" text="Estimator accuracy" styleClass="tab-pill-button"
                         onAction="#handleMarketTab"/>
             </HBox>
 

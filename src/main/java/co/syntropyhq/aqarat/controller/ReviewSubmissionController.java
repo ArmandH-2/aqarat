@@ -209,7 +209,7 @@ public class ReviewSubmissionController implements NeedsId {
 
         String districtName = lookupDistrictName(property.getDistrictId());
         String typeName = lookupTypeName(property.getPropertyTypeId());
-        districtSubtitle.setText(districtName + " • " + typeName + " • " + Format.enumLabel(property.getDealType()));
+        districtSubtitle.setText(districtName + " · " + typeName + " · " + Format.enumLabel(property.getDealType()));
 
         descriptionValue.setText(property.getDescription() == null || property.getDescription().isBlank()
             ? "No detailed description provided." : property.getDescription());
@@ -416,7 +416,7 @@ public class ReviewSubmissionController implements NeedsId {
         }
         for (PropertyMessage message : messages) {
             Label senderLine = new Label(
-                message.getAuthorName() + " • " + Format.dateTime(message.getCreatedAt()));
+                message.getAuthorName() + " · " + Format.dateTime(message.getCreatedAt()));
             senderLine.getStyleClass().add("hint");
             Label body = new Label(message.getMessage());
             body.setWrapText(true);
@@ -456,7 +456,7 @@ public class ReviewSubmissionController implements NeedsId {
         rangeValue.setText(formatMoney(result.getLowerBound()) + " – " + formatMoney(result.getUpperBound()));
         pricePerSqmValue.setText(Format.pricePerSqm(result.getPricePerSqm()));
         valuationMetaLabel.setText(
-            "Model " + saved.getModelVersion() + " • " + Format.dateTime(saved.getCreatedAt()));
+            "Model " + saved.getModelVersion() + " · " + Format.dateTime(saved.getCreatedAt()));
         applyFlagPill(result.getFlag());
         applyRangeCaption(result.getLowerBound(), result.getUpperBound());
         applyEvidenceLine(result.getComparables().size());
@@ -560,8 +560,8 @@ public class ReviewSubmissionController implements NeedsId {
         title.getStyleClass().add("label-soft");
         title.setStyle("-fx-font-weight: 600;");
 
-        Label meta = new Label(Format.area(comparableProperty.getAreaSqm()) + " • "
-            + formatMoney(comparableProperty.getAskingPrice()) + " • "
+        Label meta = new Label(Format.area(comparableProperty.getAreaSqm()) + " · "
+            + formatMoney(comparableProperty.getAskingPrice()) + " · "
             + Format.percentage(similarityPercent(comparable.getSimilarityScore())) + " match");
         meta.getStyleClass().add("hint");
 

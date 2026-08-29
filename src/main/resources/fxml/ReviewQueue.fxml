@@ -20,16 +20,17 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Property Review Pipeline" styleClass="page-title"/>
-                <Label text="Evaluate property submissions, run valuation estimates, and publish approved listings" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="REVIEW" styleClass="eyebrow"/>
+                <Label text="Submissions waiting" styleClass="display-title"/>
+                <Label text="An owner cannot publish their own property. Claim one to see its valuation, its comparables and the flag on its asking price." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="unassignedTabButton" text="Unassigned Pipeline" styleClass="tab-pill-button, active"
+                <Button fx:id="unassignedTabButton" text="Unclaimed" styleClass="tab-pill-button, active"
                         onAction="#handleUnassignedTab"/>
-                <Button fx:id="myQueueTabButton" text="My Review Queue" styleClass="tab-pill-button"
+                <Button fx:id="myQueueTabButton" text="Claimed by me" styleClass="tab-pill-button"
                         onAction="#handleMyQueueTab"/>
             </HBox>
 

@@ -261,7 +261,7 @@ public class UsersController {
             Label name = new Label(user.getFullName());
             name.getStyleClass().add("section-title");
 
-            Label meta = new Label(user.getEmail() + " • " + (user.getPhone() == null ? "No phone" : user.getPhone()));
+            Label meta = new Label(user.getEmail() + " · " + (user.getPhone() == null ? "No phone" : user.getPhone()));
             meta.getStyleClass().add("hint");
             info.getChildren().addAll(name, meta);
             HBox.setHgrow(info, Priority.ALWAYS);

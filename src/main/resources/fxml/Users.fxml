@@ -24,9 +24,10 @@
 
         <VBox fx:id="contentBox" spacing="20">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="User Accounts &amp; Access Control" styleClass="page-title"/>
-                <Label text="Provision agent and administrator accounts, manage user roles, and adjust system permissions" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="ADMINISTRATION" styleClass="eyebrow"/>
+                <Label text="People and access" styleClass="display-title"/>
+                <Label text="Three roles. Whether a customer is an owner or a client is answered by what they hold, not by a column, so one person needs one account." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Create New User Form Card -->

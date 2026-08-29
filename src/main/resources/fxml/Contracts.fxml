@@ -23,16 +23,17 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Contract Management Hub" styleClass="page-title"/>
-                <Label text="Draft new lease and sale agreements, generate payment schedules, and track active contracts" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="AGREEMENTS" styleClass="eyebrow"/>
+                <Label text="Contracts" styleClass="display-title"/>
+                <Label text="Activating one moves the property, generates its payment schedule and books the commission in a single transaction — all of it, or none." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="contractsTabButton" text="All Active &amp; Drafted Contracts" styleClass="tab-pill-button, active"
+                <Button fx:id="contractsTabButton" text="All contracts" styleClass="tab-pill-button, active"
                         onAction="#handleContractsTab"/>
-                <Button fx:id="draftTabButton" text="+ Draft New Contract" styleClass="tab-pill-button"
+                <Button fx:id="draftTabButton" text="Draft a contract" styleClass="tab-pill-button"
                         onAction="#handleDraftTab"/>
             </HBox>
 

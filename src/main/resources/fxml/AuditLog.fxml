@@ -24,10 +24,11 @@
             <!-- Header -->
             <HBox alignment="CENTER_LEFT" spacing="12">
                 <VBox spacing="2" HBox.hgrow="ALWAYS">
-                    <Label text="Security &amp; Audit Trail" styleClass="page-title"/>
-                    <Label text="Immutable audit record of all administrative operations, price modifications, and state transitions" styleClass="hint"/>
+                    <Label text="ADMINISTRATION" styleClass="eyebrow"/>
+                <Label text="Everything that changed" styleClass="display-title"/>
+                <Label text="Who did it, when, and the values before and after. Written by the service layer as part of the same transaction as the change itself." styleClass="hint" wrapText="true" maxWidth="760"/>
                 </VBox>
-                <Button text="📥 Export CSV Log" styleClass="button, button-secondary" onAction="#handleExport"/>
+                <Button text="Export CSV" styleClass="button, button-secondary" onAction="#handleExport"/>
             </HBox>
 
             <!-- Filter Controls Card -->

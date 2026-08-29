@@ -529,7 +529,7 @@ public class MyContractsController {
             line.setAlignment(Pos.CENTER_LEFT);
 
             Label text = new Label(Format.paymentAmount(payment.getAmount()) + " via "
-                + Format.enumLabel(payment.getMethod()) + " • " + Format.dateTime(payment.getPaidAt()));
+                + Format.enumLabel(payment.getMethod()) + " · " + Format.dateTime(payment.getPaidAt()));
             text.getStyleClass().add("body");
             HBox.setHgrow(text, Priority.ALWAYS);
 

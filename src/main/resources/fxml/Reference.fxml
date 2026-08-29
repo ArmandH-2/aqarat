@@ -21,18 +21,19 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="System Reference &amp; Configuration" styleClass="page-title"/>
-                <Label text="Manage municipal districts, property categories, valuation benchmarks, and global business parameters" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="ADMINISTRATION" styleClass="eyebrow"/>
+                <Label text="Districts, types and settings" styleClass="display-title"/>
+                <Label text="District averages feed the valuation. A changed commission rate applies to the next contract drafted, never to one already signed." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="districtsTabButton" text="Districts &amp; Price Baselines" styleClass="tab-pill-button, active"
+                <Button fx:id="districtsTabButton" text="Districts" styleClass="tab-pill-button, active"
                         onAction="#handleDistrictsTab"/>
-                <Button fx:id="typesTabButton" text="Property Categories" styleClass="tab-pill-button"
+                <Button fx:id="typesTabButton" text="Property types" styleClass="tab-pill-button"
                         onAction="#handleTypesTab"/>
-                <Button fx:id="settingsTabButton" text="System Settings" styleClass="tab-pill-button"
+                <Button fx:id="settingsTabButton" text="Settings" styleClass="tab-pill-button"
                         onAction="#handleSettingsTab"/>
             </HBox>
 

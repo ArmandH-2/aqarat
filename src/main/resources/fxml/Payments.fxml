@@ -21,16 +21,17 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Payments &amp; Collections Ledger" styleClass="page-title"/>
-                <Label text="Confirm declared customer payments, review installment schedules, and record cash/transfer receipts" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="COLLECTIONS" styleClass="eyebrow"/>
+                <Label text="Money owed and received" styleClass="display-title"/>
+                <Label text="A client declares a payment with proof; an agent confirms it. Nothing counts towards a contract until it has been confirmed." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="awaitingTabButton" text="Pending Confirmations" styleClass="tab-pill-button, active"
+                <Button fx:id="awaitingTabButton" text="Awaiting confirmation" styleClass="tab-pill-button, active"
                         onAction="#handleAwaitingTab"/>
-                <Button fx:id="recordTabButton" text="Record Contract Payment" styleClass="tab-pill-button"
+                <Button fx:id="recordTabButton" text="Record a payment" styleClass="tab-pill-button"
                         onAction="#handleRecordTab"/>
             </HBox>
 

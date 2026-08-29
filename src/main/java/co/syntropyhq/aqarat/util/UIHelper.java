@@ -165,6 +165,39 @@ public final class UIHelper {
     }
 
     /**
+     * A property thumbnail for a list row.
+     *
+     * <p>An agent's queues are lists of properties, and a property without its
+     * photograph is a line of text: everything on the screen looks the same and
+     * nothing is recognisable at a glance. The client surface leads with the
+     * image for that reason and the staff surface has the same problem.
+     *
+     * @param photoPath path relative to the uploads root, or null
+     */
+    public static StackPane createRowThumbnail(String photoPath, double width, double height) {
+        StackPane frame = new StackPane();
+        frame.getStyleClass().add("owned-thumb");
+        frame.setMinSize(width, height);
+        frame.setPrefSize(width, height);
+        frame.setMaxSize(width, height);
+
+        File file = photoPath == null ? null : new File("uploads/" + photoPath);
+        if (file != null && file.exists()) {
+            ImageView photo = new ImageView(new Image(
+                file.toURI().toString(), width * 2, height * 2, false, true, true));
+            photo.setFitWidth(width);
+            photo.setFitHeight(height);
+            photo.setPreserveRatio(false);
+            Rectangle clip = new Rectangle(width, height);
+            clip.setArcWidth(14);
+            clip.setArcHeight(14);
+            photo.setClip(clip);
+            frame.getChildren().add(photo);
+        }
+        return frame;
+    }
+
+    /**
      * Where a property has reached on its way from submission to closing.
      *
      * <p>An owner's first question is not what status their property holds — it

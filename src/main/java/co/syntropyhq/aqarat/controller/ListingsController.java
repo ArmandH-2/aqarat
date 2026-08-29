@@ -298,9 +298,9 @@ public class ListingsController {
         PropertyType type = typesById.get(property.getPropertyTypeId());
         String districtName = district == null ? "-" : district.getName();
         String typeName = type == null ? "-" : type.getName();
-        return districtName + " • " + typeName + " • " + Format.enumLabel(property.getDealType())
-            + " • " + Format.area(property.getAreaSqm())
-            + " • " + property.getBedrooms() + " beds";
+        return districtName + " · " + typeName + " · " + Format.enumLabel(property.getDealType())
+            + " · " + Format.area(property.getAreaSqm())
+            + " · " + property.getBedrooms() + " beds";
     }
 
     private final class PropertyCard extends ListCell<Property> {
@@ -312,33 +312,48 @@ public class ListingsController {
             setGraphic(empty || property == null ? null : buildCard(property));
         }
 
-        private VBox buildCard(Property property) {
+        private HBox buildCard(Property property) {
+            HBox row = new HBox(16);
+            row.getStyleClass().addAll("card", "card-hoverable");
+            row.setPadding(new Insets(16));
+            row.setAlignment(Pos.TOP_LEFT);
+
             VBox card = new VBox(10);
-            card.getStyleClass().addAll("card", "card-hoverable");
-            card.setPadding(new Insets(16));
+            HBox.setHgrow(card, Priority.ALWAYS);
 
             HBox header = new HBox(12);
             header.setAlignment(Pos.CENTER_LEFT);
 
             Label title = new Label(property.getTitle());
-            title.getStyleClass().add("section-title");
+            title.getStyleClass().add("body-medium");
+            title.setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(title, Priority.ALWAYS);
 
             Label pill = UIHelper.createStatusPill(property.getStatus());
             Label price = new Label(priceText(property));
-            price.getStyleClass().add("section-title");
-            price.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+            price.getStyleClass().add("price-display");
 
             header.getChildren().addAll(title, pill, price);
 
             Label meta = new Label(metaLine(property));
-            meta.getStyleClass().add("label-soft");
+            meta.getStyleClass().add("hint");
 
-            HBox actions = buildActions(property);
+            card.getChildren().addAll(header, meta, buildActions(property));
 
-            card.getChildren().addAll(header, meta, actions);
-            AnimationUtil.addHoverLift(card);
-            return card;
+            row.getChildren().addAll(
+                UIHelper.createRowThumbnail(firstPhotoPath(property.getId()), 132, 96), card);
+            AnimationUtil.addHoverLift(row);
+            return row;
+        }
+        // A row without its photograph is still usable, so a failed lookup is
+        // not allowed to take the whole queue down with it.
+        private String firstPhotoPath(int propertyId) {
+            try {
+                List<PropertyPhoto> photos = propertyService.findPhotos(propertyId);
+                return photos.isEmpty() ? null : photos.get(0).getFilePath();
+            } catch (SQLException e) {
+                return null;
+            }
         }
 
         private HBox buildActions(Property property) {

@@ -20,16 +20,17 @@
 
         <VBox fx:id="contentBox" spacing="18">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Property Viewing Appointments" styleClass="page-title"/>
-                <Label text="Manage client viewing requests, confirm upcoming schedules, and log appointment outcomes" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="APPOINTMENTS" styleClass="eyebrow"/>
+                <Label text="Viewings" styleClass="display-title"/>
+                <Label text="A client asks, an agent confirms. One agent cannot hold two confirmed viewings at the same hour, enforced by the database, not by this screen." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button fx:id="requestsTabButton" text="Incoming Requests" styleClass="tab-pill-button, active"
+                <Button fx:id="requestsTabButton" text="Requests" styleClass="tab-pill-button, active"
                         onAction="#handleRequestsTab"/>
-                <Button fx:id="myViewingsTabButton" text="My Confirmed Viewings" styleClass="tab-pill-button"
+                <Button fx:id="myViewingsTabButton" text="Confirmed" styleClass="tab-pill-button"
                         onAction="#handleMyViewingsTab"/>
             </HBox>
 

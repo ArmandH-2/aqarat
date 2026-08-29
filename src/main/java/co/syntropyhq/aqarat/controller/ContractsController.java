@@ -189,7 +189,9 @@ public class ContractsController {
     }
 
     private void loadContracts() {
-        contractList.setPlaceholder(UIHelper.createEmptyState("No Drafted Contracts", "Use '+ Draft New Contract' to prepare a lease or sales agreement."));
+        contractList.setPlaceholder(UIHelper.createEmptyState("No contracts yet",
+            "Contracts appear here once you draft one against a reserved property. "
+            + "Open the Draft tab to start."));
         List<Contract> results;
         try {
             results = contractService.findByAgent(SessionManager.getCurrentUser().getId());
@@ -231,8 +233,8 @@ public class ContractsController {
     private String propertySummary(Property property) {
         String termHint = property.getMinTermMonths() == null && property.getMaxTermMonths() == null
             ? "" : " • lease term " + termBounds(property);
-        return property.getTitle() + " • " + Format.enumLabel(property.getStatus())
-            + " • " + Format.enumLabel(property.getDealType()) + termHint;
+        return property.getTitle() + " · " + Format.enumLabel(property.getStatus())
+            + " · " + Format.enumLabel(property.getDealType()) + termHint;
     }
 
     private String termBounds(Property property) {
@@ -553,7 +555,9 @@ public class ContractsController {
     private String amountText(Contract contract) {
         return contract.getContractType() == ContractType.SALE
             ? Format.salePrice(contract.getTotalAmount())
-            : Format.monthlyRent(contract.getMonthlyRent()) + " / mo (" + contract.getTermMonths() + " mos)";
+            // monthlyRent already carries the unit; the term is what this adds.
+            : Format.monthlyRent(contract.getMonthlyRent())
+                + " for " + contract.getTermMonths() + " months";
     }
 
     private final class ContractCard extends ListCell<Contract> {
@@ -579,14 +583,13 @@ public class ContractsController {
 
             Label pill = UIHelper.createPill(Format.enumLabel(contract.getStatus()), pillClass(contract.getStatus()));
             Label amountLabel = new Label(amountText(contract));
-            amountLabel.getStyleClass().add("section-title");
-            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+            amountLabel.getStyleClass().add("price-display");
 
             header.getChildren().addAll(title, pill, amountLabel);
 
-            Label meta = new Label("Client: " + clientName(contract.getClientId()) + " • "
+            Label meta = new Label("" + clientName(contract.getClientId()) + " · "
                 + Format.enumLabel(contract.getContractType())
-                + " • Start Date: " + Format.date(contract.getStartDate()));
+                + " • started " + Format.date(contract.getStartDate()));
             meta.getStyleClass().add("label-soft");
 
             card.getChildren().addAll(header, meta);

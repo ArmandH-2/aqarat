@@ -362,7 +362,7 @@ public class MyPropertiesController {
             for (PropertyMessage message : messages) {
                 String sender = message.getAuthorId() == currentUserId
                     ? "You" : message.getAuthorName();
-                Label senderLine = new Label(sender + " • " + Format.dateTime(message.getCreatedAt()));
+                Label senderLine = new Label(sender + " · " + Format.dateTime(message.getCreatedAt()));
                 senderLine.getStyleClass().add("hint");
                 Label body = new Label(message.getMessage());
                 body.setWrapText(true);

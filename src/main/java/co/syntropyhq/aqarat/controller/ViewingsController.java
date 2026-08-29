@@ -257,7 +257,7 @@ public class ViewingsController {
             Label pill = UIHelper.createPill(Format.enumLabel(viewing.getStatus()), pillClass(viewing.getStatus()));
             header.getChildren().addAll(title, pill);
 
-            Label meta = new Label("Client: " + clientName(viewing.getClientId()) + " • Slot: "
+            Label meta = new Label("" + clientName(viewing.getClientId()) + " • Slot: "
                 + Format.dateTime(viewing.getScheduledAt()));
             meta.getStyleClass().add("label-soft");
 

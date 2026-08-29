@@ -19,9 +19,10 @@
 
         <VBox fx:id="contentBox" spacing="24">
             <!-- Header -->
-            <VBox spacing="2">
-                <Label text="Agent Operations Dashboard" styleClass="page-title"/>
-                <Label text="Overview of submission pipeline, active inventory, weekly appointments, and agency collections" styleClass="hint"/>
+            <VBox spacing="5">
+                <Label text="AGENT OPERATIONS" styleClass="eyebrow"/>
+                <Label text="Today" styleClass="display-title"/>
+                <Label text="What is waiting on you, what is live, and what is owed." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Top Row Stat Tiles -->
@@ -74,11 +75,11 @@
             <VBox styleClass="card" spacing="14">
                 <Label text="Quick Navigation" styleClass="section-title"/>
                 <HBox spacing="12">
-                    <Button text="📋 Review Queue" styleClass="button, button-primary" onAction="#handleGoReviewQueue"/>
-                    <Button text="🏠 All Listings" styleClass="button, button-secondary" onAction="#handleGoListings"/>
-                    <Button text="📅 Viewings Schedule" styleClass="button, button-secondary" onAction="#handleGoViewings"/>
-                    <Button text="💳 Payments Ledger" styleClass="button, button-secondary" onAction="#handleGoPayments"/>
-                    <Button text="📄 Contracts Hub" styleClass="button, button-secondary" onAction="#handleGoContracts"/>
+                    <Button text="Review Queue" styleClass="button, button-primary" onAction="#handleGoReviewQueue"/>
+                    <Button text="Listings" styleClass="button, button-secondary" onAction="#handleGoListings"/>
+                    <Button text="Viewings" styleClass="button, button-secondary" onAction="#handleGoViewings"/>
+                    <Button text="Payments" styleClass="button, button-secondary" onAction="#handleGoPayments"/>
+                    <Button text="Contracts" styleClass="button, button-secondary" onAction="#handleGoContracts"/>
                 </HBox>
             </VBox>
         </VBox>
