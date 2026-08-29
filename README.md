@@ -76,15 +76,18 @@ rounding remainder goes on the last row rather than quietly disappearing.
 **Audit trail** — every create, update and delete, with before and after values, filterable and
 exportable to CSV.
 
-**Search assistant** — describe what you want in plain English and it finds matching listings,
-explains why each one fits, and refines as you go: "cheaper", "add parking", "does the second one
-have an elevator?". The model's only job is turning the sentence into filter arguments; Java runs
-the search and every figure on a card is read from the database. It suggests and explains, and
-writes nothing.
+**Search assistant** — the search field on Discover takes a sentence. Describe what you want in
+plain English and it finds matching listings, shows you the filters it understood as chips you
+can remove one at a time, and refines as you go: "cheaper", "add parking". Where a phrase cannot
+become a filter it says so and ranks by it instead rather than dropping it silently. The model's
+only job is turning the sentence into filter arguments; Java runs the search and every figure on
+a card is read from the database. It suggests and explains, and writes nothing.
 
 It needs an OpenAI-compatible API key in `config/local.properties`. **The application runs fully
-without one** — leave `ai.enabled=false` and the assistant simply does not appear. Note that when
-it is enabled, what you type in the conversation is sent to whichever provider you configured.
+without one** — leave `ai.enabled=false` and the same field is a keyword search, with every
+filter still available. It also stays behind sign-in when enabled, because each conversation is
+billed to the agency's key and is kept attributable; a guest gets the keyword search. When it is
+enabled, what you type is sent to whichever provider you configured.
 
 ## Two things decided deliberately
 
