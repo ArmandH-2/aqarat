@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -63,6 +64,11 @@ public class PortfolioController {
 
     /** A reservation inside this window is worth interrupting someone about. */
     private static final Duration EXPIRY_WARNING = Duration.ofHours(24);
+
+    /* A strip that grows with the data stops being a summary. Four is what fits
+       one row at the narrowest supported width; the rest are counted, and the
+       segments below hold the full detail either way. */
+    private static final int MAX_ATTENTION_CARDS = 4;
 
     @FXML
     private Label accessDeniedLabel;
@@ -161,26 +167,69 @@ public class PortfolioController {
      * ask for would be worse than its absence.
      */
     private void renderAttention(int userId) {
-        List<Region> cards = new ArrayList<>();
+        List<Attention> items = new ArrayList<>();
         try {
-            cards.addAll(expiringReservations(userId));
-            cards.addAll(overdueInstalments(userId));
-            cards.addAll(propertiesNeedingInfo(userId));
+            items.addAll(expiringReservations(userId));
+            items.addAll(overdueInstalments(userId));
+            items.addAll(propertiesNeedingInfo(userId));
         } catch (SQLException | PropertyService.InvalidTransitionException e) {
             // findByClient lapses reservations that have run out, so it can fail
             // on a status transition as well as on the database.
-            cards.clear();
+            items.clear();
         }
 
-        attentionBar.getChildren().setAll(cards);
-        boolean any = !cards.isEmpty();
+        // Sharpest first: a reservation lapsing tonight outranks an instalment
+        // that has been late for a month, which outranks a message.
+        items.sort(Comparator.comparingInt((Attention item) -> item.rank)
+            .thenComparing(item -> -item.magnitude));
+
+        List<Region> shown = new ArrayList<>();
+        for (Attention item : items.subList(0, Math.min(MAX_ATTENTION_CARDS, items.size()))) {
+            shown.add(item.card);
+        }
+        int hidden = items.size() - shown.size();
+        if (hidden > 0) {
+            shown.add(overflowCard(hidden));
+        }
+
+        attentionBar.getChildren().setAll(shown);
+        boolean any = !shown.isEmpty();
         attentionSection.setVisible(any);
         attentionSection.setManaged(any);
     }
 
-    private List<Region> expiringReservations(int userId)
+    private Region overflowCard(int hidden) {
+        Label count = new Label(hidden + (hidden == 1 ? " more item" : " more items"));
+        count.getStyleClass().add("body-medium");
+
+        Label detail = new Label("Open a segment below to see everything.");
+        detail.getStyleClass().add("hint");
+        detail.setWrapText(true);
+
+        VBox card = new VBox(6, count, detail);
+        card.getStyleClass().addAll("attention-card", "informal");
+        card.setMinWidth(200);
+        card.setPrefWidth(220);
+        card.setMaxWidth(240);
+        return card;
+    }
+
+    /** One thing waiting on the customer, with what decides its place in the row. */
+    private static final class Attention {
+        private final int rank;
+        private final long magnitude;
+        private final Region card;
+
+        private Attention(int rank, long magnitude, Region card) {
+            this.rank = rank;
+            this.magnitude = magnitude;
+            this.card = card;
+        }
+    }
+
+    private List<Attention> expiringReservations(int userId)
             throws SQLException, PropertyService.InvalidTransitionException {
-        List<Region> cards = new ArrayList<>();
+        List<Attention> cards = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         for (Reservation reservation : reservationService.findByClient(userId)) {
             if (reservation.getStatus() != ReservationStatus.ACTIVE
@@ -192,20 +241,21 @@ public class PortfolioController {
                 continue;
             }
             long hours = Math.max(1, remaining.toHours());
-            cards.add(attentionCard(
+            // Fewer hours left is more urgent, so the key is inverted.
+            cards.add(new Attention(0, EXPIRY_WARNING.toHours() - hours, attentionCard(
                 "urgent",
                 "EXPIRES IN " + hours + (hours == 1 ? " HOUR" : " HOURS"),
                 "Reservation on " + propertyTitle(reservation.getPropertyId()),
                 "Your " + Format.salePrice(reservation.getDepositAmount())
                     + " deposit holds it until " + Format.dateTime(reservation.getExpiresAt()) + ".",
                 "Open contracts",
-                this::showContracts));
+                this::showContracts)));
         }
         return cards;
     }
 
-    private List<Region> overdueInstalments(int userId) throws SQLException {
-        List<Region> cards = new ArrayList<>();
+    private List<Attention> overdueInstalments(int userId) throws SQLException {
+        List<Attention> cards = new ArrayList<>();
         LocalDate today = LocalDate.now();
         for (Contract contract : contractService.findByClient(userId)) {
             for (PaymentSchedule instalment : paymentService.findScheduleByContract(contract.getId())) {
@@ -217,21 +267,21 @@ public class PortfolioController {
                     continue;
                 }
                 long days = Math.max(1, today.toEpochDay() - instalment.getDueDate().toEpochDay());
-                cards.add(attentionCard(
+                cards.add(new Attention(1, days, attentionCard(
                     "overdue",
                     "OVERDUE BY " + days + (days == 1 ? " DAY" : " DAYS"),
                     "Instalment " + instalment.getInstallmentNo(),
                     Format.paymentAmount(instalment.getAmountDue()) + " due on "
                         + propertyTitle(contract.getPropertyId()) + ".",
                     "Declare a payment",
-                    this::showContracts));
+                    this::showContracts)));
             }
         }
         return cards;
     }
 
-    private List<Region> propertiesNeedingInfo(int userId) throws SQLException {
-        List<Region> cards = new ArrayList<>();
+    private List<Attention> propertiesNeedingInfo(int userId) throws SQLException {
+        List<Attention> cards = new ArrayList<>();
         for (Property property : propertyService.findByOwner(userId)) {
             if (property.getStatus() != PropertyStatus.NEEDS_INFO) {
                 continue;
@@ -239,13 +289,13 @@ public class PortfolioController {
             String note = property.getReviewNote() == null || property.getReviewNote().isBlank()
                 ? "An agent has asked for more information before publishing."
                 : property.getReviewNote();
-            cards.add(attentionCard(
+            cards.add(new Attention(2, 0, attentionCard(
                 "informal",
                 "AGENT REPLIED",
                 property.getTitle(),
                 note,
                 "Read and respond",
-                this::showProperties));
+                this::showProperties)));
         }
         return cards;
     }

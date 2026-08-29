@@ -600,22 +600,32 @@ GO
 /* --------------------------------------------------------------------------
    Payments
 
-   Anything already due is paid, except roughly one in eight, which is what
-   populates the overdue reports. A handful sit as DECLARED so the agent's
-   confirmation queue is not empty.
+   Anything already due is paid, except roughly one in eight falling inside the
+   collections window, which is what populates the overdue reports. A handful
+   sit as DECLARED so the agent's confirmation queue is not empty.
+
+   Only recent instalments are left unpaid. An agency chases arrears; a payment
+   nine months late would have been escalated or the contract terminated long
+   before, so leaving one sitting quietly overdue describes a business that does
+   not exist. It also made a single client's portfolio read as though they had
+   never paid anything.
    -------------------------------------------------------------------------- */
+
+DECLARE @collections_window_days INT = 45;
 
 UPDATE s
 SET amount_paid = s.amount_due,
     status      = 'PAID'
 FROM dbo.payment_schedule s
 WHERE s.due_date <= CAST(SYSUTCDATETIME() AS DATE)
-  AND s.id % 8 <> 0;
+  AND (s.id % 8 <> 0
+       OR s.due_date < DATEADD(DAY, -@collections_window_days, CAST(SYSUTCDATETIME() AS DATE)));
 
 UPDATE s
 SET status = 'OVERDUE'
 FROM dbo.payment_schedule s
 WHERE s.due_date <= CAST(SYSUTCDATETIME() AS DATE)
+  AND s.due_date >= DATEADD(DAY, -@collections_window_days, CAST(SYSUTCDATETIME() AS DATE))
   AND s.id % 8 = 0;
 
 INSERT INTO dbo.payment

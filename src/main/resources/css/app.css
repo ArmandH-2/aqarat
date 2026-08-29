@@ -698,7 +698,7 @@
     -fx-border-color: -c-border-medium;
     -fx-border-radius: 12px;
     -fx-border-width: 1px;
-    -fx-padding: 13 16 13 16;
+    -fx-padding: 13 16 13 46;
     -fx-font-size: 14.5px;
     -fx-prompt-text-fill: -c-text-muted;
 }
@@ -931,3 +931,7 @@
 }
 .dialog-pane .header-panel { -fx-background-color: -c-surface-subtle; }
 .dialog-pane .content.label { -fx-font-size: 13px; -fx-text-fill: -c-text-primary; }
+
+/* The search field's leading icon. It overlays the field, so the field carries
+   extra left padding to keep the caret clear of it. */
+.search-hero-icon { -fx-icon-color: -c-primary; }

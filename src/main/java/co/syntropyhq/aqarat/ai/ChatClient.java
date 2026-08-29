@@ -126,6 +126,27 @@ public class ChatClient {
         return parseResponse(response.body());
     }
 
+    /**
+     * Books the completion's token usage.
+     *
+     * <p>Every OpenAI-compatible provider returns this block, but it is optional
+     * and a local runtime may omit it, so a missing block is skipped rather than
+     * treated as a failure — the answer is worth having, not worth failing a
+     * search over.
+     */
+    private void recordUsage(JsonObject root) {
+        JsonObject usage = root.getAsJsonObject("usage");
+        if (usage == null) {
+            return;
+        }
+        long prompt = usage.has("prompt_tokens") ? usage.get("prompt_tokens").getAsLong() : 0;
+        long completion = usage.has("completion_tokens")
+            ? usage.get("completion_tokens").getAsLong() : 0;
+        TokenLedger.record(prompt, completion);
+        System.out.println("Aqarat assistant: " + prompt + " prompt + " + completion
+            + " completion tokens. " + TokenLedger.summary());
+    }
+
     private ChatMessage parseResponse(String responseBody) throws AssistantUnavailableException {
         try {
             JsonElement parsed = JsonParser.parseString(responseBody);
@@ -133,6 +154,7 @@ public class ChatClient {
                 throw new AssistantUnavailableException("Response is not a valid JSON object.");
             }
             JsonObject root = parsed.getAsJsonObject();
+            recordUsage(root);
             JsonArray choices = root.getAsJsonArray("choices");
             if (choices == null || choices.isEmpty()) {
                 throw new AssistantUnavailableException("Chat completion response returned no choices.");

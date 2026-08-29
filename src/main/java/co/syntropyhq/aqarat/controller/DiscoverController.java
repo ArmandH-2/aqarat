@@ -4,6 +4,7 @@ import co.syntropyhq.aqarat.ai.AssistantUnavailableException;
 import co.syntropyhq.aqarat.ai.ChatClient;
 import co.syntropyhq.aqarat.ai.ChatMessage;
 import co.syntropyhq.aqarat.ai.Conversation;
+import co.syntropyhq.aqarat.ai.QueryRouter;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
@@ -32,6 +33,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -43,6 +45,10 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Region;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -68,6 +74,8 @@ public class DiscoverController {
     private TextField searchField;
     @FXML
     private Button searchButton;
+    @FXML
+    private FontIcon searchIcon;
     @FXML
     private VBox readingRow;
     @FXML
@@ -136,14 +144,14 @@ public class DiscoverController {
     private PropertySearch currentFilters = new PropertySearch();
     private int currentOffset;
     private int totalMatches;
+    private int catalogueSize;
+    private Timeline promptIntro;
 
     @FXML
     private void initialize() {
         loadReferenceData();
         configureCombos();
-        if (!assistantAvailable()) {
-            searchField.setPromptText("Search by title or location keywords");
-        }
+        introducePrompt();
         // Re-flow the grid whenever the window changes width.
         resultsGrid.widthProperty().addListener((observable, was, now) -> applyCardWidths());
         runSearch(0);
@@ -193,6 +201,62 @@ public class DiscoverController {
         };
     }
 
+    // ------------------------------------------------------------- the prompt
+
+    /**
+     * Tells the visitor what this field accepts.
+     *
+     * <p>Nothing about a text box says "you may write a sentence here", and the
+     * old placeholder — a comma-separated list of filters — actively suggested
+     * the opposite. Where the assistant is available the prompt is written in
+     * the first person and typed out once, because the motion is what makes
+     * someone read it; where it is not, the prompt says plainly that this is a
+     * keyword search rather than promising an assistant that will not answer.
+     *
+     * <p>It types once and stops. A looping animation in the corner of the eye
+     * competes with the photographs, which are the actual content, and JavaFX
+     * offers no equivalent of prefers-reduced-motion for a viewer who needs it
+     * to stop.
+     */
+    private void introducePrompt() {
+        if (!assistantAvailable()) {
+            searchIcon.setIconLiteral("fth-search");
+            searchField.setPromptText("Search by district, property type or price");
+            return;
+        }
+
+        searchIcon.setIconLiteral("fth-message-square");
+        String invitation = "I'm looking for a family home in Achrafieh under $400,000";
+
+        promptIntro = new Timeline();
+        for (int i = 1; i <= invitation.length(); i++) {
+            String shown = invitation.substring(0, i);
+            promptIntro.getKeyFrames().add(new KeyFrame(
+                Duration.millis(26.0 * i), event -> searchField.setPromptText(shown)));
+        }
+        promptIntro.setOnFinished(event -> promptIntro = null);
+
+        // Anyone who starts typing has already understood the invitation, so it
+        // gets out of the way rather than animating underneath them.
+        searchField.textProperty().addListener((observable, was, now) -> settlePrompt(invitation));
+        searchField.focusedProperty().addListener((observable, was, focused) -> {
+            if (focused) {
+                settlePrompt(invitation);
+            }
+        });
+
+        searchField.setPromptText("");
+        promptIntro.play();
+    }
+
+    private void settlePrompt(String invitation) {
+        if (promptIntro != null) {
+            promptIntro.stop();
+            promptIntro = null;
+            searchField.setPromptText(invitation);
+        }
+    }
+
     // ----------------------------------------------------------------- search
 
     /**
@@ -215,14 +279,32 @@ public class DiscoverController {
             runSearch(0);
             return;
         }
+
+        // Most searches in a property application are filters typed in a hurry —
+        // a district, a bedroom count, a ceiling price. Where the phrase is
+        // entirely made of those, it is answered here: no model call, no wait,
+        // and it works for a guest and with ai.enabled=false. Anything the
+        // router does not fully recognise, including a typo, goes to the
+        // assistant untouched.
+        Optional<QueryRouter.Routed> routed =
+            QueryRouter.route(phrase, districts, propertyTypes);
+        if (routed.isPresent()) {
+            currentFilters = routed.get().filters();
+            syncControlsFromFilters();
+            showReading(routed.get().explanation());
+            runSearch(0);
+            return;
+        }
+
         if (assistantAvailable()) {
             askAssistant(phrase);
-        } else {
-            currentFilters = new PropertySearch();
-            currentFilters.setTitleContains(phrase);
-            showReading("Matching the words \"" + phrase + "\" in listing titles.");
-            runSearch(0);
+            return;
         }
+
+        currentFilters = new PropertySearch();
+        currentFilters.setTitleContains(phrase);
+        showReading("Matching the words \"" + phrase + "\" in listing titles.");
+        runSearch(0);
     }
 
     /**
@@ -328,6 +410,14 @@ public class DiscoverController {
         try {
             results = propertyService.searchPublished(currentFilters, offset, PAGE_SIZE);
             matches = propertyService.count(List.of(PropertyStatus.AVAILABLE), currentFilters);
+            if (catalogueSize == 0) {
+                // The eyebrow describes the whole catalogue, so it is counted
+                // once without filters rather than following the result set.
+                catalogueSize = propertyService.count(
+                    List.of(PropertyStatus.AVAILABLE), new PropertySearch());
+                catalogueLabel.setText(Format.count(catalogueSize).toUpperCase()
+                    + (catalogueSize == 1 ? " LISTING" : " LISTINGS") + " ACROSS LEBANON");
+            }
         } catch (SQLException e) {
             AlertUtil.showError("Could not load listings. Check that SQL Server is running.");
             return;
@@ -349,8 +439,6 @@ public class DiscoverController {
 
     private void renderResults(List<Property> results) {
         resultsGrid.getChildren().clear();
-        catalogueLabel.setText(Format.count(totalMatches).toUpperCase()
-            + (totalMatches == 1 ? " LISTING" : " LISTINGS") + " ACROSS LEBANON");
         resultsCountLabel.setText(totalMatches == 1
             ? "1 property matches"
             : Format.count(totalMatches) + " properties match");
