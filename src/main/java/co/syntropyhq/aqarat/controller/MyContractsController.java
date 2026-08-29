@@ -54,6 +54,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -320,65 +321,182 @@ public class MyContractsController {
 
             Label pill = UIHelper.createPill(Format.enumLabel(contract.getStatus()), pillClass(contract.getStatus()));
             Label amountLabel = new Label(amountText(contract));
-            amountLabel.getStyleClass().add("section-title");
-            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+            amountLabel.getStyleClass().add("price-display");
 
             header.getChildren().addAll(title, pill, amountLabel);
 
             Label meta = new Label(Format.enumLabel(contract.getContractType())
-                + " • Start Date: " + Format.date(contract.getStartDate()));
-            meta.getStyleClass().add("label-soft");
+                + " · started " + Format.date(contract.getStartDate()));
+            meta.getStyleClass().add("hint");
 
             card.getChildren().addAll(header, meta, scheduleSection(contract), paymentsSection(contract));
             AnimationUtil.addHoverLift(card);
             return card;
         }
 
+        /*
+         * A payment schedule is a table, and it was being rendered as a stack of
+         * sentences that repeated "Installment #", "Due" and "(Paid: …)" on every
+         * line. Columns let the eye run down the dates and amounts, and the
+         * summary above answers the only question most people open this for:
+         * how much is left.
+         */
         private VBox scheduleSection(Contract contract) {
-            VBox section = new VBox(8);
+            VBox section = new VBox(11);
             section.getStyleClass().add("card-subtle");
-
-            Label heading = new Label("Installment Payment Schedule");
-            heading.getStyleClass().add("section-title");
-            heading.setStyle("-fx-font-size: 13px;");
 
             List<PaymentSchedule> schedule = scheduleFor(contract);
             if (schedule.isEmpty()) {
-                Label empty = new Label("No payment schedule items.");
+                Label heading = new Label("Payment schedule");
+                heading.getStyleClass().add("section-title");
+                Label empty = new Label("No schedule has been generated for this contract yet.");
                 empty.getStyleClass().add("hint");
                 section.getChildren().addAll(heading, empty);
                 return section;
             }
 
-            VBox rows = new VBox(6);
-            for (PaymentSchedule row : schedule) {
-                rows.getChildren().add(scheduleRow(contract, row));
-            }
-            section.getChildren().addAll(heading, rows);
+            section.getChildren().addAll(scheduleSummary(schedule), scheduleTable(contract, schedule));
             return section;
         }
 
-        private HBox scheduleRow(Contract contract, PaymentSchedule row) {
-            HBox line = new HBox(10);
+        /** Instalments settled, money settled, and a bar showing the proportion. */
+        private VBox scheduleSummary(List<PaymentSchedule> schedule) {
+            int paid = 0;
+            BigDecimal settled = BigDecimal.ZERO;
+            BigDecimal total = BigDecimal.ZERO;
+            for (PaymentSchedule row : schedule) {
+                total = total.add(row.getAmountDue());
+                if (row.getAmountPaid() != null) {
+                    settled = settled.add(row.getAmountPaid());
+                }
+                if (row.getStatus() == ScheduleStatus.PAID) {
+                    paid++;
+                }
+            }
+
+            Label heading = new Label("Payment schedule");
+            heading.getStyleClass().add("section-title");
+
+            Label progress = new Label(paid + " of " + schedule.size() + " instalments settled  ·  "
+                + Format.paymentAmount(settled) + " of " + Format.paymentAmount(total));
+            progress.getStyleClass().add("hint");
+
+            double fraction = total.signum() == 0
+                ? 0 : settled.divide(total, 4, RoundingMode.HALF_UP).doubleValue();
+            Region filled = new Region();
+            filled.getStyleClass().add("progress-filled");
+            Region rest = new Region();
+            rest.setMinWidth(0);
+            HBox.setHgrow(filled, Priority.ALWAYS);
+            HBox.setHgrow(rest, Priority.ALWAYS);
+            filled.setPrefWidth(Math.max(0.001, fraction) * 100);
+            rest.setPrefWidth((1 - fraction) * 100);
+
+            HBox bar = new HBox(filled, rest);
+            bar.getStyleClass().add("progress-track");
+
+            return new VBox(7, heading, progress, bar);
+        }
+
+        private VBox scheduleTable(Contract contract, List<PaymentSchedule> schedule) {
+            // A column that reads "—" on every row is furniture. It appears only
+            // when some instalment is genuinely part paid, which is the single
+            // case where due and settled differ and both are worth showing.
+            boolean anyPartial = schedule.stream().anyMatch(this::isPartlyPaid);
+
+            VBox table = new VBox(0);
+            table.getChildren().add(scheduleHeader(anyPartial));
+            for (PaymentSchedule row : schedule) {
+                table.getChildren().add(scheduleRow(contract, row, anyPartial));
+            }
+            return table;
+        }
+
+        private boolean isPartlyPaid(PaymentSchedule row) {
+            BigDecimal paid = row.getAmountPaid();
+            return paid != null
+                && paid.signum() > 0
+                && paid.compareTo(row.getAmountDue()) < 0;
+        }
+
+        private HBox scheduleHeader(boolean withSettled) {
+            HBox header = new HBox(12);
+            header.getStyleClass().add("schedule-header");
+            header.setAlignment(Pos.CENTER_LEFT);
+            header.getChildren().addAll(
+                columnLabel("#", 34, Pos.CENTER_LEFT),
+                columnLabel("DUE", 120, Pos.CENTER_LEFT),
+                columnLabel("AMOUNT", 130, Pos.CENTER_RIGHT));
+            if (withSettled) {
+                header.getChildren().add(columnLabel("PART PAID", 130, Pos.CENTER_RIGHT));
+            }
+            header.getChildren().addAll(grower(), columnLabel("", 190, Pos.CENTER_RIGHT));
+            return header;
+        }
+
+        private Label columnLabel(String text, double width, Pos alignment) {
+            Label label = new Label(text);
+            label.getStyleClass().add("schedule-column");
+            label.setMinWidth(width);
+            label.setPrefWidth(width);
+            label.setAlignment(alignment);
+            return label;
+        }
+
+        private Region grower() {
+            Region spacer = new Region();
+            spacer.setMinWidth(0);
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            return spacer;
+        }
+
+        private HBox scheduleRow(Contract contract, PaymentSchedule row, boolean withSettled) {
+            HBox line = new HBox(12);
+            line.getStyleClass().add("schedule-row");
             line.setAlignment(Pos.CENTER_LEFT);
-            line.setPadding(new Insets(4, 0, 4, 0));
 
-            Label text = new Label("Installment #" + row.getInstallmentNo() + " • Due "
-                + Format.date(row.getDueDate()) + " • " + Format.paymentAmount(row.getAmountDue())
-                + " (Paid: " + Format.paymentAmount(row.getAmountPaid()) + ")");
-            text.getStyleClass().add("body");
-            HBox.setHgrow(text, Priority.ALWAYS);
+            Label number = new Label(String.valueOf(row.getInstallmentNo()));
+            number.getStyleClass().add("hint");
+            number.setMinWidth(34);
+            number.setPrefWidth(34);
 
-            Label pill = UIHelper.createPill(Format.enumLabel(row.getStatus()), pillClass(row.getStatus()));
-            line.getChildren().addAll(text, pill);
+            Label due = new Label(Format.date(row.getDueDate()));
+            due.getStyleClass().add("body");
+            due.setMinWidth(120);
+            due.setPrefWidth(120);
+
+            Label amount = new Label(Format.paymentAmount(row.getAmountDue()));
+            amount.getStyleClass().add("numeric");
+            amount.setMinWidth(130);
+            amount.setPrefWidth(130);
+            amount.setAlignment(Pos.CENTER_RIGHT);
+
+            Label pill = UIHelper.createPill(
+                Format.enumLabel(row.getStatus()), pillClass(row.getStatus()));
+
+            HBox trailing = new HBox(9, pill);
+            trailing.setAlignment(Pos.CENTER_RIGHT);
+            trailing.setMinWidth(190);
+            trailing.setPrefWidth(190);
 
             if (row.getStatus() != ScheduleStatus.PAID) {
                 Button declare = new Button("Declare payment");
-                declare.getStyleClass().addAll("button", "button-primary");
-                declare.setStyle("-fx-font-size: 11px; -fx-pref-height: 28px;");
+                declare.getStyleClass().addAll("button", "button-secondary", "button-compact");
                 declare.setOnAction(event -> openDeclareDialog(contract, row));
-                line.getChildren().add(declare);
+                trailing.getChildren().add(declare);
             }
+
+            line.getChildren().addAll(number, due, amount);
+            if (withSettled) {
+                boolean partial = isPartlyPaid(row);
+                Label paid = new Label(partial ? Format.paymentAmount(row.getAmountPaid()) : "—");
+                paid.getStyleClass().add(partial ? "numeric" : "hint");
+                paid.setMinWidth(130);
+                paid.setPrefWidth(130);
+                paid.setAlignment(Pos.CENTER_RIGHT);
+                line.getChildren().add(paid);
+            }
+            line.getChildren().addAll(grower(), trailing);
             return line;
         }
 

@@ -935,3 +935,53 @@
 /* The search field's leading icon. It overlays the field, so the field carries
    extra left padding to keep the caret clear of it. */
 .search-hero-icon { -fx-icon-color: -c-primary; }
+
+/* Thumbnail on an owner's own property row, and on an agent's queue rows. */
+.owned-thumb {
+    -fx-background-color: -c-surface-sunken;
+    -fx-background-radius: 10px;
+}
+
+/* ==========================================================================
+   PAYMENT SCHEDULE
+   Columns rather than sentences: the eye runs down dates and amounts.
+   ========================================================================== */
+
+.schedule-header {
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0 0 7 0;
+}
+
+.schedule-column {
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-text-muted;
+}
+
+.schedule-row {
+    -fx-padding: 9 0 9 0;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.schedule-row:hover { -fx-background-color: -c-surface-hover; }
+
+.progress-track {
+    -fx-background-color: -c-surface-sunken;
+    -fx-background-radius: 3px;
+    -fx-min-height: 6px;
+    -fx-pref-height: 6px;
+    -fx-max-height: 6px;
+}
+
+.progress-filled {
+    -fx-background-color: -c-primary;
+    -fx-background-radius: 3px;
+}
+
+/* A button sitting inside a table row, where the standard height is too tall. */
+.button-compact {
+    -fx-pref-height: 28px;
+    -fx-padding: 4 11 4 11;
+    -fx-font-size: 11.5px;
+}

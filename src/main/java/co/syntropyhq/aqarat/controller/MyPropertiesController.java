@@ -11,6 +11,7 @@ import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
 import co.syntropyhq.aqarat.model.NewPhoto;
 import co.syntropyhq.aqarat.model.Property;
+import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyMessage;
 import co.syntropyhq.aqarat.model.PropertyStatus;
 import co.syntropyhq.aqarat.model.PropertyType;
@@ -39,11 +40,15 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 
 public class MyPropertiesController {
@@ -244,53 +249,95 @@ public class MyPropertiesController {
             setGraphic(empty || property == null ? null : buildCard(property));
         }
 
-        private VBox buildCard(Property property) {
-            VBox card = new VBox(10);
+        /*
+         * An owner's row leads with the photograph and the lifecycle bar. The
+         * old card opened with a status word, which says what a property is but
+         * not how far along it is or whether anything is waiting on them — the
+         * two things somebody opens this screen to find out.
+         */
+        private HBox buildCard(Property property) {
+            HBox card = new HBox(16);
             card.getStyleClass().addAll("card", "card-hoverable");
             card.setPadding(new Insets(16));
+            card.setAlignment(Pos.TOP_LEFT);
 
-            // Header row
-            HBox header = new HBox(12);
-            header.setAlignment(Pos.CENTER_LEFT);
-
-            Label title = new Label(property.getTitle());
-            title.getStyleClass().add("section-title");
-            HBox.setHgrow(title, Priority.ALWAYS);
-
-            Label pill = UIHelper.createStatusPill(property.getStatus());
-            Label price = new Label(priceText(property));
-            price.getStyleClass().add("section-title");
-            price.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
-
-            header.getChildren().addAll(title, pill, price);
-
-            // Meta specs line
-            District district = districtsById.get(property.getDistrictId());
-            PropertyType type = typesById.get(property.getPropertyTypeId());
-            String locationStr = (district != null ? district.getName() : "—")
-                + " • " + (type != null ? type.getName() : "—")
-                + " • " + Format.enumLabel(property.getDealType())
-                + " • " + Format.area(property.getAreaSqm());
-
-            Label meta = new Label(locationStr);
-            meta.getStyleClass().add("label-soft");
-
-            card.getChildren().addAll(header, meta);
-
-            // Discussion thread if any
-            VBox thread = buildThread(property);
-            if (thread != null) {
-                card.getChildren().add(thread);
-            }
-
-            // Actions row
-            HBox actions = buildActions(property);
-            if (!actions.getChildren().isEmpty()) {
-                card.getChildren().add(actions);
-            }
-
+            card.getChildren().addAll(buildThumbnail(property), buildBody(property));
             AnimationUtil.addHoverLift(card);
             return card;
+        }
+
+        private StackPane buildThumbnail(Property property) {
+            StackPane frame = new StackPane();
+            frame.getStyleClass().add("owned-thumb");
+            frame.setMinSize(132, 96);
+            frame.setPrefSize(132, 96);
+            frame.setMaxSize(132, 96);
+
+            String path = firstPhotoPath(property.getId());
+            File file = path == null ? null : new File("uploads/" + path);
+            if (file != null && file.exists()) {
+                ImageView photo = new ImageView(
+                    new Image(file.toURI().toString(), 264, 192, false, true, true));
+                photo.setFitWidth(132);
+                photo.setFitHeight(96);
+                photo.setPreserveRatio(false);
+                Rectangle clip = new Rectangle(132, 96);
+                clip.setArcWidth(14);
+                clip.setArcHeight(14);
+                photo.setClip(clip);
+                frame.getChildren().add(photo);
+            }
+            return frame;
+        }
+
+        private VBox buildBody(Property property) {
+            VBox body = new VBox(11);
+            HBox.setHgrow(body, Priority.ALWAYS);
+
+            Label title = new Label(property.getTitle());
+            title.getStyleClass().add("body-medium");
+            title.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(title, Priority.ALWAYS);
+
+            Label price = new Label(priceText(property));
+            price.getStyleClass().add("price-display");
+
+            HBox header = new HBox(12, title,
+                UIHelper.createStatusPill(property.getStatus()), price);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            District district = districtsById.get(property.getDistrictId());
+            PropertyType type = typesById.get(property.getPropertyTypeId());
+            Label meta = new Label((district != null ? district.getName() : "\u2014")
+                + " \u00b7 " + (type != null ? type.getName() : "\u2014")
+                + " \u00b7 " + Format.enumLabel(property.getDealType())
+                + " \u00b7 " + Format.area(property.getAreaSqm()));
+            meta.getStyleClass().add("hint");
+
+            body.getChildren().addAll(header, meta,
+                UIHelper.createLifecycleBar(property.getStatus()));
+
+            VBox thread = buildThread(property);
+            if (thread != null) {
+                body.getChildren().add(thread);
+            }
+
+            HBox actions = buildActions(property);
+            if (!actions.getChildren().isEmpty()) {
+                body.getChildren().add(actions);
+            }
+            return body;
+        }
+
+        // A row without its photograph is still a usable row, so a lookup that
+        // fails is not allowed to take the list down with it.
+        private String firstPhotoPath(int propertyId) {
+            try {
+                List<PropertyPhoto> photos = propertyService.findPhotos(propertyId);
+                return photos.isEmpty() ? null : photos.get(0).getFilePath();
+            } catch (SQLException e) {
+                return null;
+            }
         }
 
         private VBox buildThread(Property property) {

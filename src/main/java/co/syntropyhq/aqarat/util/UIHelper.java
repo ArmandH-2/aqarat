@@ -17,6 +17,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
@@ -161,6 +162,70 @@ public final class UIHelper {
             return "";
         }
         return Format.pricePerSqm(price.divide(area, 0, RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Where a property has reached on its way from submission to closing.
+     *
+     * <p>An owner's first question is not what status their property holds — it
+     * is how far along it is and what is holding it up. A status word answers
+     * neither; four segments and a sentence answer both. A blocked stage is
+     * drawn in red rather than left uncoloured, because "waiting on you" and
+     * "not started" are different things.
+     */
+    public static VBox createLifecycleBar(PropertyStatus status) {
+        int reached = stageOf(status);
+        boolean blocked = status == PropertyStatus.NEEDS_INFO
+            || status == PropertyStatus.REJECTED;
+
+        HBox track = new HBox(4);
+        for (int stage = 1; stage <= 4; stage++) {
+            Region segment = new Region();
+            segment.getStyleClass().add("lifecycle-seg");
+            if (stage < reached) {
+                segment.getStyleClass().add("done");
+            } else if (stage == reached) {
+                segment.getStyleClass().add(blocked ? "blocked" : "current");
+            }
+            HBox.setHgrow(segment, Priority.ALWAYS);
+            segment.setMinWidth(0);
+            track.getChildren().add(segment);
+        }
+
+        Label caption = new Label(lifecycleCaption(status));
+        caption.getStyleClass().add("hint");
+        caption.setWrapText(true);
+
+        VBox bar = new VBox(6, track, caption);
+        bar.setFillWidth(true);
+        return bar;
+    }
+
+    private static int stageOf(PropertyStatus status) {
+        return switch (status) {
+            case DRAFT -> 1;
+            case PENDING_REVIEW, NEEDS_INFO, REJECTED -> 2;
+            case AVAILABLE, WITHDRAWAL_REQUESTED -> 3;
+            case RESERVED, UNDER_CONTRACT, CLOSED -> 4;
+            case WITHDRAWN -> 0;
+        };
+    }
+
+    /* Says what happens next, not what happened. An owner reading this wants to
+       know whether they need to do something. */
+    private static String lifecycleCaption(PropertyStatus status) {
+        return switch (status) {
+            case DRAFT -> "Not submitted yet — finish it to send it for review.";
+            case PENDING_REVIEW -> "With an agent for review. Nothing needed from you.";
+            case NEEDS_INFO -> "An agent has asked you for more before it can be published.";
+            case REJECTED -> "Not published. The agent's reason is in the discussion below.";
+            case AVAILABLE -> "Live and visible to everyone browsing.";
+            case WITHDRAWAL_REQUESTED -> "You asked to withdraw it; an agent is confirming.";
+            case RESERVED -> "Reserved by a client. A deposit is holding it.";
+            case UNDER_CONTRACT -> "Under contract. Payments are running to schedule.";
+            case CLOSED -> "Closed. The deal completed.";
+            case WITHDRAWN -> "Withdrawn from the market.";
+        };
     }
 
     private static String statusToneClass(PropertyStatus status) {
