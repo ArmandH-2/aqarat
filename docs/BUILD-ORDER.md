@@ -230,11 +230,39 @@ still runs identically with `ai.enabled=false`.
 
 ---
 
-## Full UI Upgrade & Polish Focus
+## Phase 9 - Client surface rework - **DONE**
 
-With all initial functional phases complete, every panel is eligible for full visual, interactive, and UX upgrades:
+Recorded in `docs/UX-REWORK.md`, which carries the diagnosis, the requirements
+and the decisions. In short: warm stone ground, bundled display serif, real
+photography, and navigation collapsed from five customer entries to three.
 
-1. **Rich Dashboards & Overviews**: `AgentDashboard`, `Reports`, and `BrowseListings` enhanced with KPI tiles, charts, and interactive filtering.
-2. **Review & Valuation Experience**: `ReviewSubmission` and `PropertyDetails` enhanced with gallery overlays, comparison metrics, and interactive maps/breakdowns.
-3. **Transactional Workflows**: `Contracts`, `Payments`, and `SubmitProperty` upgraded with multi-step steppers, responsive validation, and receipt generation previews.
-4. **Administrative Hub**: `Users`, `Reference`, and `AuditLog` polished with advanced data tables, batch actions, and search indexing.
+- Sign in and Register rebuilt as a split brand panel.
+- Discover replaces Browse Listings and Assistant.
+- Property details leads with the photograph.
+- Portfolio replaces My properties, My contracts and My activity.
+- Submit shows the valuation live while the owner is still deciding a price.
+
+**Done when:** a customer can sign in, search in plain English, open a listing,
+see their portfolio with what needs them on top, and watch an estimate appear as
+they describe a property - and the application still runs with
+`ai.enabled=false`.
+
+---
+
+## Phase 10 - Agent and admin surface
+
+The staff panels have the design system applied but keep the old generic shape:
+controls on top, list below. They need what the client surface got.
+
+1. **Review Submission and Agent Dashboard first.** This is where an agent
+   spends the day, and Review Submission is where the valuation, the flag and
+   the comparables actually drive a decision.
+2. **Review queue, Listings, Viewings** - the queues. Lead with what is waiting
+   and for how long, as Portfolio does.
+3. **Contracts and Payments** - money over time. Neither should be a flat list.
+4. **Users, Reference data, Audit log** - dense tables done properly, with the
+   audit log readable as a history rather than a dump.
+
+Also outstanding, from `docs/UX-REWORK.md` section 5: the list cells inside
+Portfolio's three embedded panels, and re-basing seed dates so a demonstration
+does not show an instalment overdue by more than a year.

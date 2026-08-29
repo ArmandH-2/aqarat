@@ -17,36 +17,45 @@ This design system defines the visual identity, tokens, component library, and i
 
 ### Core Colors & Surfaces
 
+The canvas is warm stone, not neutral grey. A cold grey ground is the strongest
+visual cue that a desktop application is a data-entry form, and changing it is
+the single highest-leverage token in this system.
+
 | Token | Value | Description |
 |---|---|---|
-| `-c-bg` | `#F4F5F4` | Application canvas background |
-| `-c-surface` | `#FFFFFF` | Primary card, panel, and input background |
-| `-c-surface-subtle` | `#F8F9F8` | Table headers, secondary container surfaces |
-| `-c-surface-hover` | `#EDF0EE` | Hover states for list rows, table rows, and tiles |
-| `-c-surface-active` | `#E3E8E4` | Active/selected background states |
-| `-c-border-subtle` | `#E2E5E2` | Hairline dividers and card borders |
-| `-c-border-medium` | `#CDD2CD` | Input borders, secondary button outlines |
-| `-c-border-strong` | `#9FA7A0` | Focused boundaries and high-emphasis outlines |
+| `-c-bg` | `#F2EFE9` | Application canvas — warm stone |
+| `-c-surface` | `#FFFEFC` | Card, panel and input background — warm white |
+| `-c-surface-subtle` | `#F8F5EF` | Table headers, secondary containers |
+| `-c-surface-hover` | `#EFEAE0` | Hover on rows and tiles |
+| `-c-surface-active` | `#E7E0D3` | Active and selected backgrounds |
+| `-c-surface-sunken` | `#EAE5DB` | Photo wells, range tracks |
+| `-c-border-subtle` | `#E4DFD5` | Hairline dividers and card borders |
+| `-c-border-medium` | `#D2CBBE` | Input borders, secondary button outlines |
+| `-c-border-strong` | `#A9A196` | Focused boundaries |
 
 ### Brand & Accents
 
 | Token | Value | Description |
 |---|---|---|
-| `-c-primary` | `#004225` | Deep British Racing Green (Primary brand) |
-| `-c-primary-light` | `#0B5D36` | Primary hover & interactive elements |
-| `-c-primary-dark` | `#002E19` | Primary pressed state |
-| `-c-primary-tint` | `#E6EFEA` | Soft green background for pills, highlights, active nav |
-| `-c-primary-subtle` | `#F0F6F2` | Subtle section backgrounds |
-| `-c-on-primary` | `#FFFFFF` | Text on primary brand surfaces |
+| `-c-primary` | `#004225` | Deep British Racing Green (brand) |
+| `-c-primary-light` | `#0B5D36` | Primary hover, active nav |
+| `-c-primary-dark` | `#00291A` | Sidebar ground, pressed state |
+| `-c-primary-deep` | `#041F14` | Auth panel ground |
+| `-c-primary-tint` | `#E6EFEA` | Pills, highlights |
+| `-c-brass` | `#A67C2E` | Eyebrows, links, emphasis |
+| `-c-brass-bright` | `#C9A227` | Counts, the asking-price mark |
+| `-c-on-primary` | `#FFFEFC` | Text on brand surfaces |
+
+Brass is an accent, never a fill for a large area.
 
 ### Typography Colors
 
 | Token | Value | Description |
 |---|---|---|
-| `-c-text-primary` | `#141A16` | Main headings, key data, body text |
-| `-c-text-secondary` | `#4F5952` | Subheadings, section titles, field labels |
-| `-c-text-muted` | `#78837B` | Captions, hints, placeholders, secondary timestamps |
-| `-c-text-disabled` | `#A6B0A8` | Disabled text |
+| `-c-text-primary` | `#1A1815` | Headings, key data, body — warm near-black |
+| `-c-text-secondary` | `#5A554C` | Subheadings, field labels |
+| `-c-text-muted` | `#8A8378` | Captions, hints, placeholders |
+| `-c-text-disabled` | `#B5AEA2` | Disabled text |
 
 ### Status Colors & Tints
 
@@ -73,19 +82,36 @@ JavaFX supports smooth drop shadows via `-fx-effect`. Use layered shadows to est
 
 ## 4. Typography Scale
 
-Font Family: `"Inter", "Segoe UI", -apple-system, sans-serif;`
+Two families, both bundled under `src/main/resources/fonts` and loaded by
+`App.loadFonts()` so the application looks the same on a machine that has
+installed neither. A font that will not load degrades to the fallback stack
+rather than failing the launch.
 
-| Style Class | Size | Weight | Line Height / Role |
-|---|---|---|---|
-| `.hero-title` | 26px | 700 (Bold) | Dashboard greetings, main landing headers |
-| `.page-title` | 20px | 600 (Semi-Bold) | Top-level view headings |
-| `.section-title` | 16px | 600 (Semi-Bold) | Card headers, form section headers |
-| `.metric-value` | 24px | 700 (Bold) | Key KPI metrics and summary numbers |
-| `.body` | 13px | 400 (Regular) | Default content and tables |
-| `.body-medium` | 13px | 500 (Medium) | Emphasized body text |
-| `.label-caption` | 12px | 500 (Medium) | Form input labels, table column headers |
-| `.hint-caption` | 11px | 400 (Regular) | Metadata, input help text, timestamps |
-| `.badge-text` | 11px | 600 (Semi-Bold) | Status badges, category pills |
+- **Display — `"Instrument Serif", Georgia, serif`.** Display sizes only. Below
+  about 20px its stroke contrast turns fragile on Windows.
+- **Interface — `"Inter", "Segoe UI", sans-serif`.** Everything else.
+
+| Style Class | Family | Size | Weight | Role |
+|---|---|---|---|---|
+| `.display-title-lg` | Serif | 42px | 400 | Property titles, the valuation figure |
+| `.auth-statement` | Serif | 44px | 400 | The sign-in statement |
+| `.display-title` | Serif | 34px | 400 | Panel headings |
+| `.hero-title` | Serif | 30px | 400 | Secondary headings |
+| `.price-display-lg` | Serif | 36px | 400 | Price on a detail panel |
+| `.metric-value` | Serif | 28px | 400 | KPI figures |
+| `.price-display` | Serif | 25px | 400 | Price on a listing card |
+| `.brand-word` | Serif | 23px | 400 | Wordmark |
+| `.page-title` | Sans | 20px | 700 | Legacy panel headings |
+| `.spec-strip-value` | Sans | 19px | 600 | Specification figures |
+| `.section-title` | Sans | 15px | 600 | Card and section headers |
+| `.body` / `.body-medium` | Sans | 13px | 400 / 500 | Content and tables |
+| `.label-soft` | Sans | 12px | 500 | Field labels |
+| `.hint` | Sans | 11.5px | 400 | Metadata, help text, timestamps |
+| `.eyebrow` | Sans | 10.5px | 600 | Uppercase brass line above a display title |
+| `.pill` | Sans | 10.5px | 600 | Status badges |
+
+An eyebrow replaces the subtitle that used to sit under every panel title. It
+carries the same information without competing with the heading beneath it.
 
 ---
 
