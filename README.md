@@ -75,6 +75,16 @@ rounding remainder goes on the last row rather than quietly disappearing.
 **Audit trail** — every create, update and delete, with before and after values, filterable and
 exportable to CSV.
 
+**Search assistant** — describe what you want in plain English and it finds matching listings,
+explains why each one fits, and refines as you go: "cheaper", "add parking", "does the second one
+have an elevator?". The model's only job is turning the sentence into filter arguments; Java runs
+the search and every figure on a card is read from the database. It suggests and explains, and
+writes nothing.
+
+It needs an OpenAI-compatible API key in `config/local.properties`. **The application runs fully
+without one** — leave `ai.enabled=false` and the assistant simply does not appear. Note that when
+it is enabled, what you type in the conversation is sent to whichever provider you configured.
+
 ## Two things decided deliberately
 
 **There is no scheduler.** A reservation past its expiry and a payment past its grace period are
@@ -175,6 +185,7 @@ fresh seed by construction, not by fault.
 | [`docs/BUILD-ORDER.md`](docs/BUILD-ORDER.md) | The order it was built in, phase by phase |
 | [`docs/UI-STYLE.md`](docs/UI-STYLE.md) | The palette, spacing and components |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Decisions taken and the alternatives rejected |
+| [`docs/ai-agent/`](docs/ai-agent/README.md) | The search assistant: requirements, diagrams, tasks |
 | [`CLAUDE.md`](CLAUDE.md) | Coding conventions |
 
 ---

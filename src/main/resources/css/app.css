@@ -532,3 +532,34 @@
     -fx-border-color: -c-primary;
     -fx-text-fill: -c-primary;
 }
+
+/* ==========================================================================
+   AI ASSISTANT CHAT SYSTEM
+   ========================================================================== */
+
+.chat-bubble-user {
+    -fx-background-color: -c-primary-tint;
+    -fx-background-radius: 12px 12px 2px 12px;
+    -fx-padding: 10 14 10 14;
+    -fx-text-fill: -c-text-primary;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.chat-bubble-assistant {
+    -fx-background-color: -c-surface;
+    -fx-border-color: -c-border-subtle;
+    -fx-border-radius: 12px 12px 12px 2px;
+    -fx-background-radius: 12px 12px 12px 2px;
+    -fx-padding: 12 16 12 16;
+    -fx-text-fill: -c-text-primary;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.chat-typing {
+    -fx-font-style: italic;
+    -fx-text-fill: -c-text-muted;
+    -fx-font-size: 12px;
+    -fx-padding: 4 8 4 8;
+}

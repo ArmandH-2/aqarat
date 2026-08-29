@@ -1,7 +1,7 @@
 # Diagrams
 
-Four views of the same system: who uses it, what it stores, how the code is arranged, and
-how a property moves through its life.
+Five views of the same system: who uses it, what it stores, how the code is arranged, how a
+property moves through its life, and what crosses the boundary when the search assistant runs.
 
 They are written as Mermaid rather than exported from a drawing tool, so a change to the
 design is a change to this file — a diagram that has to be re-exported by hand is a diagram
@@ -199,3 +199,33 @@ Two of these transitions are decided when a row is **read**, not by a timer: a r
 past its expiry, and a schedule row past its grace period. There is no scheduler in this
 system, deliberately — a background thread in a desktop application is a source of bugs, and
 a read-time answer is still correct after the application has been closed for a month.
+
+---
+
+## 5. Search assistant, data flow
+
+The context-level view. The processes inside the assistant, and the use cases it serves, are in
+[`docs/ai-agent/DIAGRAMS.md`](ai-agent/DIAGRAMS.md).
+
+```mermaid
+graph LR
+    user([User<br/>guest, customer or agent])
+    llm([OpenAI-compatible<br/>chat completions API])
+
+    user -->|property description,<br/>refinement, question| assistant[Aqarat<br/>search assistant]
+    assistant -->|suggestions, reasons,<br/>clarifying questions| user
+
+    assistant -->|conversation + tool schemas| llm
+    llm -->|reply, or tool call<br/>with filter arguments| assistant
+
+    assistant -->|PropertySearch filters| db[(Aqarat<br/>SQL Server)]
+    db -->|AVAILABLE property rows,<br/>districts, types, photos| assistant
+```
+
+The flow to the model carries the conversation and the two tool schemas, and nothing else. Owner
+identity, internal notes, review notes and valuations never cross that boundary, because a guest
+is not entitled to see them and the reliable way to guarantee that is to never send them.
+
+The flow back carries either prose or a set of filter arguments. It never carries SQL, and it
+never carries a price or an address that the application will then display — every figure on a
+result card is read from the database row.

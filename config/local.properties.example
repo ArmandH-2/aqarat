@@ -12,3 +12,10 @@ db.pool.timeoutMs=30000
 # Where uploaded photos and payment proofs are written
 storage.images=uploads/images
 storage.proofs=uploads/proofs
+
+# AI assistant. Leave ai.enabled=false to run the application without it.
+ai.enabled=false
+ai.baseUrl=https://api.openai.com/v1
+ai.apiKey=CHANGE_ME
+ai.model=gpt-4o-mini
+ai.timeoutMs=30000

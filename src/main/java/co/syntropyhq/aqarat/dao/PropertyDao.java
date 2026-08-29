@@ -37,8 +37,14 @@ public class PropertyDao {
           AND (? IS NULL OR asking_price >= ?)
           AND (? IS NULL OR asking_price <= ?)
           AND (? IS NULL OR bedrooms = ?)
+          AND (? IS NULL OR bathrooms = ?)
           AND (? IS NULL OR area_sqm >= ?)
           AND (? IS NULL OR area_sqm <= ?)
+          AND (? IS NULL OR has_parking = ?)
+          AND (? IS NULL OR has_elevator = ?)
+          AND (? IS NULL OR has_balcony = ?)
+          AND (? IS NULL OR is_furnished = ?)
+          AND (? IS NULL OR district_id IN (SELECT id FROM district WHERE governorate = ?))
           AND (? IS NULL OR title LIKE ?)
           AND (? IS NULL OR agent_id = ?)
           AND (? IS NULL OR agent_id IS NULL)
@@ -109,10 +115,26 @@ public class PropertyDao {
         statement.setBigDecimal(index++, filters.getMaxPrice());
         statement.setObject(index++, filters.getBedrooms());
         statement.setObject(index++, filters.getBedrooms());
+        statement.setObject(index++, filters.getBathrooms());
+        statement.setObject(index++, filters.getBathrooms());
         statement.setBigDecimal(index++, filters.getMinArea());
         statement.setBigDecimal(index++, filters.getMinArea());
         statement.setBigDecimal(index++, filters.getMaxArea());
         statement.setBigDecimal(index++, filters.getMaxArea());
+        Boolean hasParking = Boolean.TRUE.equals(filters.getHasParking()) ? Boolean.TRUE : null;
+        statement.setObject(index++, hasParking);
+        statement.setObject(index++, hasParking);
+        Boolean hasElevator = Boolean.TRUE.equals(filters.getHasElevator()) ? Boolean.TRUE : null;
+        statement.setObject(index++, hasElevator);
+        statement.setObject(index++, hasElevator);
+        Boolean hasBalcony = Boolean.TRUE.equals(filters.getHasBalcony()) ? Boolean.TRUE : null;
+        statement.setObject(index++, hasBalcony);
+        statement.setObject(index++, hasBalcony);
+        Boolean isFurnished = Boolean.TRUE.equals(filters.getIsFurnished()) ? Boolean.TRUE : null;
+        statement.setObject(index++, isFurnished);
+        statement.setObject(index++, isFurnished);
+        statement.setString(index++, filters.getGovernorate());
+        statement.setString(index++, filters.getGovernorate());
         String titlePattern =
             filters.getTitleContains() == null ? null : "%" + filters.getTitleContains() + "%";
         statement.setString(index++, filters.getTitleContains());

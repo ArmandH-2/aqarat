@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 
 // The optional filters for PropertyDao.search. Every field may be left null,
 // meaning "do not filter on this". This is a plain holder so the search
-// method does not take nine arguments - not a builder, just fields.
+// method does not take fifteen arguments - not a builder, just fields.
 public class PropertySearch {
 
     private Integer districtId;
@@ -14,8 +14,14 @@ public class PropertySearch {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private Integer bedrooms;
+    private Integer bathrooms;
     private BigDecimal minArea;
     private BigDecimal maxArea;
+    private Boolean hasParking;
+    private Boolean hasElevator;
+    private Boolean hasBalcony;
+    private Boolean isFurnished;
+    private String governorate;
     private String titleContains;
     private Integer agentId;
     private Boolean unassignedOnly;
@@ -87,6 +93,14 @@ public class PropertySearch {
         this.bedrooms = bedrooms;
     }
 
+    public Integer getBathrooms() {
+        return bathrooms;
+    }
+
+    public void setBathrooms(Integer bathrooms) {
+        this.bathrooms = bathrooms;
+    }
+
     public BigDecimal getMinArea() {
         return minArea;
     }
@@ -101,6 +115,46 @@ public class PropertySearch {
 
     public void setMaxArea(BigDecimal maxArea) {
         this.maxArea = maxArea;
+    }
+
+    public Boolean getHasParking() {
+        return hasParking;
+    }
+
+    public void setHasParking(Boolean hasParking) {
+        this.hasParking = hasParking;
+    }
+
+    public Boolean getHasElevator() {
+        return hasElevator;
+    }
+
+    public void setHasElevator(Boolean hasElevator) {
+        this.hasElevator = hasElevator;
+    }
+
+    public Boolean getHasBalcony() {
+        return hasBalcony;
+    }
+
+    public void setHasBalcony(Boolean hasBalcony) {
+        this.hasBalcony = hasBalcony;
+    }
+
+    public Boolean getIsFurnished() {
+        return isFurnished;
+    }
+
+    public void setIsFurnished(Boolean isFurnished) {
+        this.isFurnished = isFurnished;
+    }
+
+    public String getGovernorate() {
+        return governorate;
+    }
+
+    public void setGovernorate(String governorate) {
+        this.governorate = governorate;
     }
 
     public String getTitleContains() {

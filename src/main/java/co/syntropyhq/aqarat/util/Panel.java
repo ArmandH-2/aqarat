@@ -18,7 +18,8 @@ public enum Panel {
     USERS("Users.fxml"),
     REFERENCE("Reference.fxml"),
     AUDIT_LOG("AuditLog.fxml"),
-    REPORTS("Reports.fxml");
+    REPORTS("Reports.fxml"),
+    ASSISTANT("Assistant.fxml");
 
     private final String fxml;
 

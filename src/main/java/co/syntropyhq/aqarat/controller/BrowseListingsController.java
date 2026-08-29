@@ -19,33 +19,20 @@ import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Format;
-import co.syntropyhq.aqarat.util.Panel;
-import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.UIHelper;
-import java.io.File;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.util.StringConverter;
 
 public class BrowseListingsController {
@@ -286,113 +273,23 @@ public class BrowseListingsController {
     }
 
     private Node buildRichPropertyCard(Property property) {
-        HBox card = new HBox(16);
-        card.getStyleClass().addAll("card", "card-hoverable");
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setPadding(new Insets(14));
-        card.setCursor(Cursor.HAND);
-
-        // Photo Thumbnail
-        StackPane photoContainer = new StackPane();
-        photoContainer.setPrefSize(140, 100);
-        photoContainer.setMinSize(140, 100);
-        photoContainer.setMaxSize(140, 100);
-        photoContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 8px; -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;");
-
-        ImageView thumbnail = new ImageView();
-        thumbnail.setFitWidth(140);
-        thumbnail.setFitHeight(100);
-        thumbnail.setPreserveRatio(false);
-
-        Rectangle clip = new Rectangle(140, 100);
-        clip.setArcWidth(16);
-        clip.setArcHeight(16);
-        thumbnail.setClip(clip);
-
-        try {
-            List<PropertyPhoto> photos = propertyService.findPhotos(property.getId());
-            if (!photos.isEmpty()) {
-                File photoFile = new File("uploads/" + photos.get(0).getFilePath());
-                if (photoFile.exists()) {
-                    thumbnail.setImage(new Image(photoFile.toURI().toString(), 140, 100, false, true));
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        if (thumbnail.getImage() != null) {
-            photoContainer.getChildren().add(thumbnail);
-        } else {
-            Label placeholder = new Label("🏠");
-            placeholder.setStyle("-fx-font-size: 28px; -fx-opacity: 0.6;");
-            photoContainer.getChildren().add(placeholder);
-        }
-
-        // Details Container
-        VBox details = new VBox(6);
-        HBox.setHgrow(details, Priority.ALWAYS);
-
-        // Title and Deal Type Badge
-        HBox header = new HBox(8);
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        Label title = new Label(property.getTitle());
-        title.getStyleClass().add("section-title");
-        HBox.setHgrow(title, Priority.ALWAYS);
-
-        Label dealBadge = new Label(Format.enumLabel(property.getDealType()));
-        dealBadge.getStyleClass().addAll("pill", property.getDealType() == DealType.SALE ? "pill-good" : "pill-info");
-
-        header.getChildren().addAll(title, dealBadge);
-
-        // Location & Type line
-        District district = districtsById.get(property.getDistrictId());
-        PropertyType type = typesById.get(property.getPropertyTypeId());
-        String locationStr = (district != null ? district.getName() : "Lebanon")
-            + " • " + (type != null ? type.getName() : "Property");
-        Label subtitle = new Label(locationStr);
-        subtitle.getStyleClass().add("label-soft");
-
-        // Spec chips
-        HBox specChips = new HBox(8);
-        specChips.setAlignment(Pos.CENTER_LEFT);
-        specChips.getChildren().add(UIHelper.createSpecChip(property.getBedrooms() + " Beds"));
-        specChips.getChildren().add(UIHelper.createSpecChip(property.getBathrooms() + " Baths"));
-        specChips.getChildren().add(UIHelper.createSpecChip(Format.area(property.getAreaSqm())));
-        if (property.isHasParking()) {
-            specChips.getChildren().add(UIHelper.createSpecChip("Parking"));
-        }
-
-        details.getChildren().addAll(header, subtitle, specChips);
-
-        // Price Callout Box
-        VBox priceBox = new VBox(2);
-        priceBox.setAlignment(Pos.CENTER_RIGHT);
-        priceBox.setPrefWidth(160);
-
-        Label price = new Label(formatPrice(property));
-        price.getStyleClass().add("section-title");
-        price.setStyle("-fx-font-size: 17px; -fx-font-weight: 700; -fx-text-fill: -c-primary;");
-
-        BigDecimal pricePerSqm = BigDecimal.ZERO;
-        if (property.getAreaSqm() != null && property.getAreaSqm().compareTo(BigDecimal.ZERO) > 0 && property.getAskingPrice() != null) {
-            pricePerSqm = property.getAskingPrice().divide(property.getAreaSqm(), 0, RoundingMode.HALF_UP);
-        }
-        Label pricePerSqmLabel = new Label("$" + pricePerSqm + "/m²");
-        pricePerSqmLabel.getStyleClass().add("hint");
-
-        priceBox.getChildren().addAll(price, pricePerSqmLabel);
-
-        card.getChildren().addAll(photoContainer, details, priceBox);
-        card.setOnMouseClicked(event -> Router.show(Panel.PROPERTY_DETAILS, property.getId()));
-        AnimationUtil.addHoverLift(card);
-        return card;
+        return UIHelper.createPropertyCard(
+            property,
+            districtsById.get(property.getDistrictId()),
+            typesById.get(property.getPropertyTypeId()),
+            firstPhotoPath(property.getId()),
+            null);
     }
 
-    private String formatPrice(Property property) {
-        return property.getDealType() == DealType.SALE
-            ? Format.salePrice(property.getAskingPrice())
-            : Format.monthlyRent(property.getAskingPrice());
+    // A card without its thumbnail is still a usable card, so a photo lookup
+    // that fails is not allowed to take the whole result list down with it.
+    private String firstPhotoPath(int propertyId) {
+        try {
+            List<PropertyPhoto> photos = propertyService.findPhotos(propertyId);
+            return photos.isEmpty() ? null : photos.get(0).getFilePath();
+        } catch (SQLException e) {
+            return null;
+        }
     }
 
     private void clearFieldErrors() {

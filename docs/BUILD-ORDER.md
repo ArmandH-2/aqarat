@@ -207,6 +207,29 @@ This is not optional padding. It is where the marks are.
 
 ---
 
+## Phase 8 — Conversational search assistant — **DONE**
+
+Specified in full in [`docs/ai-agent/`](ai-agent/README.md); that folder is the source of truth
+and this is only the index.
+
+- **T1** — Gson pinned in `pom.xml`, `util/Config` extracted so `config/local.properties` is read
+  in one place, `ai.*` keys added to the example file.
+- **T2** — `PropertySearch` and `PropertyDao.FILTER_CLAUSE` extended with bathrooms, the four
+  amenities, and governorate. Existing columns only; the schema was not touched.
+- **T3** — the `ai` package and `AssistantService`: the chat client, the two tool schemas, the
+  filter mapper, the ranker, and the agent loop.
+- **T4** — `Assistant.fxml`, its controller, the sidebar entry, and three chat classes in
+  `app.css`.
+- **T5** — the property card extracted to `UIHelper.createPropertyCard`, so the browse screen and
+  the assistant render the same card from one place.
+- **T6** — documentation.
+
+**Done when:** a customer can describe a property in plain English, get ranked suggestions with a
+reason on each, refine with "cheaper", and click through to the property — and the application
+still runs identically with `ai.enabled=false`.
+
+---
+
 ## Full UI Upgrade & Polish Focus
 
 With all initial functional phases complete, every panel is eligible for full visual, interactive, and UX upgrades:

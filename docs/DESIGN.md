@@ -336,32 +336,42 @@ Twenty panels. If time runs out, the five that go first are `MyActivity`, `Audit
 
 Disproportionate polish goes to `ReviewSubmission`, `PropertyDetails` and `MyContracts`.
 
-## 10. Deferred: AI assistant (phase two)
+## 10. Search assistant
 
-Three additional tables, none of which touch the existing schema:
+Built in phase eight. The full specification is in [`docs/ai-agent/`](ai-agent/README.md).
 
-- `kb_document` — an indexed document
-- `kb_chunk` — a chunk of it, with its embedding
-- `chat_message` — conversation history, with the sources each answer used
+A user describes what they want in plain English — "furnished two-bedroom in Achrafieh under
+$1200 a month with parking" — and the assistant finds matching listings, explains why each one
+fits, and refines the search as the conversation goes on.
 
-**Hybrid design.** Policy, FAQ, contract-template and tenancy questions are answered from the
-indexed documents. Data questions such as "what do I still owe?" are answered by calling a small
-set of named, parameterised SQL queries scoped to the logged-in user. Pure retrieval is weak at
-structured questions, so the split is deliberate.
+**The retrieval design this section used to describe was dropped.** It proposed three new tables,
+`kb_document`, `kb_chunk` and `chat_message`, with embeddings and cosine similarity computed in
+Java. None of them were built, and none should be.
 
-Pure Java. An HTTP call to an OpenAI-compatible endpoint for chat and embeddings. Vectors are
-stored in a table and cosine similarity is computed in Java. No Redis, no vector database, no
-Python. The provider and model are configuration, so a local model and a hosted one are the
-same code.
+The reason is that the requirement turned out to be structured search rather than document
+retrieval. Someone asking for a two-bedroom under a budget is stating filter values, not posing a
+question that needs a passage found for it. And the structured filter surface that answers it
+already existed: `PropertySearch` holds optional filters, `PropertyDao.FILTER_CLAUSE` guards each
+one with `? IS NULL OR col = ?`, and `PropertyService.searchPublished` is the method the browse
+screen already calls. The assistant fills the same object the browse screen fills.
 
-**AI-guided intake.** An optional second tab on `SubmitProperty` where the owner describes the
-property in conversation and the assistant fills the form in. The form always works on its own.
-The chat is a wrapper over it, never a replacement. This matters: a dead API key must not stop
-anyone listing a property, and the chat cannot upload photos.
+So the language model does one job: it turns a sentence into arguments. Java executes the search,
+Java ranks the results, and every figure on screen is read from the database row. The model
+supplies prose and nothing else. This is the same shape Zillow's natural-language search uses, and
+it needs no new table, no embedding, and no change to the schema.
 
-The intake exists to deliver the valuation at the moment it changes behaviour, before the owner
-has committed to a number. Grounding an owner's expectation early is the difference between a
-listing that moves and one that sits.
+Two tools are exposed to it, `search_properties` and `get_property_details`, and the status filter
+is hard-wired to `AVAILABLE` in Java rather than passed as a parameter, so no argument the model
+produces can widen what it sees.
+
+The assistant is read-only. It reserves nothing, books nothing, and writes no row — including to
+`audit_log`. Section 1 of this document says the AI advises and a human decides, and this is where
+that constraint is load-bearing rather than decorative.
+
+The conversation lives in memory for the life of the panel. It is not persisted, which is why no
+table was needed. Account-data questions, actions taken from chat, and retrieval over policy
+documents are all deferred, and the reasoning for each is recorded in
+[`docs/ai-agent/README.md`](ai-agent/README.md).
 
 ## 11. Architecture
 

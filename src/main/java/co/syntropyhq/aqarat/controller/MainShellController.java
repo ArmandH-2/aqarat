@@ -1,5 +1,6 @@
 package co.syntropyhq.aqarat.controller;
 
+import co.syntropyhq.aqarat.ai.ChatClient;
 import co.syntropyhq.aqarat.model.AppUser;
 import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.util.AlertUtil;
@@ -25,6 +26,7 @@ public class MainShellController {
 
     private static final NavEntry[] NAV_ENTRIES = {
         new NavEntry(Panel.BROWSE_LISTINGS, "Browse listings", "DISCOVER", Role.CUSTOMER),
+        new NavEntry(Panel.ASSISTANT, "Assistant", "DISCOVER", Role.CUSTOMER, Role.AGENT, Role.ADMIN),
         new NavEntry(Panel.MY_PROPERTIES, "My properties", "PORTFOLIO", Role.CUSTOMER),
         new NavEntry(Panel.SUBMIT_PROPERTY, "Submit a property", "PORTFOLIO", Role.CUSTOMER),
         new NavEntry(Panel.MY_CONTRACTS, "My contracts", "PORTFOLIO", Role.CUSTOMER),
@@ -70,6 +72,9 @@ public class MainShellController {
             signOutButton.setText("Sign in");
             avatarContainer.getChildren().setAll(UIHelper.createAvatar("Guest", 16));
             addNavItem(GUEST_ENTRY);
+            if (ChatClient.isEnabled()) {
+                addNavItem(new NavEntry(Panel.ASSISTANT, "Assistant", "DISCOVER"));
+            }
             return;
         }
 
@@ -79,6 +84,9 @@ public class MainShellController {
 
         String currentCategory = null;
         for (NavEntry entry : NAV_ENTRIES) {
+            if (entry.panel == Panel.ASSISTANT && !ChatClient.isEnabled()) {
+                continue;
+            }
             if (entry.appliesTo(user.getRole())) {
                 if (currentCategory == null || !currentCategory.equals(entry.category)) {
                     currentCategory = entry.category;
