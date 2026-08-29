@@ -32,18 +32,19 @@ does not get a veto over a real person's property.
 
 | | |
 |---|---|
-| ![Sign in](screenshots/01-login.png) | ![Browse listings](screenshots/02-browse-listings.png) |
-| Sign in, or browse without an account | Search and filter 2,000 listings |
-| ![Property details](screenshots/07-property-details.png) | ![Review queue](screenshots/04-review-queue.png) |
-| Photos, price, and specs for one listing | Claim submissions from the unassigned queue |
-| ![Contracts](screenshots/05-contracts.png) | ![My properties](screenshots/08-my-properties.png) |
-| Draft a contract, then activate it | An owner's submissions, with the review discussion |
-| ![Reports](screenshots/06-reports.png) | |
-| Revenue and commission by month | |
+| ![Sign in](screenshots/01-login.png) | ![Discover](screenshots/02-browse-listings.png) |
+| Sign in, or browse without an account | Describe what you want in plain English, or filter |
+| ![Property details](screenshots/07-property-details.png) | ![Submit a property](screenshots/09-submit-valuation.png) |
+| Photographs, price and specification for one listing | The estimate appears while you are still deciding a price |
+| ![Portfolio](screenshots/08-portfolio.png) | ![Review queue](screenshots/04-review-queue.png) |
+| Everything you own, with what needs you on top | Claim submissions from the unassigned queue |
+| ![Contracts](screenshots/05-contracts.png) | ![Reports](screenshots/06-reports.png) |
+| Draft a contract, then activate it | Revenue and commission by month |
 
-Twenty panels in total, behind a role-aware sidebar: a guest sees published listings, a
-customer sees their own properties and contracts, an agent sees the pipeline, an admin sees
-everything plus accounts, reference data, reports and the audit log.
+Sixteen panels behind a role-aware sidebar. A customer navigates three: Discover,
+Portfolio and Submit. An agent sees the pipeline on top of Discover, and an admin sees
+everything plus accounts, reference data, reports and the audit log. A guest gets Discover
+alone - the whole catalogue and every filter, without an account.
 
 ## Features
 
@@ -143,7 +144,8 @@ static port or put the dynamic one in the URL — the example assumes `localhost
 mvn javafx:run
 ```
 
-Sign in as `admin@aqarat.local` / `Password123!`, or use "Browse listings without signing in".
+Sign in as `admin@aqarat.local` / `Password123!`, as a customer with
+`user1@example.com` / `Password123!`, or use "Browse listings as a guest".
 
 **Tests:**
 
