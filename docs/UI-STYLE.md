@@ -17,21 +17,26 @@ This design system defines the visual identity, tokens, component library, and i
 
 ### Core Colors & Surfaces
 
-The canvas is warm stone, not neutral grey. A cold grey ground is the strongest
+The canvas is limestone, not neutral grey. A cold grey ground is the strongest
 visual cue that a desktop application is a data-entry form, and changing it is
 the single highest-leverage token in this system.
 
+The particular stone is not arbitrary: Beirut is built from limestone, so the
+ground is the colour of the city the agency works in, and the palette is stone
+against foliage rather than two colours that happened to sit well together.
+Three alternatives are photographed side by side in `docs/palette-options`.
+
 | Token | Value | Description |
 |---|---|---|
-| `-c-bg` | `#EDE8DE` | Application canvas — warm stone |
-| `-c-surface` | `#FBF8F1` | Card, panel and input background — cream, never white |
-| `-c-surface-subtle` | `#F5F1E7` | Table headers, secondary containers |
-| `-c-surface-hover` | `#F0EBE0` | Hover on rows and tiles |
-| `-c-surface-active` | `#E6DFD1` | Active and selected backgrounds |
-| `-c-surface-sunken` | `#E4DED2` | Photo wells, range tracks |
-| `-c-border-subtle` | `#E4DFD5` | Hairline dividers and card borders |
-| `-c-border-medium` | `#D2CBBE` | Input borders, secondary button outlines |
-| `-c-border-strong` | `#A9A196` | Focused boundaries |
+| `-c-bg` | `#E7DFCD` | Application canvas — Beirut limestone |
+| `-c-surface` | `#FAF5E9` | Card, panel and input background — cream, never white |
+| `-c-surface-subtle` | `#F3ECDB` | Table headers, secondary containers |
+| `-c-surface-hover` | `#EEE6D3` | Hover on rows and tiles |
+| `-c-surface-active` | `#E1D7C0` | Active and selected backgrounds |
+| `-c-surface-sunken` | `#DED4BE` | Photo wells, range tracks |
+| `-c-border-subtle` | `#DFD5BF` | Hairline dividers and card borders |
+| `-c-border-medium` | `#CBBFA5` | Input borders, secondary button outlines |
+| `-c-border-strong` | `#A2957B` | Focused boundaries |
 
 ### Brand & Accents
 

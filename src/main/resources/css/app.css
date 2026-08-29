@@ -13,17 +13,17 @@
             Cards are cream rather than white; white on a warm ground reads as an
             unstyled default. The canvas is a shade deeper than the card so the
             two still separate without needing a heavy border. ---- */
-    -c-bg:             #EDE8DE;
-    -c-surface:        #FBF8F1;
-    -c-surface-subtle: #F5F1E7;
-    -c-surface-hover:  #F0EBE0;
-    -c-surface-active: #E6DFD1;
-    -c-surface-sunken: #E4DED2;
+    -c-bg:             #E7DFCD;
+    -c-surface:        #FAF5E9;
+    -c-surface-subtle: #F3ECDB;
+    -c-surface-hover:  #EEE6D3;
+    -c-surface-active: #E1D7C0;
+    -c-surface-sunken: #DED4BE;
 
     /* ---- Borders ---- */
-    -c-border-subtle:  #E4DFD5;
-    -c-border-medium:  #D2CBBE;
-    -c-border-strong:  #A9A196;
+    -c-border-subtle:  #DFD5BF;
+    -c-border-medium:  #CBBFA5;
+    -c-border-strong:  #A2957B;
 
     /* ---- Typography ---- */
     -c-text-primary:   #1A1815;
