@@ -473,7 +473,7 @@ public class ReviewSubmissionController implements NeedsId {
     }
 
     private void applyFlagPill(ValuationFlag flag) {
-        flagPill.setText(Format.enumLabel(flag));
+        flagPill.setText(flagWording(flag));
         flagPill.getStyleClass().removeAll("pill-good", "pill-warn", "pill-bad", "pill-info", "pill-neutral");
         flagPill.getStyleClass().add(flagPillClass(flag));
     }
@@ -487,6 +487,18 @@ public class ReviewSubmissionController implements NeedsId {
         } else {
             flagCaption.setText("Asking price falls within realistic market corridor");
         }
+    }
+
+    /** What the flag means for the decision in front of the agent. */
+    private String flagWording(ValuationFlag flag) {
+        if (flag == null) {
+            return "Not assessed";
+        }
+        return switch (flag) {
+            case OK -> "Within range";
+            case ABOVE_MARKET -> "Above the market";
+            case IMPLAUSIBLE -> "Implausible";
+        };
     }
 
     private String flagPillClass(ValuationFlag flag) {
@@ -513,13 +525,19 @@ public class ReviewSubmissionController implements NeedsId {
         }
     }
 
+    /*
+     * These are signed adjustments to a base figure, so the sign belongs in
+     * front of the money and carries the colour: formatMoney on a negative
+     * produced "$-4,496", with the minus inside the amount where it reads as
+     * part of the number rather than as a direction.
+     */
     private HBox buildFactorRow(String key, BigDecimal value) {
         Label label = new Label(sentenceCase(key));
-        label.getStyleClass().add("label-soft");
+        label.getStyleClass().add("hint");
 
-        Label amount = new Label(formatMoney(value));
-        amount.getStyleClass().add("label-soft");
-        amount.setStyle("-fx-font-weight: 600; -fx-text-fill: -c-primary;");
+        boolean negative = value.signum() < 0;
+        Label amount = new Label((negative ? "−" : "+") + formatMoney(value.abs()));
+        amount.getStyleClass().addAll("body-medium", negative ? "tone-bad" : "tone-good");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

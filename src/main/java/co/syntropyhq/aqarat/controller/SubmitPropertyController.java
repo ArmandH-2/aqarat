@@ -47,6 +47,7 @@ import javafx.util.Duration;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -319,6 +320,17 @@ public class SubmitPropertyController {
      * positioning, so the bar stretches with the panel instead of drifting
      * away from the labels beneath it.
      */
+    /**
+     * Draws the confidence range with both marks on it.
+     *
+     * <p>Showing only one of them answers half the question. The point of the
+     * range is the distance between what the system thinks and what the owner
+     * is asking, so the estimate is a line and the asking price a filled dot,
+     * and where they sit relative to each other is the whole message.
+     *
+     * <p>Built from proportional spacers rather than absolute positions so the
+     * bar stretches with the panel instead of drifting from its labels.
+     */
     private void renderRange(ValuationResult result, BigDecimal askingPrice) {
         lowerBoundLabel.setText(Format.salePrice(result.getLowerBound()));
         upperBoundLabel.setText(Format.salePrice(result.getUpperBound()));
@@ -330,25 +342,55 @@ public class SubmitPropertyController {
             return;
         }
 
-        double fraction = 0.5;
-        if (askingPrice != null && askingPrice.signum() > 0) {
-            double span = high.subtract(low).doubleValue();
-            fraction = askingPrice.subtract(low).doubleValue() / span;
-            fraction = Math.max(0, Math.min(1, fraction));
+        double estimateAt = positionOf(result.getEstimatedValue(), low, high);
+        Node estimateMark = new Region();
+        estimateMark.getStyleClass().add("range-estimate-mark");
+
+        boolean hasAsk = askingPrice != null && askingPrice.signum() > 0;
+        if (!hasAsk) {
+            layOut(new double[] {estimateAt}, new Node[] {estimateMark});
+            return;
         }
 
-        Region before = new Region();
-        Region marker = new Region();
-        Region after = new Region();
-        marker.getStyleClass().add(askingPrice != null && askingPrice.signum() > 0
-            ? "range-asking-mark" : "range-estimate-mark");
-        before.setMinWidth(0);
-        after.setMinWidth(0);
-        HBox.setHgrow(before, Priority.ALWAYS);
-        HBox.setHgrow(after, Priority.ALWAYS);
-        before.setPrefWidth(fraction * 100);
-        after.setPrefWidth((1 - fraction) * 100);
-        rangeTrack.getChildren().addAll(before, marker, after);
+        double askAt = positionOf(askingPrice, low, high);
+        Node askMark = new Region();
+        askMark.getStyleClass().add("range-asking-mark");
+
+        // Whichever sits further left is placed first, or the spacers between
+        // them come out negative.
+        if (askAt < estimateAt) {
+            layOut(new double[] {askAt, estimateAt}, new Node[] {askMark, estimateMark});
+        } else {
+            layOut(new double[] {estimateAt, askAt}, new Node[] {estimateMark, askMark});
+        }
+    }
+
+    /** Where a value falls across the range, clamped to its ends. */
+    private double positionOf(BigDecimal value, BigDecimal low, BigDecimal high) {
+        if (value == null) {
+            return 0.5;
+        }
+        double span = high.subtract(low).doubleValue();
+        double at = value.subtract(low).doubleValue() / span;
+        return Math.max(0, Math.min(1, at));
+    }
+
+    private void layOut(double[] positions, Node[] marks) {
+        double previous = 0;
+        for (int i = 0; i < marks.length; i++) {
+            rangeTrack.getChildren().add(spacer(positions[i] - previous));
+            rangeTrack.getChildren().add(marks[i]);
+            previous = positions[i];
+        }
+        rangeTrack.getChildren().add(spacer(1 - previous));
+    }
+
+    private Region spacer(double share) {
+        Region spacer = new Region();
+        spacer.setMinWidth(0);
+        spacer.setPrefWidth(Math.max(0, share) * 100);
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        return spacer;
     }
 
     private void renderFactors(ValuationResult result) {

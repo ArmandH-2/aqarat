@@ -32,7 +32,7 @@
                         <Label fx:id="queueCountLabel" styleClass="metric-value" style="-fx-text-fill: -c-warn;" text="0"/>
                     </HBox>
                     <Label text="Waiting in your review queue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
-                    <Label text="Click to review pending submissions →" styleClass="hint"/>
+                    <Label text="Claim one to review it" styleClass="hint"/>
                 </VBox>
 
                 <VBox fx:id="unassignedCard" styleClass="stat-tile" spacing="8" HBox.hgrow="ALWAYS" maxWidth="Infinity">

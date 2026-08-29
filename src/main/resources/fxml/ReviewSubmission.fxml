@@ -25,7 +25,7 @@
         <VBox fx:id="contentBox" spacing="20">
             <!-- Header Bar -->
             <HBox spacing="12" alignment="CENTER_LEFT">
-                <Button text="← Back to queue" styleClass="button, button-secondary" onAction="#handleBack"/>
+                <Button text="← Back to the queue" styleClass="button, button-secondary" onAction="#handleBack"/>
             </HBox>
 
             <HBox spacing="16" alignment="CENTER_LEFT">
@@ -33,13 +33,13 @@
                     <Label fx:id="titleLabel" styleClass="hero-title"/>
                     <HBox spacing="8" alignment="CENTER_LEFT">
                         <Label fx:id="districtSubtitle" styleClass="label-soft"/>
-                        <Label text="•" styleClass="hint"/>
+                        <Label text="·" styleClass="hint"/>
                         <Label fx:id="statusPill" styleClass="pill"/>
                     </HBox>
                 </VBox>
                 <VBox spacing="2" alignment="CENTER_RIGHT">
-                    <Label fx:id="askingPriceCaption" styleClass="hint" text="Asking Price"/>
-                    <Label fx:id="askingPriceValue" styleClass="metric-value" style="-fx-text-fill: -c-primary;"/>
+                    <Label fx:id="askingPriceCaption" styleClass="eyebrow" text="ASKING PRICE"/>
+                    <Label fx:id="askingPriceValue" styleClass="price-display-lg"/>
                 </VBox>
             </HBox>
 
@@ -51,7 +51,7 @@
 
                     <!-- Photos Gallery Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Property Media" styleClass="section-title"/>
+                        <Label text="Photographs" styleClass="section-title"/>
                         <StackPane fx:id="mainPhotoContainer" prefHeight="320" maxHeight="320"
                                    style="-fx-background-color: -c-surface-subtle; -fx-background-radius: 8px; -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;">
                             <ImageView fx:id="mainImageView" fitHeight="320" preserveRatio="true"/>
@@ -69,7 +69,7 @@
 
                     <!-- Specifications Card -->
                     <VBox styleClass="card" spacing="14">
-                        <Label text="Specifications Overview" styleClass="section-title"/>
+                        <Label text="Specification" styleClass="section-title"/>
 
                         <GridPane hgap="20" vgap="12">
                             <VBox spacing="2" GridPane.columnIndex="0" GridPane.rowIndex="0">
@@ -111,26 +111,26 @@
 
                     <!-- Features & Amenities Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Features &amp; Amenities" styleClass="section-title"/>
+                        <Label text="Features" styleClass="section-title"/>
                         <FlowPane fx:id="amenitiesPane" hgap="10" vgap="10"/>
                     </VBox>
 
                     <!-- Location & Description -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Property Location &amp; Description" styleClass="section-title"/>
+                        <Label text="Address and description" styleClass="section-title"/>
                         <VBox spacing="2">
-                            <Label text="Address Line" styleClass="hint"/>
+                            <Label text="Address" styleClass="hint"/>
                             <Label fx:id="addressValue" styleClass="body" wrapText="true"/>
                         </VBox>
                         <VBox spacing="2">
-                            <Label text="Owner Description" styleClass="hint"/>
+                            <Label text="Described by the owner" styleClass="hint"/>
                             <Label fx:id="descriptionValue" styleClass="body" wrapText="true"/>
                         </VBox>
                     </VBox>
 
                     <!-- Discussion & Messages Thread -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Agent-Owner Discussion Thread" styleClass="section-title"/>
+                        <Label text="Discussion with the owner" styleClass="section-title"/>
                         <VBox fx:id="discussionBox" spacing="10"/>
                     </VBox>
                 </VBox>
@@ -141,8 +141,8 @@
                     <!-- Valuation Centerpiece Card -->
                     <VBox styleClass="card" spacing="14" style="-fx-border-color: -c-primary; -fx-border-width: 1.5px;">
                         <HBox spacing="10" alignment="CENTER_LEFT">
-                            <Label text="Valuation Intelligence" styleClass="section-title" HBox.hgrow="ALWAYS"/>
-                            <Button text="⚡ Re-run" styleClass="button, button-secondary"
+                            <Label text="What the system estimates" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                            <Button text="Re-run" styleClass="button, button-secondary"
                                     style="-fx-font-size: 11px; -fx-pref-height: 28px;"
                                     onAction="#handleRunValuation"/>
                         </HBox>
@@ -153,11 +153,11 @@
                         <VBox fx:id="valuationContent" spacing="14">
                             <HBox spacing="16" alignment="CENTER_LEFT" styleClass="card-subtle">
                                 <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                    <Label text="Estimated Market Value" styleClass="hint"/>
-                                    <Label fx:id="estimateValue" styleClass="metric-value" style="-fx-text-fill: -c-primary;"/>
+                                    <Label text="Estimate" styleClass="hint"/>
+                                    <Label fx:id="estimateValue" styleClass="price-display"/>
                                 </VBox>
                                 <VBox spacing="4" alignment="CENTER_RIGHT">
-                                    <Label text="Price Flag" styleClass="hint"/>
+                                    <Label text="The owner's asking price" styleClass="hint"/>
                                     <Label fx:id="flagPill" styleClass="pill"/>
                                 </VBox>
                             </HBox>
@@ -166,7 +166,7 @@
 
                             <HBox spacing="16">
                                 <VBox spacing="2" HBox.hgrow="ALWAYS">
-                                    <Label text="Plausible Range" styleClass="hint"/>
+                                    <Label text="Range" styleClass="hint"/>
                                     <Label fx:id="rangeValue" styleClass="label-soft" style="-fx-font-weight: 600;"/>
                                 </VBox>
                                 <VBox spacing="2" HBox.hgrow="ALWAYS">
@@ -182,13 +182,13 @@
 
                     <!-- Factor Breakdown Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="Valuation Factor Breakdown" styleClass="section-title"/>
+                        <Label text="How it was reached" styleClass="section-title"/>
                         <VBox fx:id="factorsBox" spacing="8"/>
                     </VBox>
 
                     <!-- Comparables Used Card -->
                     <VBox styleClass="card" spacing="12">
-                        <Label text="District Comparables" styleClass="section-title"/>
+                        <Label text="Comparables it reasoned from" styleClass="section-title"/>
                         <VBox fx:id="comparablesBox" spacing="10"/>
                     </VBox>
                 </VBox>
@@ -196,32 +196,32 @@
 
             <!-- Bottom Decision Card -->
             <VBox fx:id="decisionBox" styleClass="card" spacing="14">
-                <Label text="Agent Evaluation &amp; Decision" styleClass="section-title"/>
+                <Label text="Your decision" styleClass="section-title"/>
 
                 <VBox fx:id="withdrawalReasonBox" spacing="4" managed="false" visible="false" styleClass="card-subtle">
-                    <Label text="Owner's Stated Reason for Withdrawal:" styleClass="label-soft" style="-fx-font-weight: 600;"/>
+                    <Label text="Why the owner wants it withdrawn" styleClass="label-soft" style="-fx-font-weight: 600;"/>
                     <Label fx:id="withdrawalReasonValue" styleClass="body" wrapText="true"/>
                 </VBox>
 
                 <VBox fx:id="noteBox" spacing="4">
-                    <Label text="Decision Note / Instructions to Owner" styleClass="label-soft"/>
+                    <Label text="Note to the owner" styleClass="label-soft"/>
                     <TextArea fx:id="noteArea" wrapText="true" prefRowCount="3"
                               promptText="Provide feedback or state reasons for request/rejection..."/>
                     <Label fx:id="noteError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>
 
                 <HBox fx:id="reviewActionsBox" spacing="12">
-                    <Button text="✓ Approve &amp; Publish Listing" styleClass="button, button-primary"
+                    <Button text="Approve and publish" styleClass="button, button-primary"
                             onAction="#handleApprove"/>
-                    <Button text="💬 Request More Information" styleClass="button, button-secondary"
+                    <Button text="Ask the owner for more" styleClass="button, button-secondary"
                             onAction="#handleRequestInfo"/>
-                    <Button text="✕ Reject Submission" styleClass="button, button-danger" onAction="#handleReject"/>
+                    <Button text="Reject" styleClass="button, button-danger" onAction="#handleReject"/>
                 </HBox>
 
                 <HBox fx:id="withdrawalActionsBox" spacing="12" managed="false" visible="false">
-                    <Button text="Accept Removal &amp; Delist" styleClass="button, button-danger"
+                    <Button text="Accept and delist" styleClass="button, button-danger"
                             onAction="#handleAcceptRemoval"/>
-                    <Button text="Decline &amp; Keep Listed" styleClass="button, button-secondary"
+                    <Button text="Decline, keep it listed" styleClass="button, button-secondary"
                             onAction="#handleDeclineRemoval"/>
                 </HBox>
             </VBox>

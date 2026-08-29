@@ -123,7 +123,7 @@
                     </VBox>
 
                     <!-- Submit Draft CTA -->
-                    <Button text="Create Contract Draft →" styleClass="button, button-primary"
+                    <Button text="Create the draft" styleClass="button, button-primary"
                             maxWidth="Infinity" prefHeight="42" style="-fx-font-weight: 700; -fx-font-size: 14px;"
                             onAction="#handleDraft"/>
                 </VBox>

@@ -852,9 +852,11 @@
 
 .range-estimate-mark {
     -fx-background-color: -c-primary;
-    -fx-pref-width: 2px;
-    -fx-min-width: 2px;
-    -fx-pref-height: 18px;
+    -fx-pref-width: 3px;
+    -fx-min-width: 3px;
+    -fx-pref-height: 16px;
+    -fx-min-height: 16px;
+    -fx-background-radius: 2px;
 }
 
 .range-asking-mark {
