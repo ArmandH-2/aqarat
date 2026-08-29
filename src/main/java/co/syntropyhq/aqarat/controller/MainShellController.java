@@ -71,10 +71,11 @@ public class MainShellController {
             userRoleLabel.setText("Browsing Catalog");
             signOutButton.setText("Sign in");
             avatarContainer.getChildren().setAll(UIHelper.createAvatar("Guest", 16));
+            // The assistant is not offered to guests. Every conversation spends
+            // money against the agency's API key, so it is kept behind a name we
+            // can attribute the spend to. Guests still have the full filter
+            // search on Browse listings.
             addNavItem(GUEST_ENTRY);
-            if (ChatClient.isEnabled()) {
-                addNavItem(new NavEntry(Panel.ASSISTANT, "Assistant", "DISCOVER"));
-            }
             return;
         }
 

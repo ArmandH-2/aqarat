@@ -11,7 +11,7 @@ Each requirement is numbered so a task, a test or a review comment can cite it.
 
 | # | Requirement |
 |---|---|
-| FR-1 | A signed-in customer, and a guest, can open an Assistant panel from the sidebar and type a free-text description of the property they want. |
+| FR-1 | A signed-in user can open an Assistant panel from the sidebar and type a free-text description of the property they want. Guests cannot: the entry is absent from the guest sidebar, and the panel shows a sign-in prompt if reached directly. Every turn spends against the agency key, so it stays attributable to an account. |
 | FR-2 | The assistant extracts structured filters from the sentence: district, governorate, property type, deal type, minimum and maximum price, bedrooms, bathrooms, minimum and maximum area, parking, elevator, balcony, furnished. |
 | FR-3 | Filters the user did not state are left unset. The assistant never invents a constraint. A sentence mentioning only a budget produces a filter set containing only a budget. |
 | FR-4 | When the request is too vague to search usefully — no location, no budget and no property type — the assistant asks exactly one clarifying question instead of guessing or searching. |
@@ -25,6 +25,10 @@ Each requirement is numbered so a task, a test or a review comment can cite it.
 | FR-12 | Every figure shown on a card is read from the database row. The model supplies prose only. No price, area, bedroom count, district name or property id displayed anywhere originates from model output. |
 | FR-13 | The assistant performs no writes. It cannot reserve, request a viewing, submit a property, change a status, or add an audit entry. Asked to do any of these, it declines and points at the panel where a person does it. |
 | FR-14 | With the assistant disabled or misconfigured, every other panel behaves exactly as it did before this phase. |
+| FR-15 | The assistant discusses Aqarat listings and Lebanese property only. Asked about anything else, it declines in one sentence and says what it can help with, without answering first. |
+| FR-16 | A conversation is capped at 20 user turns. At the limit the input is disabled with an explanation, and "Start over" resets both the transcript and the count. |
+| FR-17 | Replies render as plain text. The prompt forbids markdown and any emphasis markers that slip through are stripped before display. |
+| FR-18 | The reason shown under each card is matched to its property by position in the reply, not by title, because titles repeat. |
 
 ---
 

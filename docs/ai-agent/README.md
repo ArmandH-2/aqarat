@@ -172,6 +172,52 @@ error messages written for the user, and this feature is where it is most tempti
 
 ---
 
+## Known limitations
+
+Recorded here because they are real, and a limitation named is worth more than one discovered.
+
+### The API key ships with the client
+
+This is a desktop application. `config/local.properties` sits on the machine that runs it, so
+anyone who can run Aqarat can read the key out of the file and spend it on anything they like.
+Gitignoring the file keeps the key out of the repository; it does not keep it out of the hands of
+whoever the application is installed for.
+
+There is no fix for this inside a desktop client. A key that the client must send is a key the
+client must hold. The real answer is a thin server that holds the key, authenticates the user, and
+proxies the call — which is a deployment this project does not have and should not grow one for.
+
+What is done instead: the assistant is behind a sign-in, so spend is attributable to an account
+rather than anonymous, and a conversation is capped so a single session cannot run away. Both are
+mitigations. Neither is a fix, and the honest position is that this design is appropriate for a
+training project on a trusted machine and would not ship to real users unchanged.
+
+### Scope is held by the prompt, not by the code
+
+The system prompt tells the model to discuss Aqarat listings and Lebanese property and to decline
+everything else. A determined user can talk it out of that, as they can with any prompt rule.
+
+What that costs is bounded, and the bound is structural rather than textual:
+
+- It has two tools, both read-only.
+- `AVAILABLE` is hard-wired in Java, so no argument it produces widens what it can see.
+- It holds no `Connection` and reaches the database only through `PropertyService`.
+- Owner identity, review notes and valuations are never in its context, so they cannot leak from it.
+- Every figure rendered on a card is read from the database row, so a hallucinated price cannot
+  reach the screen.
+
+Talk it into discussing the weather and you have wasted a few tokens and produced an off-topic
+paragraph. You have not read another user's data, changed a status, or written a row. That
+containment is the part worth defending; the prompt is only the polite first line.
+
+### Cost is capped, not measured
+
+A conversation stops after twenty turns. Nothing counts tokens, records what a session cost, or
+enforces a budget across sessions. For a project with one operator and a personal key that is
+proportionate. An agency would want per-user accounting before enabling this for real clients.
+
+---
+
 ## Deferred
 
 Each of these is a later rung. None is in this phase.

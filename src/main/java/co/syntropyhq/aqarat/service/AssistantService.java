@@ -15,6 +15,8 @@ import com.google.gson.JsonObject;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AssistantService {
 
@@ -34,8 +36,17 @@ public class AssistantService {
         - For each property you suggest, give one short sentence on why it fits what they asked for. Do not restate the price, area or bedroom count in that sentence; those are already shown.
         - All prices are USD and all areas are square metres. For a SALE listing the price is the full sale price; for a RENT listing it is the monthly rent.
         - You cannot reserve a property, book a viewing, or change anything. If asked, say so plainly and tell the user to open the property and use the buttons there.
+        - You only discuss Aqarat's listings and Lebanese property. If asked about anything else - general knowledge, current events, coding, homework, or another company - decline in one sentence and say what you can help with instead. Do not answer the question first.
+        - Write plain text. No markdown, no asterisks, no headings. The application renders your reply as it is.
+        - When you list properties, number them 1., 2., 3. in the same order the tool returned them, and give each one its own line.
 
         Keep replies short. Two or three sentences, then the properties.""";
+
+    private static final String DEFAULT_REASON = "Matches your search criteria.";
+
+    // "1. text", "2) text", with optional leading bullet or emphasis markers.
+    private static final Pattern NUMBERED_ITEM =
+        Pattern.compile("^[-*\\s]*\\d+[.)]\\s*(.+)$");
 
     private final PropertyService propertyService;
     private final ChatClient chatClient;
@@ -93,7 +104,8 @@ public class AssistantService {
             if (toolCalls == null || toolCalls.isEmpty()) {
                 conversation.append(responseMessage);
                 List<Suggestion> suggestions = extractSuggestions(tools.getLastRankedResults(), responseMessage.getContent());
-                return new Response(responseMessage.getContent(), suggestions, tools.getLastAppliedFilters());
+                return new Response(stripEmphasis(responseMessage.getContent()), suggestions,
+                    tools.getLastAppliedFilters());
             }
 
             conversation.append(responseMessage);
@@ -120,7 +132,8 @@ public class AssistantService {
         ChatMessage finalResponse = chatClient.complete(conversation.messages(), false);
         conversation.append(finalResponse);
         List<Suggestion> suggestions = extractSuggestions(tools.getLastRankedResults(), finalResponse.getContent());
-        return new Response(finalResponse.getContent(), suggestions, tools.getLastAppliedFilters());
+        return new Response(stripEmphasis(finalResponse.getContent()), suggestions,
+            tools.getLastAppliedFilters());
     }
 
     private String toolError(String message) {
@@ -130,29 +143,47 @@ public class AssistantService {
     }
 
     private List<Suggestion> extractSuggestions(List<Property> rankedResults, String assistantText) {
-        List<Suggestion> suggestions = new ArrayList<>();
         if (rankedResults == null || rankedResults.isEmpty()) {
-            return suggestions;
+            return List.of();
         }
+        List<String> reasons = numberedLines(assistantText);
 
-        for (Property p : rankedResults) {
-            String reason = findReasonForProperty(p, assistantText);
-            suggestions.add(new Suggestion(p, reason));
+        List<Suggestion> suggestions = new ArrayList<>();
+        for (int i = 0; i < rankedResults.size(); i++) {
+            String reason = i < reasons.size() ? reasons.get(i) : DEFAULT_REASON;
+            suggestions.add(new Suggestion(rankedResults.get(i), reason));
         }
         return suggestions;
     }
 
-    private String findReasonForProperty(Property property, String assistantText) {
+    // The reply is matched to properties by position rather than by title,
+    // because titles repeat - two warehouses in Saida are both called
+    // "Warehouse in Saida", and matching on the text gave them the same reason.
+    // The prompt asks for a numbered list in tool order, so the nth item
+    // describes the nth property.
+    List<String> numberedLines(String assistantText) {
+        List<String> reasons = new ArrayList<>();
         if (assistantText == null || assistantText.isBlank()) {
-            return "Matches your search criteria.";
+            return reasons;
         }
-        String[] lines = assistantText.split("\\r?\\n");
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.toLowerCase().contains(property.getTitle().toLowerCase())) {
-                return trimmed;
+        for (String line : assistantText.split("\r?\n")) {
+            Matcher matcher = NUMBERED_ITEM.matcher(line.trim());
+            if (matcher.matches()) {
+                String reason = stripEmphasis(matcher.group(1)).trim();
+                if (!reason.isBlank()) {
+                    reasons.add(reason);
+                }
             }
         }
-        return "Matches your search criteria.";
+        return reasons;
+    }
+
+    // A model told to write plain text still slips in the occasional asterisk,
+    // and a JavaFX Label renders those literally.
+    String stripEmphasis(String text) {
+        if (text == null) {
+            return null;
+        }
+        return text.replace("**", "").replace("__", "").trim();
     }
 }

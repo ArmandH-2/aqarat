@@ -21,6 +21,7 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
+import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -65,6 +66,12 @@ public class AssistantController {
     private final Map<Integer, District> districtsById = new HashMap<>();
     private final Map<Integer, PropertyType> typesById = new HashMap<>();
 
+    // A conversation is capped so a stuck user, or a held-down Enter key, cannot
+    // run up an unbounded bill. Start over resets it.
+    private static final int MAX_TURNS = 20;
+
+    private int turnsUsed;
+
     private final Conversation conversation = new Conversation();
     private PropertySearch carriedFilters = new PropertySearch();
     private Node typingIndicatorNode;
@@ -81,6 +88,20 @@ public class AssistantController {
                 UIHelper.createEmptyState(
                     "Search Assistant Unavailable",
                     "The assistant is not configured or disabled. You can still search with filters on Browse listings."
+                )
+            );
+            return;
+        }
+
+        // Reached only if a guest navigates here directly; the sidebar does not
+        // offer it. Every turn spends against the agency key, so it stays behind
+        // a signed-in account.
+        if (SessionManager.getCurrentUser() == null) {
+            lockInput();
+            transcriptBox.getChildren().add(
+                UIHelper.createEmptyState(
+                    "Sign in to use the assistant",
+                    "The search assistant is available to registered users. You can browse and filter every listing without an account."
                 )
             );
             return;
@@ -119,6 +140,10 @@ public class AssistantController {
         if (text.isEmpty()) {
             return;
         }
+        if (turnsUsed >= MAX_TURNS) {
+            return;
+        }
+        turnsUsed++;
 
         renderUserBubble(text);
         conversation.append(ChatMessage.user(text));
@@ -137,8 +162,7 @@ public class AssistantController {
 
         task.setOnSucceeded(event -> {
             hideTypingIndicator();
-            inputField.setDisable(false);
-            sendButton.setDisable(false);
+            unlockInputUnlessCapped();
 
             AssistantService.Response response = task.getValue();
             if (response != null) {
@@ -154,8 +178,7 @@ public class AssistantController {
 
         task.setOnFailed(event -> {
             hideTypingIndicator();
-            inputField.setDisable(false);
-            sendButton.setDisable(false);
+            unlockInputUnlessCapped();
 
             Throwable ex = task.getException();
             if (isSqlException(ex)) {
@@ -186,6 +209,8 @@ public class AssistantController {
     private void handleStartOver() {
         conversation.clear();
         carriedFilters = new PropertySearch();
+        turnsUsed = 0;
+        inputField.setPromptText("Ask anything (e.g. 3 bedroom apartment in Beirut under 300k)...");
         transcriptBox.getChildren().clear();
         inputField.setDisable(false);
         sendButton.setDisable(false);
@@ -264,6 +289,23 @@ public class AssistantController {
         } catch (SQLException e) {
             return null;
         }
+    }
+
+    private void lockInput() {
+        inputField.setDisable(true);
+        sendButton.setDisable(true);
+    }
+
+    private void unlockInputUnlessCapped() {
+        if (turnsUsed >= MAX_TURNS) {
+            lockInput();
+            inputField.setPromptText("Conversation limit reached - use Start over to begin a new one.");
+            renderAssistantBubble("That is as far as one conversation goes. "
+                + "Choose Start over above to begin a new search.");
+            return;
+        }
+        inputField.setDisable(false);
+        sendButton.setDisable(false);
     }
 
     private void showTypingIndicator() {
