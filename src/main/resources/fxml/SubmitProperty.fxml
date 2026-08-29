@@ -16,9 +16,12 @@
 
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="co.syntropyhq.aqarat.controller.SubmitPropertyController"
-            fitToWidth="true" hbarPolicy="NEVER" styleClass="panel">
+            fitToWidth="true" hbarPolicy="NEVER">
 
     <VBox spacing="24">
+        <padding>
+            <Insets top="30" right="40" bottom="34" left="40"/>
+        </padding>
         <padding>
             <Insets bottom="34" right="6"/>
         </padding>

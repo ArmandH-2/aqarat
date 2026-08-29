@@ -5,66 +5,90 @@
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="co.syntropyhq.aqarat.controller.RegisterController"
-           styleClass="content" alignment="CENTER">
-    <VBox styleClass="card" spacing="16" maxWidth="420" alignment="TOP_CENTER">
-        <padding>
-            <Insets top="32" right="28" bottom="28" left="28"/>
-        </padding>
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="co.syntropyhq.aqarat.controller.RegisterController">
 
-        <ImageView fitWidth="140" preserveRatio="true">
-            <image>
-                <Image url="@../images/lockup.png"/>
-            </image>
-        </ImageView>
+    <!-- ============ Brand panel ============ -->
+    <StackPane styleClass="auth-brand" minWidth="360" prefWidth="600" HBox.hgrow="ALWAYS">
+        <Region styleClass="auth-scrim"/>
 
-        <VBox spacing="2" alignment="CENTER">
-            <Label text="Create an account" styleClass="page-title"/>
-            <Label text="Join Aqarat to submit properties and request viewings" styleClass="hint" wrapText="true" alignment="CENTER"/>
-        </VBox>
+        <VBox spacing="0">
+            <padding>
+                <Insets top="46" right="52" bottom="46" left="52"/>
+            </padding>
 
-        <VBox spacing="12" maxWidth="Infinity">
-            <VBox spacing="4">
-                <Label text="Full name" styleClass="label-soft"/>
-                <TextField fx:id="fullNameField" promptText="e.g. Maya Haddad"/>
-                <Label fx:id="fullNameError" styleClass="field-error" managed="false" visible="false"/>
-            </VBox>
+            <Label text="Aqarat" styleClass="brand-word"/>
 
-            <VBox spacing="4">
-                <Label text="Email address" styleClass="label-soft"/>
-                <TextField fx:id="emailField" promptText="name@example.com"/>
-                <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
-            </VBox>
+            <Region VBox.vgrow="ALWAYS"/>
 
-            <VBox spacing="4">
-                <Label text="Phone number" styleClass="label-soft"/>
-                <TextField fx:id="phoneField" promptText="+961 3 123456"/>
-                <Label fx:id="phoneError" styleClass="field-error" managed="false" visible="false"/>
-            </VBox>
-
-            <VBox spacing="4">
-                <Label text="Password" styleClass="label-soft"/>
-                <PasswordField fx:id="passwordField" promptText="At least 6 characters"/>
-                <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
-            </VBox>
-
-            <VBox spacing="4">
-                <Label text="Confirm password" styleClass="label-soft"/>
-                <PasswordField fx:id="confirmPasswordField" promptText="Re-enter password"/>
-                <Label fx:id="confirmPasswordError" styleClass="field-error" managed="false" visible="false"/>
+            <VBox spacing="18" maxWidth="480">
+                <Label styleClass="auth-statement" wrapText="true"
+                       text="One account, whichever side of the deal you are on."/>
+                <Label styleClass="auth-supporting" wrapText="true"
+                       text="Sell one property and lease another from the same place. Track submissions, viewings, contracts and payments without keeping two identities."/>
             </VBox>
         </VBox>
+    </StackPane>
 
-        <Button text="Create account" styleClass="button, button-primary" maxWidth="Infinity"
-                onAction="#handleRegister"/>
+    <!-- ============ Form ============ -->
+    <StackPane styleClass="auth-form-side" minWidth="440" prefWidth="520" alignment="CENTER">
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="scroll-pane" maxWidth="420">
+            <VBox spacing="24" maxWidth="396">
 
-        <Hyperlink text="Already have an account? Sign in" onAction="#handleLoginLink"/>
-    </VBox>
-</StackPane>
+                <VBox spacing="6">
+                    <Label text="Create an account" styleClass="display-title"/>
+                    <Label styleClass="hint" wrapText="true"
+                           text="It takes a minute, and you can browse without one."/>
+                </VBox>
+
+                <VBox spacing="15">
+                    <VBox spacing="6">
+                        <Label text="Full name" styleClass="label-soft"/>
+                        <TextField fx:id="fullNameField" promptText="Maya Haddad"/>
+                        <Label fx:id="fullNameError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Email address" styleClass="label-soft"/>
+                        <TextField fx:id="emailField" promptText="name@example.com"/>
+                        <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Phone number" styleClass="label-soft"/>
+                        <TextField fx:id="phoneField" promptText="+961 3 123456"/>
+                        <Label fx:id="phoneError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Password" styleClass="label-soft"/>
+                        <PasswordField fx:id="passwordField" promptText="At least 6 characters"/>
+                        <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+
+                    <VBox spacing="6">
+                        <Label text="Confirm password" styleClass="label-soft"/>
+                        <PasswordField fx:id="confirmPasswordField" promptText="Re-enter your password"/>
+                        <Label fx:id="confirmPasswordError" styleClass="field-error" managed="false" visible="false"/>
+                    </VBox>
+                </VBox>
+
+                <VBox spacing="12">
+                    <Button text="Create account" styleClass="button, button-primary" maxWidth="Infinity"
+                            defaultButton="true" onAction="#handleRegister"/>
+                    <HBox spacing="4" alignment="CENTER">
+                        <Label text="Already have an account?" styleClass="hint"/>
+                        <Hyperlink text="Sign in" onAction="#handleLoginLink"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </StackPane>
+</HBox>
