@@ -5,6 +5,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import co.syntropyhq.aqarat.util.RequiredLabel?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -21,9 +22,6 @@
     <VBox spacing="24">
         <padding>
             <Insets top="30" right="40" bottom="34" left="40"/>
-        </padding>
-        <padding>
-            <Insets bottom="34" right="6"/>
         </padding>
 
         <Label fx:id="accessDeniedLabel" styleClass="empty-state" managed="false" visible="false"/>
@@ -44,19 +42,19 @@
                         <Label text="The basics" styleClass="section-title"/>
 
                         <VBox spacing="5">
-                            <Label text="Property title" styleClass="label-soft"/>
+                            <RequiredLabel text="Property title"/>
                             <TextField fx:id="titleField" promptText="Modern three-bedroom apartment with sea view"/>
                             <Label fx:id="titleError" styleClass="field-error" managed="false" visible="false"/>
                         </VBox>
 
                         <HBox spacing="12">
                             <VBox spacing="5" HBox.hgrow="ALWAYS">
-                                <Label text="District" styleClass="label-soft"/>
+                                <RequiredLabel text="District"/>
                                 <ComboBox fx:id="districtCombo" maxWidth="Infinity" promptText="Select a district"/>
                                 <Label fx:id="districtError" styleClass="field-error" managed="false" visible="false"/>
                             </VBox>
                             <VBox spacing="5" HBox.hgrow="ALWAYS">
-                                <Label text="Property type" styleClass="label-soft"/>
+                                <RequiredLabel text="Property type"/>
                                 <ComboBox fx:id="propertyTypeCombo" maxWidth="Infinity" promptText="Select a type"/>
                                 <Label fx:id="propertyTypeError" styleClass="field-error" managed="false" visible="false"/>
                             </VBox>
@@ -79,7 +77,7 @@
 
                         <GridPane hgap="12" vgap="13">
                             <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label text="Area (m²)" styleClass="label-soft"/>
+                                <RequiredLabel text="Area (m²)"/>
                                 <TextField fx:id="areaField" promptText="175"/>
                                 <Label fx:id="areaError" styleClass="field-error" managed="false" visible="false"/>
                             </VBox>
@@ -146,7 +144,7 @@
                                 <ComboBox fx:id="dealTypeCombo" maxWidth="Infinity"/>
                             </VBox>
                             <VBox spacing="5" HBox.hgrow="ALWAYS">
-                                <Label fx:id="askingPriceLabel" text="Asking price ($)" styleClass="label-soft"/>
+                                <RequiredLabel fx:id="askingPriceLabel" text="Asking price ($)"/>
                                 <TextField fx:id="askingPriceField" promptText="250,000"/>
                                 <Label fx:id="askingPriceError" styleClass="field-error" managed="false" visible="false"/>
                             </VBox>

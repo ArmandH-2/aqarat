@@ -23,12 +23,12 @@ the single highest-leverage token in this system.
 
 | Token | Value | Description |
 |---|---|---|
-| `-c-bg` | `#F2EFE9` | Application canvas — warm stone |
-| `-c-surface` | `#FFFEFC` | Card, panel and input background — warm white |
-| `-c-surface-subtle` | `#F8F5EF` | Table headers, secondary containers |
-| `-c-surface-hover` | `#EFEAE0` | Hover on rows and tiles |
-| `-c-surface-active` | `#E7E0D3` | Active and selected backgrounds |
-| `-c-surface-sunken` | `#EAE5DB` | Photo wells, range tracks |
+| `-c-bg` | `#EDE8DE` | Application canvas — warm stone |
+| `-c-surface` | `#FBF8F1` | Card, panel and input background — cream, never white |
+| `-c-surface-subtle` | `#F5F1E7` | Table headers, secondary containers |
+| `-c-surface-hover` | `#F0EBE0` | Hover on rows and tiles |
+| `-c-surface-active` | `#E6DFD1` | Active and selected backgrounds |
+| `-c-surface-sunken` | `#E4DED2` | Photo wells, range tracks |
 | `-c-border-subtle` | `#E4DFD5` | Hairline dividers and card borders |
 | `-c-border-medium` | `#D2CBBE` | Input borders, secondary button outlines |
 | `-c-border-strong` | `#A9A196` | Focused boundaries |
@@ -148,6 +148,11 @@ carries the same information without competing with the heading beneath it.
 - Height: `36px`, rounded `6px`, `-c-border-medium` border.
 - Focus State: Highlighted `-c-primary` outline with subtle focus ring.
 - Inline Validation: Red border (`-c-bad`) and clear error caption underneath the input.
+- **Required fields** carry a red asterisk through `RequiredLabel`, which is
+  usable straight from FXML: `<RequiredLabel text="Email address"/>`. Mark a
+  field only where the form genuinely refuses to submit without it — an
+  asterisk on an optional field is worse than none at all. The required set is
+  taken from the controller's own validation, never assumed.
 - Search Input: Integrated search icon on the left and quick-clear `(×)` button on the right.
 
 ### G. Status Pills & Badges

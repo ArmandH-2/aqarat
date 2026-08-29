@@ -117,6 +117,18 @@ No Spring, no Hibernate, no Lombok, no ORM. Roughly ninety classes across `model
 
 ## Running it
 
+### Option A: 1-Click Automated Setup (Fastest for Windows)
+
+1. Double-click **`setup.bat`** (or run `.\setup.ps1` in PowerShell).
+   * Automatically detects/installs Java 21 and SQL Server tools.
+   * Creates the `Aqarat` database, provisions users, applies `schema.sql`, and seeds 2,000 properties.
+   * Generates `config/local.properties` and caches dependencies.
+2. Double-click **`run.bat`** (or run `.\mvnw.cmd javafx:run`) to launch!
+
+---
+
+### Option B: Manual Setup
+
 You need Java 21, Maven, and a local SQL Server.
 
 **1. Create the database.**

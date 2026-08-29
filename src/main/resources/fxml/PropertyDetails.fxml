@@ -5,6 +5,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import co.syntropyhq.aqarat.util.RequiredLabel?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
@@ -124,11 +125,11 @@
                                     maxWidth="Infinity" onAction="#handleRequestViewing"/>
                             <HBox spacing="9">
                                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                                    <Label text="Date" styleClass="label-soft"/>
+                                    <RequiredLabel text="Date"/>
                                     <DatePicker fx:id="viewingDatePicker" maxWidth="Infinity"/>
                                 </VBox>
                                 <VBox spacing="4" HBox.hgrow="ALWAYS">
-                                    <Label text="Time" styleClass="label-soft"/>
+                                    <RequiredLabel text="Time"/>
                                     <ComboBox fx:id="viewingTimeCombo" maxWidth="Infinity" promptText="Slot"/>
                                 </VBox>
                             </HBox>
@@ -143,7 +144,7 @@
                             <Label styleClass="hint" wrapText="true"
                                    text="Ready to commit? A deposit holds this property for 48 hours while contracts are drafted."/>
                             <VBox spacing="4">
-                                <Label text="Deposit ($)" styleClass="label-soft"/>
+                                <RequiredLabel text="Deposit ($)"/>
                                 <TextField fx:id="depositField" promptText="5,000"/>
                                 <Label fx:id="depositError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
                             </VBox>

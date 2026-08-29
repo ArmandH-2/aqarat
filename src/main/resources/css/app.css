@@ -9,13 +9,16 @@
    ========================================================================== */
 
 .root {
-    /* ---- Surfaces: warm, low-saturation, never pure grey ---- */
-    -c-bg:             #F2EFE9;
-    -c-surface:        #FFFEFC;
-    -c-surface-subtle: #F8F5EF;
-    -c-surface-hover:  #EFEAE0;
-    -c-surface-active: #E7E0D3;
-    -c-surface-sunken: #EAE5DB;
+    /* ---- Surfaces: warm, low-saturation, never pure grey and never pure white.
+            Cards are cream rather than white; white on a warm ground reads as an
+            unstyled default. The canvas is a shade deeper than the card so the
+            two still separate without needing a heavy border. ---- */
+    -c-bg:             #EDE8DE;
+    -c-surface:        #FBF8F1;
+    -c-surface-subtle: #F5F1E7;
+    -c-surface-hover:  #F0EBE0;
+    -c-surface-active: #E6DFD1;
+    -c-surface-sunken: #E4DED2;
 
     /* ---- Borders ---- */
     -c-border-subtle:  #E4DFD5;
@@ -154,6 +157,13 @@
     -fx-text-fill: -c-bad;
 }
 
+/* Marks a field the form will not submit without. Only ever on those. */
+.required-mark {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-bad;
+}
+
 /* ==========================================================================
    SHELL
    ========================================================================== */
@@ -207,6 +217,13 @@
     -fx-text-fill: -c-on-primary;
     -fx-font-weight: 600;
 }
+
+/* Ikonli paints a FontIcon with -fx-icon-color, not -fx-text-fill, so the icon
+   has to be told about the hover and active states separately from the label. */
+.nav-icon { -fx-icon-color: -c-side-text-dim; }
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon { -fx-icon-color: -c-on-primary; }
+.nav-item:disabled .nav-icon { -fx-icon-color: -c-side-rule; }
 
 .user-profile-card {
     -fx-background-color: transparent;
@@ -578,7 +595,7 @@
    because the photo underneath is not a known colour. Only the text carries
    the status tone — a tinted ground would fight the image. */
 .pill-on-photo {
-    -fx-background-color: rgba(255, 254, 252, 0.94);
+    -fx-background-color: rgba(251, 248, 241, 0.95);
     -fx-background-radius: 20px;
     -fx-border-width: 0;
     -fx-padding: 4 11 4 11;

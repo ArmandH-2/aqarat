@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
+<?import co.syntropyhq.aqarat.util.RequiredLabel?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
@@ -70,13 +71,13 @@
 
             <VBox spacing="16">
                 <VBox spacing="6">
-                    <Label text="Email address" styleClass="label-soft"/>
+                    <RequiredLabel text="Email address"/>
                     <TextField fx:id="emailField" promptText="name@example.com"/>
                     <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>
 
                 <VBox spacing="6">
-                    <Label text="Password" styleClass="label-soft"/>
+                    <RequiredLabel text="Password"/>
                     <PasswordField fx:id="passwordField" promptText="Enter your password"/>
                     <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
                 </VBox>

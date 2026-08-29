@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
+<?import co.syntropyhq.aqarat.util.RequiredLabel?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
@@ -50,31 +51,31 @@
 
                 <VBox spacing="15">
                     <VBox spacing="6">
-                        <Label text="Full name" styleClass="label-soft"/>
+                        <RequiredLabel text="Full name"/>
                         <TextField fx:id="fullNameField" promptText="Maya Haddad"/>
                         <Label fx:id="fullNameError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
 
                     <VBox spacing="6">
-                        <Label text="Email address" styleClass="label-soft"/>
+                        <RequiredLabel text="Email address"/>
                         <TextField fx:id="emailField" promptText="name@example.com"/>
                         <Label fx:id="emailError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
 
                     <VBox spacing="6">
-                        <Label text="Phone number" styleClass="label-soft"/>
+                        <RequiredLabel text="Phone number"/>
                         <TextField fx:id="phoneField" promptText="+961 3 123456"/>
                         <Label fx:id="phoneError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
 
                     <VBox spacing="6">
-                        <Label text="Password" styleClass="label-soft"/>
+                        <RequiredLabel text="Password"/>
                         <PasswordField fx:id="passwordField" promptText="At least 6 characters"/>
                         <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
 
                     <VBox spacing="6">
-                        <Label text="Confirm password" styleClass="label-soft"/>
+                        <RequiredLabel text="Confirm password"/>
                         <PasswordField fx:id="confirmPasswordField" promptText="Re-enter your password"/>
                         <Label fx:id="confirmPasswordError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>

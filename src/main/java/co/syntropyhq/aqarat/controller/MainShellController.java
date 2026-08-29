@@ -22,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 public class MainShellController {
 
@@ -114,6 +115,14 @@ public class MainShellController {
         Label label = new Label(entry.text);
         label.getStyleClass().add("nav-item");
         label.setMaxWidth(Double.MAX_VALUE);
+
+        // A leading icon is what makes a sidebar scannable rather than a list of
+        // words. Colour is left to CSS so the active and hover states carry it.
+        FontIcon icon = new FontIcon(entry.panel.getIconLiteral());
+        icon.setIconSize(16);
+        icon.getStyleClass().add("nav-icon");
+        label.setGraphic(icon);
+        label.setGraphicTextGap(11);
 
         boolean fxmlExists = getClass().getResource("/fxml/" + entry.panel.getFxml()) != null;
         label.setDisable(!fxmlExists);
