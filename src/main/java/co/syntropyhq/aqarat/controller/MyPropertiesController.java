@@ -130,10 +130,10 @@ public class MyPropertiesController {
             else if (p.getStatus() == PropertyStatus.NEEDS_INFO) needsInfo++;
         }
 
-        AnimationUtil.animateCount(totalCountLabel, total, 300);
-        AnimationUtil.animateCount(activeCountLabel, active, 300);
-        AnimationUtil.animateCount(reviewCountLabel, review, 300);
-        AnimationUtil.animateCount(needsInfoCountLabel, needsInfo, 300);
+        totalCountLabel.setText(Format.count(total));
+        activeCountLabel.setText(Format.count(active));
+        reviewCountLabel.setText(Format.count(review));
+        needsInfoCountLabel.setText(Format.count(needsInfo));
     }
 
     @FXML

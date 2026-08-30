@@ -16,6 +16,7 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReportService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
@@ -108,11 +109,11 @@ public class AgentDashboardController {
             Integer scope = user.getRole() == Role.ADMIN ? null : agentId;
             int overdueCount = reportService.overduePayments(scope).size();
 
-            AnimationUtil.animateCount(queueCountLabel, queueCount, 350);
-            AnimationUtil.animateCount(unassignedCountLabel, unassignedCount, 350);
-            AnimationUtil.animateCount(activeListingsCountLabel, activeListings, 350);
-            AnimationUtil.animateCount(weekViewingsCountLabel, weekViewings, 350);
-            AnimationUtil.animateCount(overdueCountLabel, overdueCount, 350);
+            queueCountLabel.setText(Format.count(queueCount));
+            unassignedCountLabel.setText(Format.count(unassignedCount));
+            activeListingsCountLabel.setText(Format.count(activeListings));
+            weekViewingsCountLabel.setText(Format.count(weekViewings));
+            overdueCountLabel.setText(Format.count(overdueCount));
 
             overdueCaptionLabel.setText(user.getRole() == Role.ADMIN
                 ? "Payments overdue across the agency" : "Payments overdue in your portfolio");

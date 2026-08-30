@@ -42,6 +42,10 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * <p>Built on {@link Popup} rather than an overlay inside the shell so it works
  * on the sign-in window too, which has no shell around it, and so no panel has
  * to reserve space for something that is usually absent.
+ *
+ * <p>Top right rather than bottom right: the bottom corner is where a panel puts
+ * its actions, so a message that lands there covers the button that produced
+ * it.
  */
 public final class Toast {
 
@@ -133,8 +137,11 @@ public final class Toast {
 
         ensurePopup();
         Card card = new Card(tone, message, detail, actionLabel, action);
+        // Newest nearest the top edge, so a card that arrives while two are
+        // already up appears where the eye is rather than below them, and the
+        // one pushed out is the oldest.
         live.add(card);
-        stack.getChildren().add(card.node);
+        stack.getChildren().add(0, card.node);
         while (live.size() > MAX_VISIBLE) {
             live.get(0).dismiss();
         }
@@ -153,7 +160,7 @@ public final class Toast {
             return;
         }
         stack = new VBox(10);
-        stack.setAlignment(Pos.BOTTOM_RIGHT);
+        stack.setAlignment(Pos.TOP_RIGHT);
         stack.setPickOnBounds(false);
         stack.getStyleClass().add("toast-layer");
         // Room for the drop shadow, which would otherwise be clipped by the
@@ -165,7 +172,7 @@ public final class Toast {
         // off one: a message nobody can see is not a message.
         popup.setAutoFix(true);
         popup.setHideOnEscape(false);
-        popup.setAnchorLocation(PopupWindow.AnchorLocation.CONTENT_BOTTOM_RIGHT);
+        popup.setAnchorLocation(PopupWindow.AnchorLocation.CONTENT_TOP_RIGHT);
         popup.getContent().add(stack);
         popup.getScene().getStylesheets()
             .add(Toast.class.getResource("/css/app.css").toExternalForm());
@@ -200,8 +207,11 @@ public final class Toast {
         if (popup == null || !popup.isShowing()) {
             return;
         }
+        // The scene's offset inside the window is the title bar. Without it the
+        // first toast would sit on top of the title bar rather than under it.
+        double titleBar = owner.getScene() == null ? 0 : owner.getScene().getY();
         popup.setAnchorX(owner.getX() + owner.getWidth() - MARGIN);
-        popup.setAnchorY(owner.getY() + owner.getHeight() - MARGIN);
+        popup.setAnchorY(owner.getY() + titleBar + MARGIN);
     }
 
     private static Window focusedWindow() {
@@ -313,8 +323,10 @@ public final class Toast {
             FadeTransition fade = new FadeTransition(Duration.millis(180), node);
             fade.setFromValue(0);
             fade.setToValue(1);
+            // Enters from above, which is the edge it now lives on. 180ms: long
+            // enough to be seen arriving, short enough that nobody waits for it.
             TranslateTransition rise = new TranslateTransition(Duration.millis(180), node);
-            rise.setFromY(14);
+            rise.setFromY(-14);
             rise.setToY(0);
             rise.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1.0));
             fade.play();

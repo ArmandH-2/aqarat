@@ -2,16 +2,10 @@ package co.syntropyhq.aqarat.util;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
-import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
@@ -117,18 +111,4 @@ public final class AnimationUtil {
         });
     }
 
-    /**
-     * Animates an integer count-up on a label (e.g. for KPI stats).
-     */
-    public static void animateCount(Label label, int targetValue, double durationMillis) {
-        if (label == null) return;
-        IntegerProperty value = new SimpleIntegerProperty(0);
-        value.addListener((obs, oldVal, newVal) -> label.setText(String.valueOf(newVal)));
-
-        Timeline timeline = new Timeline(
-            new KeyFrame(Duration.ZERO, new KeyValue(value, 0)),
-            new KeyFrame(Duration.millis(durationMillis), new KeyValue(value, targetValue, Interpolator.EASE_OUT))
-        );
-        timeline.play();
-    }
 }
