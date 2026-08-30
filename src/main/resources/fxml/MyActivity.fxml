@@ -15,22 +15,24 @@
             <Insets top="0" right="6" bottom="28" left="0"/>
         </padding>
 
-        <!-- Active Reservations Section -->
+        <!-- Both lists size to their contents. A fixed height left a card with one
+             reservation in it two thirds empty, which reads as something failing to
+             load rather than as a short list. The controller sets the height from
+             the row count. -->
         <VBox styleClass="card" spacing="12">
             <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="Active &amp; Past Reservations" styleClass="section-title" HBox.hgrow="ALWAYS"/>
-                <Label text="48h exclusivity lock" styleClass="hint"/>
+                <Label text="Reservations" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                <Label text="A deposit holds a property for 48 hours" styleClass="hint"/>
             </HBox>
-            <ListView fx:id="reservationList" prefHeight="220" minHeight="180"/>
+            <ListView fx:id="reservationList" minHeight="0"/>
         </VBox>
 
-        <!-- Scheduled Viewings Section -->
         <VBox styleClass="card" spacing="12">
             <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="Scheduled Viewings" styleClass="section-title" HBox.hgrow="ALWAYS"/>
-                <Label text="Accompanied by licensed agents" styleClass="hint"/>
+                <Label text="Viewings" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                <Label text="An agent comes with you" styleClass="hint"/>
             </HBox>
-            <ListView fx:id="viewingList" prefHeight="260" minHeight="200"/>
+            <ListView fx:id="viewingList" minHeight="0"/>
         </VBox>
     </VBox>
 </ScrollPane>

@@ -42,16 +42,16 @@
                 <VBox styleClass="card" spacing="10">
                     <HBox spacing="12" alignment="CENTER_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="From Period" styleClass="label-soft"/>
+                            <Label text="From" styleClass="label-soft"/>
                             <DatePicker fx:id="revenueFromPicker" maxWidth="Infinity"/>
                         </VBox>
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="To Period" styleClass="label-soft"/>
+                            <Label text="To" styleClass="label-soft"/>
                             <DatePicker fx:id="revenueToPicker" maxWidth="Infinity"/>
                         </VBox>
                         <VBox spacing="4" alignment="BOTTOM_LEFT">
                             <Label text="" styleClass="label-soft"/>
-                            <Button text="Generate Report" styleClass="button, button-primary" prefHeight="36" onAction="#handleRunRevenue"/>
+                            <Button text="Run" styleClass="button, button-primary" prefHeight="36" onAction="#handleRunRevenue"/>
                         </VBox>
                     </HBox>
                 </VBox>

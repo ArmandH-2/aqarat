@@ -41,10 +41,10 @@
             <VBox fx:id="districtsBox" spacing="16">
                 <!-- Add New District Card -->
                 <VBox styleClass="card" spacing="12">
-                    <Label text="Add New Municipal District" styleClass="section-title"/>
+                    <Label text="Add a district" styleClass="section-title"/>
                     <HBox spacing="12" alignment="CENTER_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="District Name" styleClass="label-soft"/>
+                            <Label text="Name" styleClass="label-soft"/>
                             <TextField fx:id="newDistrictNameField" promptText="e.g. Achrafieh"/>
                             <Label fx:id="newDistrictNameError" styleClass="field-error" managed="false" visible="false"/>
                         </VBox>

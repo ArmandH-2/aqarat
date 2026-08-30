@@ -81,12 +81,28 @@ public class MyActivityController {
         viewingList.setItems(FXCollections.observableArrayList());
     }
 
+    /**
+     * Sizes a list to what is in it.
+     *
+     * <p>These lists are short — a person has a handful of reservations, not a
+     * page of them — and a fixed height left a card with one row in it two
+     * thirds empty, which reads as something that failed to load rather than as
+     * a short list. An empty list keeps enough height for its placeholder.
+     */
+    private void sizeToContents(ListView<?> list, int rows, double rowHeight) {
+        double height = rows == 0 ? 96 : rows * rowHeight + 8;
+        list.setPrefHeight(height);
+        list.setMinHeight(height);
+        list.setMaxHeight(height);
+    }
+
     private void loadReservations() {
         try {
             int clientId = SessionManager.getCurrentUser().getId();
             List<Reservation> reservations = reservationService.findByClient(clientId);
             loadReservationProperties(reservations);
             reservationList.setItems(FXCollections.observableArrayList(reservations));
+            sizeToContents(reservationList, reservations.size(), 132);
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
         } catch (PropertyService.InvalidTransitionException e) {
@@ -106,6 +122,7 @@ public class MyActivityController {
             List<Viewing> viewings = viewingService.findByClient(clientId);
             loadViewingProperties(viewings);
             viewingList.setItems(FXCollections.observableArrayList(viewings));
+            sizeToContents(viewingList, viewings.size(), 118);
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
         }
@@ -262,7 +279,7 @@ public class MyActivityController {
             HBox header = new HBox(12, titleLabel, pill);
             header.setAlignment(Pos.CENTER_LEFT);
 
-            Label meta = new Label("Appointment Slot: " + Format.dateTime(viewing.getScheduledAt()));
+            Label meta = new Label(Format.dateTime(viewing.getScheduledAt()));
             meta.getStyleClass().add("label-soft");
 
             VBox card = new VBox(8, header, meta);

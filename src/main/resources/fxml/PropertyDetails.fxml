@@ -120,20 +120,23 @@
                     </VBox>
 
                     <VBox fx:id="actionsBox" spacing="18" visible="false" managed="false">
+                        <!-- Fields, then the action. The button sat above its own inputs,
+                             which asks someone to submit a form they have not filled in.
+                             Stacked rather than side by side: this rail is 330px wide, and
+                             a DatePicker and a ComboBox sharing it leaves the time as a
+                             bare arrow with its value clipped to an ellipsis. -->
                         <VBox spacing="10">
+                            <VBox spacing="4">
+                                <RequiredLabel text="Date"/>
+                                <DatePicker fx:id="viewingDatePicker" maxWidth="Infinity"/>
+                            </VBox>
+                            <VBox spacing="4">
+                                <RequiredLabel text="Time"/>
+                                <ComboBox fx:id="viewingTimeCombo" maxWidth="Infinity" promptText="Choose a slot"/>
+                            </VBox>
+                            <Label fx:id="viewingError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
                             <Button text="Request a viewing" styleClass="button, button-primary"
                                     maxWidth="Infinity" onAction="#handleRequestViewing"/>
-                            <HBox spacing="9">
-                                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                                    <RequiredLabel text="Date"/>
-                                    <DatePicker fx:id="viewingDatePicker" maxWidth="Infinity"/>
-                                </VBox>
-                                <VBox spacing="4" HBox.hgrow="ALWAYS">
-                                    <RequiredLabel text="Time"/>
-                                    <ComboBox fx:id="viewingTimeCombo" maxWidth="Infinity" promptText="Slot"/>
-                                </VBox>
-                            </HBox>
-                            <Label fx:id="viewingError" styleClass="field-error" managed="false" visible="false" wrapText="true"/>
                             <Label styleClass="hint" wrapText="true"
                                    text="Free, and accompanied by the listing agent."/>
                         </VBox>

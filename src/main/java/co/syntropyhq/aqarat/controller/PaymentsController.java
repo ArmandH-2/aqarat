@@ -215,7 +215,7 @@ public class PaymentsController {
     }
 
     private String contractSummary(Contract contract) {
-        return propertyTitle(contract.getPropertyId()) + " • " + userName(contract.getClientId())
+        return propertyTitle(contract.getPropertyId()) + " · " + userName(contract.getClientId())
             + " · " + Format.enumLabel(contract.getStatus());
     }
 

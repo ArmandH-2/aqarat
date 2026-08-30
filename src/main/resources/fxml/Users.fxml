@@ -32,7 +32,7 @@
 
             <!-- Create New User Form Card -->
             <VBox styleClass="card" spacing="14">
-                <Label text="Provision New Account" styleClass="section-title"/>
+                <Label text="Add someone" styleClass="section-title"/>
 
                 <GridPane hgap="14" vgap="12">
                     <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
@@ -54,18 +54,18 @@
                     </VBox>
 
                     <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                        <Label text="Initial Password" styleClass="label-soft"/>
+                        <Label text="Password" styleClass="label-soft"/>
                         <PasswordField fx:id="passwordField" promptText="Minimum 8 characters"/>
                         <Label fx:id="passwordError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
 
                     <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="2">
-                        <Label text="Assigned System Role" styleClass="label-soft"/>
+                        <Label text="Role" styleClass="label-soft"/>
                         <ComboBox fx:id="roleCombo" maxWidth="Infinity"/>
                     </VBox>
 
                     <HBox spacing="10" alignment="BOTTOM_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
-                        <Button text="+ Provision Account" styleClass="button, button-primary"
+                        <Button text="Create account" styleClass="button, button-primary"
                                 prefHeight="36" onAction="#handleCreate"/>
                     </HBox>
                 </GridPane>
@@ -73,7 +73,7 @@
 
             <!-- User Accounts Directory Card -->
             <VBox styleClass="card" spacing="12">
-                <Label text="System Accounts Directory" styleClass="section-title"/>
+                <Label text="Everyone with an account" styleClass="section-title"/>
                 <ListView fx:id="userList" minHeight="450"/>
             </VBox>
         </VBox>

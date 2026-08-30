@@ -35,7 +35,7 @@
             <VBox styleClass="card" spacing="12">
                 <HBox spacing="12" alignment="CENTER_LEFT">
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Entity Type" styleClass="label-soft"/>
+                        <Label text="Record type" styleClass="label-soft"/>
                         <TextField fx:id="entityTypeField" promptText="e.g. PROPERTY, USER"/>
                     </VBox>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
@@ -48,16 +48,19 @@
                         <Label fx:id="userIdError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="From Date" styleClass="label-soft"/>
+                        <Label text="From" styleClass="label-soft"/>
                         <DatePicker fx:id="fromDatePicker" maxWidth="Infinity"/>
                     </VBox>
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="To Date" styleClass="label-soft"/>
+                        <Label text="To" styleClass="label-soft"/>
                         <DatePicker fx:id="toDatePicker" maxWidth="Infinity"/>
                     </VBox>
-                    <VBox spacing="4" alignment="BOTTOM_LEFT">
+                    <!-- Every sibling grows, so this column has to state a floor
+                         or the button is squeezed until its label is clipped. -->
+                    <VBox spacing="4" alignment="BOTTOM_LEFT" minWidth="104">
                         <Label text="" styleClass="label-soft"/>
-                        <Button text="Apply Filters" styleClass="button, button-primary" prefHeight="36" onAction="#handleApplyFilters"/>
+                        <Button text="Apply" styleClass="button, button-primary"
+                                minWidth="104" prefHeight="36" onAction="#handleApplyFilters"/>
                     </VBox>
                 </HBox>
             </VBox>
