@@ -39,6 +39,7 @@
         <slf4j.version>2.0.13</slf4j.version>
         <junit.version>5.10.2</junit.version>
         <ikonli.version>12.3.1</ikonli.version>
+        <openpdf.version>2.0.3</openpdf.version>
         <controlsfx.version>11.2.1</controlsfx.version>
         <animatefx.version>1.2.4</animatefx.version>
         <!-- Parses tool-call responses from the chat API -->
@@ -120,6 +121,18 @@
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>${jbcrypt.version}</version>
+        </dependency>
+
+        <!-- OpenPDF: writes the payment receipt as a PDF.
+
+             JavaFX can print but cannot write a file: on Windows it is the
+             "Microsoft Print to PDF" driver that produces the PDF, so a machine
+             with no printer installed has no way to save one at all. A receipt
+             is the artefact a client keeps, so it has to be a file. -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>${openpdf.version}</version>
         </dependency>
 
         <dependency>

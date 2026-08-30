@@ -44,9 +44,12 @@ public final class Router {
         String path = "/fxml/" + panel.getFxml();
         FXMLLoader loader = new FXMLLoader(Router.class.getResource(path));
         try {
-            Parent view = loader.load();
-            PageScroll.install(view);
-            return view;
+            // No PageScroll here on purpose. An embedded panel is part of the
+            // host's page, and installing it on both makes each treat itself as
+            // the page: the two size their lists to their own viewports, neither
+            // ends up with anything to scroll, and the wheel does nothing at all.
+            // The host's own install covers everything inside it.
+            return loader.load();
         } catch (IOException e) {
             throw new PanelLoadException(panel, e);
         }

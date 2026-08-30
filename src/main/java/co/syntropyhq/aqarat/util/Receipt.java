@@ -1,12 +1,11 @@
 package co.syntropyhq.aqarat.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.geometry.Pos;
-import javafx.print.PageLayout;
-import javafx.print.Printer;
-import javafx.print.PrinterJob;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -15,7 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.transform.Scale;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -29,25 +28,30 @@ import javafx.stage.Window;
  * built as something that was issued: a masthead, the figure at display size,
  * ruled lines of detail, and the balance the payment leaves behind.
  *
- * <p>It prints. On Windows, choosing "Microsoft Print to PDF" in the print
- * dialog saves it as a PDF, which is why no PDF library is pulled in for it:
- * the platform already has one, and a dependency that produces a worse-looking
- * page than the one already on screen is not worth carrying.
+ * <p>It saves as a PDF, drawn by {@link ReceiptPdf} to match what is on screen.
+ * A file rather than a print job: JavaFX can print but cannot write, and on
+ * Windows it is a printer driver that turns a print job into a file, so a
+ * machine with no printer installed had no way to keep a receipt at all.
+ * Printing is left to whatever the client opens the file with.
  */
 public final class Receipt {
 
-    private final List<Line> lines = new ArrayList<>();
-    private final String number;
-    private final String title;
-    private BigDecimal amount;
-    private String statusLabel;
-    private String statusDetail;
-    private boolean settled = true;
-    private BigDecimal remaining;
-    private final Label printMessage = new Label();
-    private String remainingLabel = "Remaining on this contract";
-    private String footNote =
+    /* Read by ReceiptPdf, which draws the same document onto a page. Package
+       private rather than exposed through eleven getters that exist for one
+       caller in the same package. */
+    final List<Line> lines = new ArrayList<>();
+    final String number;
+    final String title;
+    BigDecimal amount;
+    String statusLabel;
+    String statusDetail;
+    boolean settled = true;
+    BigDecimal remaining;
+    String remainingLabel = "Remaining on this contract";
+    String footNote =
         "Issued by Aqarat against the proof supplied. Recorded in the audit trail.";
+
+    private final Label saveMessage = new Label();
 
     private Receipt(String number, String title) {
         this.number = number;
@@ -115,9 +119,9 @@ public final class Receipt {
 
         VBox document = build();
 
-        Button print = new Button("Print / Save as PDF");
-        print.getStyleClass().addAll("button", "button-secondary");
-        print.setOnAction(e -> print(stage));
+        Button save = new Button("Save as PDF");
+        save.getStyleClass().addAll("button", "button-secondary");
+        save.setOnAction(e -> saveAsPdf(stage));
 
         Button done = new Button("Done");
         done.getStyleClass().addAll("button", "button-primary");
@@ -130,26 +134,24 @@ public final class Receipt {
         foot.setMaxWidth(230);
         HBox.setHgrow(foot, Priority.ALWAYS);
 
-        HBox actions = new HBox(9, foot, print, done);
+        HBox actions = new HBox(9, foot, save, done);
         actions.setAlignment(Pos.CENTER_LEFT);
         actions.getStyleClass().add("receipt-actions");
 
-        // Printing reports itself here rather than as a toast. A toast rises in
-        // the bottom-right corner of the window it belongs to, which on a window
-        // this small is exactly where these two buttons are - so the message
-        // covered the button that raised it.
-        printMessage.getStyleClass().add("receipt-print-error");
-        printMessage.setWrapText(true);
+        // Saving reports itself in the document rather than as a toast, which
+        // would rise in a corner of a window this small and cover a button.
+        saveMessage.getStyleClass().add("receipt-save-message");
+        saveMessage.setWrapText(true);
         // Fills the width the document sets without asking for any of its own:
         // a preferred width taken from the unwrapped text would widen the whole
-        // receipt to fit one line of an error message.
-        printMessage.setMinWidth(0);
-        printMessage.setPrefWidth(1);
-        printMessage.setMaxWidth(Double.MAX_VALUE);
-        printMessage.setVisible(false);
-        printMessage.setManaged(false);
+        // receipt to fit one line of a message.
+        saveMessage.setMinWidth(0);
+        saveMessage.setPrefWidth(1);
+        saveMessage.setMaxWidth(Double.MAX_VALUE);
+        saveMessage.setVisible(false);
+        saveMessage.setManaged(false);
 
-        VBox root = new VBox(document, printMessage, actions);
+        VBox root = new VBox(document, saveMessage, actions);
         root.getStyleClass().add("receipt-window");
 
         Scene scene = new Scene(root);
@@ -270,61 +272,45 @@ public final class Receipt {
         return row;
     }
 
-    /*
-     * Prints a fresh copy of the document, scaled down only as far as the page
-     * needs. It is never scaled up: a receipt blown across a sheet of A4 looks
-     * like a mistake rather than a document.
+    /**
+     * Writes the receipt to a file the person chooses.
+     *
+     * <p>A PDF rather than a print job. JavaFX can print but cannot save, and on
+     * Windows it is a printer driver that turns a print job into a file — so on
+     * a machine with no printer there was no way to keep a receipt at all.
+     * Printing is left to whatever they open the file with.
      */
-    private void print(Stage owner) {
-        // Checked before the job is created, because with no printer installed
-        // showPrintDialog simply returns false — indistinguishable from the
-        // person pressing Cancel, which would leave the button doing nothing at
-        // all with nothing said about why.
-        if (Printer.getDefaultPrinter() == null || Printer.getAllPrinters().isEmpty()) {
-            say("There is no printer to send this to. Windows has no printer installed, or the "
-                + "print spooler is not running - Microsoft Print to PDF counts as one.");
+    private void saveAsPdf(Stage owner) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Save receipt " + number);
+        chooser.setInitialFileName(number + ".pdf");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("PDF document", "*.pdf"));
+        File target = chooser.showSaveDialog(owner);
+        if (target == null) {
             return;
         }
-        PrinterJob job = PrinterJob.createPrinterJob();
-        if (job == null || !job.showPrintDialog(owner)) {
+        try {
+            ReceiptPdf.write(this, target);
+        } catch (IOException | RuntimeException e) {
+            say("The receipt could not be saved to " + target.getName()
+                + ". Choose another folder, or one you have permission to write to.", true);
             return;
         }
-
-        VBox copy = build();
-        // Off-screen nodes have no styling and no size until they belong to a
-        // scene that has been laid out, so the copy is given one.
-        Scene scene = new Scene(copy);
-        scene.getStylesheets().add(getClass().getResource("/css/app.css").toExternalForm());
-        copy.applyCss();
-        copy.layout();
-
-        PageLayout page = job.getJobSettings().getPageLayout();
-        double scale = Math.min(1.0, Math.min(
-            page.getPrintableWidth() / copy.getBoundsInParent().getWidth(),
-            page.getPrintableHeight() / copy.getBoundsInParent().getHeight()));
-        if (scale < 1.0) {
-            copy.getTransforms().add(new Scale(scale, scale));
-        }
-
-        if (job.printPage(page, copy)) {
-            job.endJob();
-            printMessage.setVisible(false);
-            printMessage.setManaged(false);
-            Toast.done("Receipt " + number + " sent to the printer");
-        } else {
-            job.cancelJob();
-            say("The printer refused the page. Try another printer, or Microsoft Print to PDF.");
-        }
+        // The name, not the path. A full Windows path wraps to three lines in a
+        // window this narrow, and the person just chose the folder themselves.
+        say("Saved as " + target.getName(), false);
     }
 
     /* Shows a line above the buttons and grows the window to fit it, since the
        receipt is fixed-size and would otherwise clip its own message. */
-    private void say(String message) {
-        printMessage.setText(message);
-        printMessage.setVisible(true);
-        printMessage.setManaged(true);
-        Stage stage = (Stage) printMessage.getScene().getWindow();
-        stage.sizeToScene();
+    private void say(String message, boolean failed) {
+        saveMessage.setText(message);
+        saveMessage.getStyleClass().removeAll("receipt-save-failed", "receipt-save-done");
+        saveMessage.getStyleClass().add(failed ? "receipt-save-failed" : "receipt-save-done");
+        saveMessage.setVisible(true);
+        saveMessage.setManaged(true);
+        ((Stage) saveMessage.getScene().getWindow()).sizeToScene();
     }
 
     private static Window focusedWindow() {
@@ -336,6 +322,7 @@ public final class Receipt {
         return null;
     }
 
-    private record Line(String label, String value) {
+    /* Package private so ReceiptPdf can lay the same rows onto a page. */
+    record Line(String label, String value) {
     }
 }
