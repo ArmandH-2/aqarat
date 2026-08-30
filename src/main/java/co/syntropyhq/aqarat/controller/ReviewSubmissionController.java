@@ -236,24 +236,16 @@ public class ReviewSubmissionController implements NeedsId {
         if (amenitiesPane == null) return;
         amenitiesPane.getChildren().clear();
         addAmenityChip("Dedicated Parking", property.isHasParking());
-        addAmenityChip("Elevator", property.isHasElevator());
+        addAmenityChip("Lift", property.isHasElevator());
         addAmenityChip("Balcony", property.isHasBalcony());
         addAmenityChip("Furnished", property.isFurnished());
     }
 
+    /* Same chips the owner sees on the listing: a feature the property lacks is
+       stated in words and set back, rather than marked with a tick or a cross. */
     private void addAmenityChip(String name, boolean active) {
-        HBox chip = new HBox(6);
-        chip.setAlignment(Pos.CENTER_LEFT);
-        chip.setStyle(active
-            ? "-fx-background-color: -c-primary-tint; -fx-padding: 5 10 5 10; -fx-background-radius: 20px; -fx-border-color: -c-primary; -fx-border-radius: 20px;"
-            : "-fx-background-color: -c-surface-subtle; -fx-padding: 5 10 5 10; -fx-background-radius: 20px; -fx-border-color: -c-border-subtle; -fx-border-radius: 20px; -fx-opacity: 0.6;");
-
-        Label label = new Label((active ? "✓ " : "✕ ") + name);
-        label.setStyle(active
-            ? "-fx-font-weight: 600; -fx-text-fill: -c-primary; -fx-font-size: 11px;"
-            : "-fx-font-weight: 500; -fx-text-fill: -c-text-muted; -fx-font-size: 11px;");
-
-        chip.getChildren().add(label);
+        Label chip = new Label(active ? name : "No " + name.toLowerCase());
+        chip.getStyleClass().add(active ? "amenity-chip" : "amenity-chip-absent");
         amenitiesPane.getChildren().add(chip);
     }
 

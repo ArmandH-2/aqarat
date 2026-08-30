@@ -193,7 +193,9 @@ public class MyContractsController {
     private String amountText(Contract contract) {
         return contract.getContractType() == ContractType.SALE
             ? Format.salePrice(contract.getTotalAmount())
-            : Format.monthlyRent(contract.getMonthlyRent()) + " / month (" + contract.getTermMonths() + " mos)";
+            // monthlyRent already carries the unit; the term is what this adds.
+            : Format.monthlyRent(contract.getMonthlyRent())
+                + " for " + contract.getTermMonths() + " months";
     }
 
     private String pillClass(ContractStatus status) {
@@ -504,9 +506,8 @@ public class MyContractsController {
             VBox section = new VBox(8);
             section.getStyleClass().add("card-subtle");
 
-            Label heading = new Label("Recorded Payments & Receipts");
+            Label heading = new Label("Payments received");
             heading.getStyleClass().add("section-title");
-            heading.setStyle("-fx-font-size: 13px;");
 
             List<Payment> payments = paymentsFor(contract);
             if (payments.isEmpty()) {
@@ -516,7 +517,7 @@ public class MyContractsController {
                 return section;
             }
 
-            VBox rows = new VBox(6);
+            VBox rows = new VBox(0);
             for (Payment payment : payments) {
                 rows.getChildren().add(paymentRow(contract, payment));
             }
@@ -524,25 +525,48 @@ public class MyContractsController {
             return section;
         }
 
+        /*
+         * Columns, and the date without a time. Every seeded payment was booked
+         * at midnight UTC, which rendered as "02:00" in Beirut on every single
+         * row — a number that means nothing and looks like a defect. A payment
+         * is a thing that happened on a day.
+         */
         private HBox paymentRow(Contract contract, Payment payment) {
-            HBox line = new HBox(10);
+            HBox line = new HBox(12);
+            line.getStyleClass().add("schedule-row");
             line.setAlignment(Pos.CENTER_LEFT);
 
-            Label text = new Label(Format.paymentAmount(payment.getAmount()) + " via "
-                + Format.enumLabel(payment.getMethod()) + " · " + Format.dateTime(payment.getPaidAt()));
-            text.getStyleClass().add("body");
-            HBox.setHgrow(text, Priority.ALWAYS);
+            Label amount = new Label(Format.paymentAmount(payment.getAmount()));
+            amount.getStyleClass().add("numeric");
+            amount.setMinWidth(130);
+            amount.setPrefWidth(130);
 
-            Label pill = UIHelper.createPill(Format.enumLabel(payment.getStatus()), pillClass(payment.getStatus()));
-            line.getChildren().addAll(text, pill);
+            Label when = new Label(Format.date(payment.getPaidAt().toLocalDate()));
+            when.getStyleClass().add("body");
+            when.setMinWidth(120);
+            when.setPrefWidth(120);
+
+            Label method = new Label(Format.enumLabel(payment.getMethod()));
+            method.getStyleClass().add("hint");
+
+            Region spacer = new Region();
+            spacer.setMinWidth(0);
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+
+            Label pill = UIHelper.createPill(
+                Format.enumLabel(payment.getStatus()), pillClass(payment.getStatus()));
+
+            HBox trailing = new HBox(9, pill);
+            trailing.setAlignment(Pos.CENTER_RIGHT);
 
             if (payment.getStatus() == PaymentStatus.CONFIRMED) {
                 Button receipt = new Button("Receipt");
-                receipt.getStyleClass().addAll("button", "button-secondary");
-                receipt.setStyle("-fx-font-size: 11px; -fx-pref-height: 28px;");
+                receipt.getStyleClass().addAll("button", "button-secondary", "button-compact");
                 receipt.setOnAction(event -> showReceipt(contract, payment));
-                line.getChildren().add(receipt);
+                trailing.getChildren().add(receipt);
             }
+
+            line.getChildren().addAll(amount, when, method, spacer, trailing);
             return line;
         }
     }
