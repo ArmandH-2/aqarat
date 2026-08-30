@@ -48,14 +48,13 @@ public final class PageScroll {
         if (page == null || !(page.getContent() instanceof Parent content)) {
             return;
         }
-        // One selector at a time as well: lookupAll takes a single simple
-        // selector and silently matches nothing when given a comma-separated
-        // group.
-        for (String selector : new String[] {".list-view", ".table-view", ".scroll-pane"}) {
-            for (Node inner : content.lookupAll(selector)) {
-                chain(inner, page);
-            }
-        }
+        // One filter, on the page itself, rather than one per inner scroller.
+        // A filter runs on the way down, so it sees the wheel before any list
+        // inside the page does — and it covers content added later, which
+        // hunting for lists at load time did not: a panel that swaps its body
+        // when a tab is pressed produced lists nobody had ever chained.
+        chain(page);
+
         for (Node list : content.lookupAll(PAGE_LIST)) {
             fillViewport(list, page);
         }
@@ -118,8 +117,8 @@ public final class PageScroll {
      * A filter rather than a handler: it has to run before the list's own skin,
      * which is what consumes the event today.
      */
-    private static void chain(Node inner, ScrollPane page) {
-        inner.addEventFilter(ScrollEvent.SCROLL, event -> {
+    private static void chain(ScrollPane page) {
+        page.addEventFilter(ScrollEvent.SCROLL, event -> {
             double delta = event.getDeltaY();
             if (delta == 0) {
                 return;

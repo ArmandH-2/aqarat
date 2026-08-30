@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -69,6 +70,29 @@
                     <Label text="Requires collection follow-up" styleClass="hint"/>
                 </VBox>
             </HBox>
+
+            <!-- What is owed. First, because it is the only thing on this
+                 screen that gets worse while nobody looks at it. -->
+            <VBox fx:id="arrearsSection" spacing="12" managed="false" visible="false">
+                <HBox alignment="BOTTOM_LEFT" spacing="12">
+                    <VBox spacing="2">
+                        <Label text="COLLECTIONS" styleClass="eyebrow"/>
+                        <Label text="Longest overdue" styleClass="section-title"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="arrearsTotalLabel" styleClass="numeric"/>
+                </HBox>
+                <VBox fx:id="arrearsList" spacing="0" styleClass="card"/>
+            </VBox>
+
+            <!-- What is booked. Second, because it is already arranged. -->
+            <VBox fx:id="weekSection" spacing="12" managed="false" visible="false">
+                <VBox spacing="2">
+                    <Label text="APPOINTMENTS" styleClass="eyebrow"/>
+                    <Label text="Next seven days" styleClass="section-title"/>
+                </VBox>
+                <VBox fx:id="weekList" spacing="0" styleClass="card"/>
+            </VBox>
         </VBox>
     </VBox>
 </ScrollPane>

@@ -27,7 +27,7 @@
             <VBox spacing="5">
                 <Label text="ADMINISTRATION" styleClass="eyebrow"/>
                 <Label text="People and access" styleClass="display-title"/>
-                <Label text="Three roles. Whether a customer is an owner or a client is answered by what they hold, not by a column, so one person needs one account." styleClass="hint" wrapText="true" maxWidth="760"/>
+                <Label text="Three roles. Whether a customer is an owner or a client is decided by what they hold, so someone selling one property and renting another needs one account, not two." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Create New User Form Card -->

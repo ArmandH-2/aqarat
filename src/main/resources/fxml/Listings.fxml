@@ -25,7 +25,7 @@
             <VBox spacing="5">
                 <Label text="INVENTORY" styleClass="eyebrow"/>
                 <Label text="Everything on the market" styleClass="display-title"/>
-                <Label text="Published listings, reserved holds and closed deals. Status moves only through PropertyService — no screen writes the column." styleClass="hint" wrapText="true" maxWidth="760"/>
+                <Label text="Published listings, reserved holds and closed deals. A property changes status by someone acting on it, never by an edit to this list." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Filter Card -->

@@ -26,7 +26,7 @@
             <VBox spacing="5">
                 <Label text="AGREEMENTS" styleClass="eyebrow"/>
                 <Label text="Contracts" styleClass="display-title"/>
-                <Label text="Activating one moves the property, generates its payment schedule and books the commission in a single transaction — all of it, or none." styleClass="hint" wrapText="true" maxWidth="760"/>
+                <Label text="Activating one moves the property off the market, generates its payment schedule and books the commission. All of it, or none of it — never half." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->

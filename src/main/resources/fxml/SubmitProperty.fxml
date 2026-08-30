@@ -185,7 +185,7 @@
                         <Label text="AQARAT ESTIMATE" styleClass="eyebrow"/>
                         <Label fx:id="estimateValue" styleClass="display-title-lg" text="—"/>
                         <Label fx:id="estimateState" styleClass="hint" wrapText="true"
-                               text="Enter a district, property type and area, and an estimate appears here."/>
+                               text="Enter a district, property type and area, and an estimate appears here — with the range it sits in and the properties it was compared against."/>
                     </VBox>
 
                     <VBox fx:id="estimateDetail" spacing="18" managed="false" visible="false">

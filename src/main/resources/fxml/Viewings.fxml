@@ -23,7 +23,7 @@
             <VBox spacing="5">
                 <Label text="APPOINTMENTS" styleClass="eyebrow"/>
                 <Label text="Viewings" styleClass="display-title"/>
-                <Label text="A client asks, an agent confirms. One agent cannot hold two confirmed viewings at the same hour, enforced by the database, not by this screen." styleClass="hint" wrapText="true" maxWidth="760"/>
+                <Label text="A client asks, an agent confirms. No agent can hold two confirmed viewings in the same hour, so a double booking is refused rather than discovered later." styleClass="hint" wrapText="true" maxWidth="760"/>
             </VBox>
 
             <!-- Segmented Tab Bar -->

@@ -32,9 +32,9 @@
 
             <VBox spacing="18" maxWidth="500">
                 <Label styleClass="auth-statement" wrapText="true"
-                       text="Every number here can be traced to where it came from."/>
+                       text="The whole of a deal, in one place."/>
                 <Label styleClass="auth-supporting" wrapText="true"
-                       text="Valuations show their range, their reasoning, and the properties they compared against. The system advises. A person decides. Both are on the record."/>
+                       text="Listings, viewings, contracts and the money against them — from the first enquiry to the last instalment. Nothing kept in someone's notebook."/>
 
                 <HBox spacing="26" alignment="CENTER_LEFT">
                     <padding>

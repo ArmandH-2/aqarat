@@ -52,6 +52,10 @@
                         onAction="#handleSubmitNew"/>
             </HBox>
 
+            <!-- Deliberately not a page-list. The embedded panel varies in
+                 height, and forcing it to the viewport leaves a screen of empty
+                 canvas under a short one. It sizes to its own content and the
+                 page scrolls around it. -->
             <StackPane fx:id="segmentContent"/>
         </VBox>
     </VBox>
