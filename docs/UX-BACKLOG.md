@@ -1,7 +1,9 @@
 # UX backlog — after the popup rework
 
-Raised 30 Aug 2026, on `phase9-design-rework`. Nothing here is started.
-Items 5 and 8 need a decision before they are touched.
+Raised 30 Aug 2026, on `phase9-design-rework`. **All eight are done**, across
+five commits. The notes below are kept as the reasoning behind each change,
+including the two that were decisions rather than instructions (5 and 8) and the
+one whose diagnosis turned out to be wrong on the first reading (6).
 
 ---
 
@@ -49,9 +51,10 @@ the field reads as an assistant rather than as a search box with a long hint.
 Examples should show the range of what the parser and the model can each take:
 a full sentence, a bare district, a spec, a budget.
 
-## 5. Loosen the assistant's refusal to search — *decision needed*
+## 5. Loosen the assistant's refusal to search
 
-See "Open decisions".
+Done, and not as written: the gate was removed rather than loosened. See the
+reasoning under "Decisions taken" below.
 
 ## 6. Scrolling behaves differently depending on where the pointer is
 
@@ -115,15 +118,15 @@ application to find out: what is overdue and by how much, which submissions
 have been waiting longest, today's viewings. Each row should be a way in, not
 a number.
 
-## 8. Remove the number count-up animation — *decision needed*
+## 8. Remove the number count-up animation
 
-See "Open decisions".
+Done. See the reasoning under "Decisions taken" below.
 
 ---
 
-## Open decisions
+## Decisions taken
 
-### 2. What "save as PDF" should mean
+### 2. What "save as PDF" meant — OpenPDF
 
 | Option | Cost | Result |
 |---|---|---|
@@ -135,7 +138,7 @@ Recommendation: OpenPDF if it must be a PDF. It is a single dependency, it is
 the artefact a client would expect, and "the receipt saves as a PDF" is a
 better sentence in a demo than "the receipt prints".
 
-### 5. How lenient the assistant should be
+### 5. How lenient the assistant should be — no gate at all
 
 The rule lives in `AssistantService.SYSTEM_PROMPT`:
 
@@ -163,7 +166,7 @@ A dead end costs a visitor a turn and tells them nothing. A wide result set
 with "that is everything in Achrafieh — a budget would narrow it fastest" costs
 them nothing and teaches them how to ask.
 
-### 8. Removing the count-up animation
+### 8. Removing the count-up animation — agreed
 
 Agreed, and the reason is worth writing down because it generalises.
 
