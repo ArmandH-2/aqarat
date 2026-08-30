@@ -39,7 +39,9 @@ Derived from the diagnosis, and satisfied by the work in section 4.
 
 ### Ground and identity
 
-- R1. The canvas must not be neutral grey. Warm stone `#F2EFE9`.
+- R1. The canvas must not be neutral grey, and cards must not be pure white.
+      Beirut limestone `#E7DFCD` on cream `#FAF5E9`; three alternatives are
+      photographed in `docs/palette-options`.
 - R2. British Racing Green `#004225` is retained as brand, with a brass accent
       for eyebrows and emphasis. No new hues invented.
 - R3. Display type must have character. A serif for display sizes, a sans for
@@ -85,7 +87,7 @@ to its source — and are the requirements most easily broken by a redesign.
 
 | Decision | Rationale |
 |---|---|
-| Warm stone over dark luxe or pure editorial | Dark is risky for long back-office sessions, and pure editorial needs photography quality the project cannot guarantee. Warm stone is forgiving and still reads as considered. |
+| Limestone over dark luxe or pure editorial | Dark is risky for long back-office sessions, and pure editorial needs photography the project cannot guarantee. Limestone is the stone Beirut is built from, so the ground is answerable rather than decorative, and cards separate on it without a heavier border. |
 | Instrument Serif + Inter | A display serif with real character against the interface sans already in use. Inter alone was part of why the application looked like a template. |
 | Discover merges Browse and Assistant | They were two entrances to one catalogue. Merging makes the assistant more visible, not less. |
 | Portfolio hosts the three panels rather than replacing them | They hold working payment-schedule and declaration logic. Rewriting that to change a layout risks regressions for no design gain. |
