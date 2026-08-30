@@ -146,28 +146,8 @@ public class AgentDashboardController {
         return propertyService.count(List.of(PropertyStatus.AVAILABLE), filters);
     }
 
-    @FXML
-    private void handleGoReviewQueue() {
-        Router.show(Panel.REVIEW_QUEUE);
-    }
 
-    @FXML
-    private void handleGoListings() {
-        Router.show(Panel.LISTINGS);
-    }
 
-    @FXML
-    private void handleGoViewings() {
-        Router.show(Panel.VIEWINGS);
-    }
 
-    @FXML
-    private void handleGoPayments() {
-        Router.show(Panel.PAYMENTS);
-    }
 
-    @FXML
-    private void handleGoContracts() {
-        Router.show(Panel.CONTRACTS);
-    }
 }

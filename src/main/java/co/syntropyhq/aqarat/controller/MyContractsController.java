@@ -25,8 +25,11 @@ import co.syntropyhq.aqarat.service.ContractService;
 import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
+import co.syntropyhq.aqarat.util.AppIcons;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
+import co.syntropyhq.aqarat.util.RequiredLabel;
+import co.syntropyhq.aqarat.util.SceneCapture;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
@@ -38,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -55,6 +60,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.stage.Stage;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -127,12 +133,44 @@ public class MyContractsController {
         }
     }
 
+    /**
+     * Asks the client what they paid.
+     *
+     * <p>Built here rather than in FXML because it is a dialog, so it needs the
+     * application's stylesheet and icon applied by hand — without them a JavaFX
+     * Dialog opens with toolkit defaults and looks like it belongs to another
+     * program. The OK button is disabled until the two fields the handler
+     * refuses without have been filled, so the dialog cannot be submitted into
+     * an error it already knows about.
+     */
     private void openDeclareDialog(Contract contract, PaymentSchedule schedule) {
         DeclareForm form = new DeclareForm(outstanding(schedule));
+
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Declare Payment");
-        dialog.getDialogPane().setContent(form.layout());
+        dialog.setTitle("Declare a payment");
+        dialog.setHeaderText(null);
+        dialog.getDialogPane().setContent(form.layout(contract, schedule));
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+
+        Button confirm = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        confirm.setText("Declare it");
+        confirm.getStyleClass().addAll("button", "button-primary");
+        confirm.disableProperty().bind(form.incomplete());
+        // Enter submits, which is what someone finishing a short form expects,
+        // and it stays inert while the button is disabled.
+        confirm.setDefaultButton(true);
+
+        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancel.getStyleClass().addAll("button", "button-secondary");
+
+        dialog.getDialogPane().getStyleClass().add("app-dialog");
+        dialog.getDialogPane().getStylesheets()
+            .add(getClass().getResource("/css/app.css").toExternalForm());
+        AppIcons.apply((Stage) dialog.getDialogPane().getScene().getWindow());
+        // A dialog owns its own scene, so it needs its own capture hook to be
+        // reviewable at all: Windows cannot screenshot it from outside either.
+        SceneCapture.install(dialog.getDialogPane().getScene());
+
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             submitDeclaredPayment(contract, schedule, form);
@@ -261,18 +299,57 @@ public class MyContractsController {
             methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
             setLabelConverter(methodCombo, Format::enumLabel);
             methodCombo.getSelectionModel().select(PaymentMethod.BANK_TRANSFER);
+            methodCombo.setMaxWidth(Double.MAX_VALUE);
+            proofPathField.setPromptText("Transfer slip number, or a path to the file");
+            referenceField.setPromptText("Bank or cheque reference");
         }
 
-        private GridPane layout() {
-            GridPane grid = new GridPane();
-            grid.setHgap(12);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(16));
-            grid.addRow(0, new Label("Payment Amount ($)"), amountField);
-            grid.addRow(1, new Label("Payment Method"), methodCombo);
-            grid.addRow(2, new Label("Transaction Reference"), referenceField);
-            grid.addRow(3, new Label("Proof Ref / File"), proofPathField);
-            return grid;
+        /** True while a required field is empty, which is what disables the button. */
+        private BooleanBinding incomplete() {
+            return Bindings.createBooleanBinding(
+                () -> amountField.getText() == null || amountField.getText().isBlank()
+                    || proofPathField.getText() == null || proofPathField.getText().isBlank(),
+                amountField.textProperty(), proofPathField.textProperty());
+        }
+
+        private VBox layout(Contract contract, PaymentSchedule schedule) {
+            Label eyebrow = new Label(("Instalment " + schedule.getInstallmentNo()
+                + " · " + propertyTitle(contract.getPropertyId())).toUpperCase());
+            eyebrow.getStyleClass().add("eyebrow");
+
+            Label heading = new Label(Format.paymentAmount(outstanding(schedule)) + " outstanding");
+            heading.getStyleClass().add("price-display");
+
+            Label note = new Label("An agent checks this against the proof you give before it "
+                + "counts towards the contract.");
+            note.getStyleClass().add("hint");
+            note.setWrapText(true);
+            note.setMaxWidth(360);
+
+            VBox form = new VBox(14,
+                field(new RequiredLabel(), "Amount", amountField),
+                field(new Label(), "How you paid", methodCombo),
+                field(new Label(), "Reference", referenceField),
+                field(new RequiredLabel(), "Proof", proofPathField));
+
+            VBox content = new VBox(16, new VBox(3, eyebrow, heading), note, form);
+            content.setPadding(new Insets(4, 4, 8, 4));
+            content.setPrefWidth(380);
+            return content;
+        }
+
+        /* One field: its label, and the control under it. RequiredLabel carries
+           the asterisk, so which fields are mandatory is visible rather than
+           discovered by pressing the button. */
+        private VBox field(Label label, String text, javafx.scene.Node control) {
+            label.setText(text);
+            if (!(label instanceof RequiredLabel)) {
+                label.getStyleClass().add("label-soft");
+            }
+            if (control instanceof Region region) {
+                region.setMaxWidth(Double.MAX_VALUE);
+            }
+            return new VBox(5, label, control);
         }
 
         private BigDecimal readAmount() {
