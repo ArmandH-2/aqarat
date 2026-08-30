@@ -69,9 +69,22 @@ both enforced by filtered unique indexes as well as by the service layer.
 maximum. Activation runs as a single transaction: property status, generated payment schedule,
 commission, and audit entry, all or nothing.
 
-**Payments** — an installment schedule per contract, overdue detection, client-declared payments
-with proof, agent confirmation, and receipts. A schedule sums to exactly the contract total; the
-rounding remainder goes on the last row rather than quietly disappearing.
+**Payments** — an instalment schedule per contract, overdue detection, client-declared payments
+with proof, agent confirmation, and a receipt that saves as a PDF. A schedule sums to exactly the
+contract total; the rounding remainder goes on the last row rather than quietly disappearing.
+
+One invariant holds the money together: **an instalment's `amount_paid` is the sum of the
+confirmed payments against it.** Any other figure is a number with nothing behind it.
+`db/repair-schedules.sql` restates the schedule from the payment rows and reports what
+disagreed, which is how two data faults were found and closed. It is idempotent — on a
+consistent database it changes nothing.
+
+Confirming a payment is guarded twice. The `UPDATE` that moves it out of `DECLARED` carries
+`AND status = 'DECLARED'` and counts the rows it changed, so two agents confirming the same
+declaration — or one agent double-clicking — cannot both apply the amount: the first changes one
+row, the second changes none and is refused. Separately, a payment cannot be applied to an
+instalment already settled in full. Both are covered by tests, one of which runs two threads at
+the same payment.
 
 **Audit trail** — every create, update and delete, with before and after values, filterable and
 exportable to CSV.
@@ -110,6 +123,7 @@ its tests run with no connection at all.
 | Driver | mssql-jdbc |
 | Pooling | HikariCP |
 | Passwords | BCrypt |
+| PDF | OpenPDF, for the receipt |
 | Build | Maven |
 
 No Spring, no Hibernate, no Lombok, no ORM. Roughly ninety classes across `model`, `dao`,
@@ -143,6 +157,15 @@ without it `schema.sql` fails partway through with a message about SET options.
 
 The seed prints its row counts at the end. You should see 2,000 properties.
 
+If you have run an older `db/rebase-arrears.sql` against this database, follow the seed with:
+
+```bash
+sqlcmd -S "localhost\SQLEXPRESS" -E -C -I -d Aqarat -i db/repair-schedules.sql
+```
+
+It restates every instalment from the payments behind it and prints how many disagreed. On a
+fresh seed the answer is zero and nothing changes.
+
 **2. Point the application at it.**
 
 ```bash
@@ -168,8 +191,10 @@ Sign in as `admin@aqarat.local` / `Password123!`, as a customer with
 mvn test
 ```
 
-Fifteen tests, covering the two places where correctness is not visible by clicking: the price
-estimator, and payment schedule generation.
+Eighty tests. They cover the places where correctness is not visible by clicking: the price
+estimator, payment schedule generation, the money paths through `PaymentService` — including two
+agents confirming the same payment at once — the assistant's query router, and every FXML file
+parsing, which catches a malformed panel at build time rather than on the click that opens it.
 
 ## An honest note on the data
 
@@ -202,6 +227,8 @@ fresh seed by construction, not by fault.
 | [`docs/BUILD-ORDER.md`](docs/BUILD-ORDER.md) | The order it was built in, phase by phase |
 | [`docs/UI-STYLE.md`](docs/UI-STYLE.md) | The palette, spacing and components |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Decisions taken and the alternatives rejected |
+| [`docs/UX-REWORK.md`](docs/UX-REWORK.md) | The client-surface redesign: diagnosis, requirements, what testing found |
+| [`docs/UX-BACKLOG.md`](docs/UX-BACKLOG.md) | The round after it, and the reasoning behind each change |
 | [`docs/ai-agent/`](docs/ai-agent/README.md) | The search assistant: requirements, diagrams, tasks |
 | [`CLAUDE.md`](CLAUDE.md) | Coding conventions |
 
