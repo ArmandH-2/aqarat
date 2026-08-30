@@ -66,6 +66,10 @@ public class ListingsController {
     @FXML
     private TextField titleField;
     @FXML
+    private VBox filterPanel;
+    @FXML
+    private Button filtersButton;
+    @FXML
     private ComboBox<District> districtCombo;
     @FXML
     private ComboBox<PropertyType> typeCombo;
@@ -173,6 +177,16 @@ public class ListingsController {
                 return null;
             }
         };
+    }
+
+    /* The structured filters are collapsed until asked for, so the panel opens
+       on inventory rather than on a form. */
+    @FXML
+    private void handleToggleFilters() {
+        boolean showing = !filterPanel.isVisible();
+        filterPanel.setVisible(showing);
+        filterPanel.setManaged(showing);
+        filtersButton.setText(showing ? "Hide filters" : "All filters");
     }
 
     @FXML

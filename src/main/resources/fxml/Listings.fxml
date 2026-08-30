@@ -31,13 +31,19 @@
             <!-- Filter Card -->
             <VBox styleClass="card" spacing="12">
                 <HBox spacing="10" alignment="CENTER_LEFT">
-                    <TextField fx:id="titleField" promptText="Search listings by title..."
-                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    <TextField fx:id="titleField" promptText="Search by title"
+                               HBox.hgrow="ALWAYS" maxWidth="Infinity" onAction="#handleSearch"/>
                     <Button text="Search" styleClass="button, button-primary" onAction="#handleSearch"/>
-                    <Button text="Clear filters" styleClass="button, button-secondary"
+                    <Button fx:id="filtersButton" text="All filters" styleClass="button, button-secondary"
+                            onAction="#handleToggleFilters"/>
+                    <Button text="Clear" styleClass="button, button-ghost"
                             onAction="#handleClearFilters"/>
                 </HBox>
 
+                <!-- Eight controls held permanently open cost the height of two
+                     listings before the first result, which is what made this
+                     panel read as a query form. Discover collapses the same set. -->
+                <VBox fx:id="filterPanel" spacing="12" managed="false" visible="false">
                 <HBox spacing="12">
                     <VBox spacing="4" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                         <Label text="District" styleClass="label-soft"/>
@@ -79,6 +85,7 @@
                         <Label fx:id="maxAreaError" styleClass="field-error" managed="false" visible="false"/>
                     </VBox>
                 </HBox>
+                </VBox>
             </VBox>
 
             <!-- Listings List -->
