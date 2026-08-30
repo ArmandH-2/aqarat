@@ -7,15 +7,16 @@ import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.model.UserStatus;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.AuthService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -27,7 +28,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -93,7 +93,10 @@ public class UsersController {
             List<AppUser> users = authService.findAll();
             userList.setItems(FXCollections.observableArrayList(users));
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load accounts. Check that SQL Server is running.");
+            userList.getItems().clear();
+            userList.setPlaceholder(Banner.failure("Accounts could not be loaded",
+                "The database did not answer. No account has been changed.",
+                this::loadUsers));
         }
     }
 
@@ -119,7 +122,8 @@ public class UsersController {
             FieldError.show(emailField, emailError, "This email is already registered.");
             return;
         }
-        AlertUtil.showInfo("Account successfully provisioned.");
+        AlertUtil.showInfo("Account created",
+            "They can sign in with the password you set. Ask them to change it afterwards.");
         clearForm();
         loadUsers();
     }
@@ -174,7 +178,8 @@ public class UsersController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Account role updated.");
+        AlertUtil.showInfo("Role updated",
+            "What they can reach changes the next time they sign in.");
         loadUsers();
     }
 
@@ -182,7 +187,19 @@ public class UsersController {
         UserStatus target =
             user.getStatus() == UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
         String verb = target == UserStatus.INACTIVE ? "deactivate" : "reactivate";
-        if (!AlertUtil.confirm("Do you want to " + verb + " " + user.getFullName() + "?")) {
+        boolean deactivating = target == UserStatus.INACTIVE;
+        boolean go = Dialogs.ask((deactivating ? "Deactivate " : "Reactivate ")
+                + user.getFullName() + "?")
+            .about(Format.enumLabel(user.getRole()) + " account")
+            .because(deactivating
+                ? "They can no longer sign in. Their properties, contracts and payment history "
+                    + "are untouched, and the account can be reactivated here at any time."
+                : "They can sign in again with the same password, and pick up whatever they "
+                    + "had open before the account was deactivated.")
+            .confirm(deactivating ? "Deactivate the account" : "Reactivate the account")
+            .cancel("Go back")
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -198,26 +215,31 @@ public class UsersController {
     }
 
     private void handleResetPassword(AppUser user) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText(null);
-        dialog.setTitle("Reset User Password");
-        dialog.setContentText("Enter new temporary password for " + user.getFullName() + ":");
-        Optional<String> input = dialog.showAndWait();
-        if (input.isEmpty()) {
-            return;
-        }
-        String newPassword = input.get().trim();
-        if (newPassword.isEmpty()) {
-            AlertUtil.showError("Enter a valid password.");
+        // A PasswordField rather than a text field: an administrator doing this
+        // is usually reading the new password aloud to the person it belongs to,
+        // and the screen is rarely private.
+        PasswordField field = new PasswordField();
+        field.setPromptText("A temporary password to hand over");
+
+        boolean go = Dialogs.form("Reset this password")
+            .about(user.getFullName() + " - " + Format.enumLabel(user.getRole()))
+            .note("The old password stops working immediately. Give the new one to them "
+                + "directly and ask them to change it once they are signed in.")
+            .required("New password", field)
+            .confirm("Reset it")
+            .cancel("Go back")
+            .show();
+        if (!go) {
             return;
         }
         try {
-            authService.resetPassword(user.getId(), newPassword);
+            authService.resetPassword(user.getId(), field.getText().trim());
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("User password has been successfully reset.");
+        AlertUtil.showInfo("Password reset for " + user.getFullName(),
+            "Hand it over directly, and ask them to change it after signing in.");
     }
 
     private String statusPillClass(UserStatus status) {

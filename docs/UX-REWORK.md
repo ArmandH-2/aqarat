@@ -143,19 +143,95 @@ the confirmation queue was titled "Contract Installment Payment"; the audit
 log's Apply button was clipped to "Ap…"; alerts carried the toolkit's default
 icon; and a malformed FXML made a navigation click look like it did nothing.
 
-## 6. Outstanding
+## 6. Reporting an outcome
+
+The application opened a modal window 161 times: 113 errors, 30 confirmations of
+success, 12 questions and 6 hand-built forms. Every one of them dimmed the
+screen and demanded a click. That is a problem of count rather than of
+appearance — restyling 161 modal windows still leaves 161 doors — so they were
+sorted by what the message actually is.
+
+One defect had to be fixed first. `app.css` defined `.content` for the shell's
+content pane, and JavaFX uses that same class name internally inside every
+`DialogPane`, `TitledPane`, `ScrollPane` and `TextArea`. Our rule was painting
+the inside of every dialog with the canvas colour, leaving a cream frame around
+a limestone block. Ours is now `.shell-content`, which fixed every dialog at
+once.
+
+| What the message is | Where it now goes |
+|---|---|
+| A field is wrong | Inline, under the field (`FieldError`), or prevented outright by a submit button that stays disabled until the required fields are filled |
+| A panel could not load | `Banner` in the space the list would have filled, carrying a Try again |
+| Something worked | `Toast`, bottom-right, four seconds, no focus taken |
+| Something was cancelled or withdrawn | `Toast` in brass, seven seconds |
+| Something failed | `Toast` in red, and it stays until dismissed |
+| A decision | `Dialogs.ask` — still modal, because the answer changes what happens next |
+| A form | `Dialogs.form` / `Dialogs.note` — still modal, one shared builder |
+| A confirmed payment | `Receipt` — a document, not a message |
+
+Rules that came out of it, and are now enforced in one place rather than
+twenty:
+
+- A button names its outcome. "Terminate the contract", never "Yes". Someone
+  reading only the buttons still knows what will happen.
+- A destructive button is red and is never the default, so Enter cannot destroy
+  anything.
+- A form cannot be submitted into an error it already knows about.
+- A failure never disappears on a timer.
+- Every outcome message says what happened on the first line and what changed
+  underneath on the second. "The contract is now active" became "Contract
+  active — the property is under contract and off the market. The payment
+  schedule is now running."
+
+`AlertUtil` survives as the plain way to report an outcome from a controller;
+it no longer opens a window.
+
+### The receipt
+
+It was built in three places as a string of newlines and shown in an
+information alert — the same blue-iconed box that reported failures. It is now
+one `Receipt` view: masthead, the figure in the display serif, ruled lines of
+detail, and the balance the payment leaves on the contract. It prints. On
+Windows, choosing "Microsoft Print to PDF" in the print dialog saves it as a
+PDF, which is why no PDF library was added: the platform already has one.
+
+### A money bug the receipt exposed
+
+Opening a receipt for a settled instalment reported "$-622,600.00 remaining".
+Three instalments in the database had `amount_paid` at exactly twice
+`amount_due`.
+
+`db/rebase-arrears.sql` settled every overdue instalment older than the
+collections window, including the ones the seed had hung a DECLARED payment on
+for the agent's confirmation queue. That left a payment awaiting confirmation
+against an instalment already marked paid, and confirming it added the money a
+second time.
+
+Closed at three depths: the script now skips an instalment that has a payment
+awaiting confirmation; `PaymentService` refuses to apply a payment to an
+instalment already settled in full; and a receipt cannot show a negative
+balance. `db/repair-double-counted.sql` restates the rows written before any of
+that existed, and is idempotent. `RoleWorkflowTest` now settles an instalment
+and asserts that a further payment against it is refused and leaves the figure
+untouched.
+
+## 7. Outstanding
 
 - (Resolved) The agent dashboard's Quick Navigation card duplicated the sidebar
   and the clickable KPI tiles; removed.
 - `MyContracts` and `MyActivity` render inside Portfolio; their remaining
   sections are tidy but were not redesigned as thoroughly as the schedule.
 - (Resolved) The declare-payment dialog was raw JavaFX with no design system
-  and no marks on its two mandatory fields; rebuilt, and a declaration driven
-  through it end to end.
+  and no marks on its two mandatory fields; rebuilt on the shared dialog
+  builder, and a declaration driven through it end to end.
+- `Banner` is compile-verified but was not seen on screen: reaching it needs the
+  database to fail after sign-in, and sign-in needs the database. Its one
+  reachable route today is a panel load failing while the application is
+  already running.
 - `docs/palette-options` holds three grounds not chosen. Clay is the one worth
   revisiting if the interface should feel heavier.
 
-## 7. Reviewing a panel yourself
+## 8. Reviewing a panel yourself
 
 The application cannot be screenshotted from outside — JavaFX composites on the
 GPU, so Windows returns a blank frame. Ask the scene to draw itself instead:

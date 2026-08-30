@@ -246,7 +246,8 @@ public class ReferenceController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("District baseline rates updated.");
+        AlertUtil.showInfo("Baseline rates updated",
+            "Valuations calculated from now on use the new figures. Valuations already recorded are unchanged.");
         loadDistricts();
     }
 
@@ -288,7 +289,8 @@ public class ReferenceController {
             return;
         }
         setting.setValue(newValue);
-        AlertUtil.showInfo("System setting updated.");
+        AlertUtil.showInfo("Setting updated",
+            "It applies to work done from now on, not to records already written.");
     }
 
     private BigDecimal requirePositivePrice(TextField field, Label errorLabel) {

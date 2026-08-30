@@ -348,7 +348,7 @@ public class PaymentService implements ContractService.ScheduleGenerator {
      * schedule it was meant to pay down.
      */
     public void confirm(int paymentId, int confirmedByUserId)
-            throws SQLException, InvalidPaymentStateException {
+            throws SQLException, InvalidPaymentStateException, InvalidPaymentTargetException {
         Payment payment = requireDeclaredPayment(paymentId);
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
@@ -384,9 +384,23 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         }
     }
 
+    /*
+     * Adds a confirmed payment to the instalment it settles.
+     *
+     * An instalment that is already settled is refused rather than added to. The
+     * arithmetic here is a plain sum, so a payment confirmed against a paid
+     * instalment silently doubles what the schedule believes was received - the
+     * classic double-count, and the one place in this application where a data
+     * accident turns directly into a wrong number on a client's receipt.
+     */
     private void applyToSchedule(Connection connection, int scheduleId, BigDecimal amount)
-            throws SQLException {
+            throws SQLException, InvalidPaymentTargetException {
         PaymentSchedule schedule = paymentScheduleDao.findById(connection, scheduleId);
+        if (schedule.getAmountPaid().compareTo(schedule.getAmountDue()) >= 0) {
+            throw new InvalidPaymentTargetException(
+                "Instalment " + schedule.getInstallmentNo() + " is already settled in full, "
+                    + "so this payment would be counted twice. Reject it instead.");
+        }
         BigDecimal newAmountPaid = schedule.getAmountPaid().add(amount);
         ScheduleStatus newStatus = scheduleStatusFor(newAmountPaid, schedule.getAmountDue());
         paymentScheduleDao.updateAmountPaid(connection, scheduleId, newAmountPaid);

@@ -23,6 +23,7 @@ import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Router;
@@ -388,7 +389,8 @@ public class PropertyDetailsController implements NeedsId {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your viewing request has been sent.");
+        AlertUtil.showInfo("Viewing requested",
+            "An agent confirms the slot before it is yours. You will see it under Portfolio either way.");
         viewingDatePicker.setValue(null);
         viewingTimeCombo.setValue(null);
         receiveId(currentProperty.getId());
@@ -401,8 +403,14 @@ public class PropertyDetailsController implements NeedsId {
         if (deposit == null) {
             return;
         }
-        if (!AlertUtil.confirm("Reserve this property with a deposit of "
-                + Format.paymentAmount(deposit) + "? This takes it off the market.")) {
+        boolean go = Dialogs.ask("Reserve this property?")
+            .about(currentProperty.getTitle())
+            .because("A deposit of " + Format.paymentAmount(deposit) + " is recorded against it "
+                + "and the listing comes off the market while your reservation stands.")
+            .confirm("Reserve it")
+            .cancel("Not yet")
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -425,7 +433,8 @@ public class PropertyDetailsController implements NeedsId {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Property reserved. An agent will be in touch about the next steps.");
+        AlertUtil.showInfo("Property reserved",
+            "It is off the market while your reservation stands. An agent will be in touch about the contract.");
         depositField.clear();
         receiveId(currentProperty.getId());
     }

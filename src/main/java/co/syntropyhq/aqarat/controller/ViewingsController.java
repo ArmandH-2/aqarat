@@ -15,8 +15,10 @@ import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ViewingService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
@@ -33,7 +35,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -115,7 +116,10 @@ public class ViewingsController {
         try {
             results = showingRequests ? viewingService.findRequested() : myConfirmedViewings();
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load viewings. Check that SQL Server is running.");
+            viewingList.getItems().clear();
+            viewingList.setPlaceholder(Banner.failure("Viewings could not be loaded",
+                "The database did not answer. Every appointment already booked is unaffected.",
+                () -> loadViewings()));
             return;
         }
         viewingList.setItems(FXCollections.observableArrayList(results));
@@ -142,12 +146,19 @@ public class ViewingsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Viewing appointment confirmed.");
+        AlertUtil.showInfo("Viewing confirmed",
+            "The slot is held against your name. Nobody else can be booked into it.");
         loadViewings();
     }
 
     private void handleCancel(Viewing viewing) {
-        if (!AlertUtil.confirm("Cancel this viewing appointment?")) {
+        boolean go = Dialogs.ask("Cancel this viewing?")
+            .because("The slot is released and the client is told. Cancel rather than mark an "
+                + "outcome when the appointment did not take place at all.")
+            .confirm("Cancel the viewing")
+            .cancel("Keep it")
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -159,7 +170,8 @@ public class ViewingsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The viewing has been cancelled.");
+        AlertUtil.showUndone("Viewing cancelled",
+            "The slot is released and the client has been told.");
         loadViewings();
     }
 
@@ -167,20 +179,23 @@ public class ViewingsController {
         String prompt = outcome == ViewingStatus.NO_SHOW
             ? "Client did not show. Add an outcome note:"
             : "Viewing completed. Add an outcome note:";
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText(null);
-        dialog.setTitle("Record Appointment Outcome");
-        dialog.setContentText(prompt);
-        Optional<String> input = dialog.showAndWait();
+        Optional<String> input = Dialogs.note(outcome == ViewingStatus.NO_SHOW
+                ? "The client did not show"
+                : "The viewing went ahead")
+            .about(clientName(viewing.getClientId()) + " - " + propertyTitle(viewing.getPropertyId()))
+            .explaining(prompt + " It stays on the property record, so whoever handles this "
+                + "client next can read what happened.")
+            .field("What happened")
+            .placeholder(outcome == ViewingStatus.NO_SHOW
+                ? "Whether they made contact, and whether to offer another slot"
+                : "Their reaction, questions raised, and what happens next")
+            .confirm("Record the outcome")
+            .cancel("Not yet")
+            .show();
         if (input.isEmpty()) {
             return;
         }
-        String note = input.get().trim();
-        if (note.isEmpty()) {
-            AlertUtil.showError("A note is required to record an outcome.");
-            return;
-        }
-        recordOutcome(viewing, outcome, note);
+        recordOutcome(viewing, outcome, input.get());
     }
 
     private void recordOutcome(Viewing viewing, ViewingStatus outcome, String note) {
@@ -193,7 +208,8 @@ public class ViewingsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The outcome has been recorded successfully.");
+        AlertUtil.showInfo("Outcome recorded",
+            "Your note stays on the property record for whoever handles this client next.");
         loadViewings();
     }
 

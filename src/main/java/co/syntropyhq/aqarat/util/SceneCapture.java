@@ -43,9 +43,12 @@ public final class SceneCapture {
             return;
         }
 
+        // F12 captures every window that is open, not only the one with focus.
+        // A toast and a dialog each live in a window of their own, so capturing
+        // just the focused scene photographs the screen without them on it.
         scene.getAccelerators().put(
             new javafx.scene.input.KeyCodeCombination(KeyCode.F12),
-            () -> write(scene, directory, "manual"));
+            () -> writeAll(directory, "manual"));
 
         // The first frame is laid out but not yet painted; a short pause lets
         // fonts resolve and any entry animation finish before the shutter.
@@ -59,6 +62,18 @@ public final class SceneCapture {
         Path directory = configuredDirectory();
         if (directory != null) {
             write(scene, directory, name);
+        }
+    }
+
+    /* Snapshots every showing window: the shell, whatever dialog is over it, and
+       any toast in the corner. Named by index so the order on screen is readable
+       from the filenames afterwards. */
+    private static void writeAll(Path directory, String name) {
+        int index = 0;
+        for (javafx.stage.Window window : javafx.stage.Window.getWindows()) {
+            if (window.isShowing() && window.getScene() != null) {
+                write(window.getScene(), directory, name + "-w" + index++);
+            }
         }
     }
 

@@ -161,7 +161,10 @@ public class LoginController {
             stage.show();
             return true;
         } catch (IOException e) {
-            AlertUtil.showError("Could not open the window.");
+            AlertUtil.showError("Aqarat could not open",
+                "The application started but could not build its main window. This is "
+                    + "usually the database being unreachable - check that SQL Server is "
+                    + "running, then sign in again.");
             return false;
         }
     }

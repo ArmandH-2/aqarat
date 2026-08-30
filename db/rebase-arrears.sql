@@ -21,13 +21,20 @@ GO
 DECLARE @collections_window_days INT = 45;
 DECLARE @cutoff DATE = DATEADD(DAY, -@collections_window_days, CAST(SYSUTCDATETIME() AS DATE));
 
-/* 1. Settle anything overdue from before the window. */
+/* 1. Settle anything overdue from before the window.
+
+      An instalment with a payment still awaiting confirmation is left alone.
+      Settling it here would mark it paid while a DECLARED payment for the same
+      money sat in the agent's queue, and confirming that payment would then add
+      the amount a second time. */
 UPDATE s
 SET amount_paid = s.amount_due,
     status      = 'PAID'
 FROM dbo.payment_schedule s
 WHERE s.status <> 'PAID'
-  AND s.due_date < @cutoff;
+  AND s.due_date < @cutoff
+  AND NOT EXISTS (SELECT 1 FROM dbo.payment p
+                  WHERE p.schedule_id = s.id AND p.status = 'DECLARED');
 
 /* 2. Every paid instalment needs the payment that paid it. Only rows with no
       payment at all are inserted, which is what makes a rerun a no-op. */

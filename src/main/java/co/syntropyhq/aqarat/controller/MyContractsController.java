@@ -25,11 +25,12 @@ import co.syntropyhq.aqarat.service.ContractService;
 import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
-import co.syntropyhq.aqarat.util.AppIcons;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
-import co.syntropyhq.aqarat.util.RequiredLabel;
-import co.syntropyhq.aqarat.util.SceneCapture;
+import co.syntropyhq.aqarat.util.Dialogs;
+import co.syntropyhq.aqarat.util.Receipt;
+import co.syntropyhq.aqarat.util.Toast;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
@@ -39,28 +40,21 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
-import javafx.beans.binding.BooleanBinding;
-import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.stage.Stage;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -113,7 +107,10 @@ public class MyContractsController {
             contractList.setItems(FXCollections.observableArrayList(
                 contractService.findByClient(clientId)));
         } catch (SQLException e) {
-            AlertUtil.showError("Could not reach the database. Try again.");
+            contractList.getItems().clear();
+            contractList.setPlaceholder(Banner.failure("Your contracts could not be loaded",
+                "The database did not answer. Nothing you have paid or declared is affected.",
+                this::loadContracts));
         }
     }
 
@@ -143,36 +140,31 @@ public class MyContractsController {
      * refuses without have been filled, so the dialog cannot be submitted into
      * an error it already knows about.
      */
+    /**
+     * Asks the client what they paid.
+     *
+     * <p>The submit button stays disabled until the amount and the proof are
+     * both present, which are the two things the handler refuses without, so the
+     * dialog cannot be submitted into an error it already knows about.
+     */
     private void openDeclareDialog(Contract contract, PaymentSchedule schedule) {
         DeclareForm form = new DeclareForm(outstanding(schedule));
 
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Declare a payment");
-        dialog.setHeaderText(null);
-        dialog.getDialogPane().setContent(form.layout(contract, schedule));
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+        boolean go = Dialogs.form("Declare a payment")
+            .about("Instalment " + schedule.getInstallmentNo() + " - "
+                + propertyTitle(contract.getPropertyId()))
+            .figure(Format.paymentAmount(outstanding(schedule)) + " outstanding")
+            .note("An agent checks this against the proof you give before it counts towards "
+                + "the contract.")
+            .required("Amount", form.amountField)
+            .optional("How you paid", form.methodCombo)
+            .optional("Reference", form.referenceField)
+            .required("Proof", form.proofPathField)
+            .confirm("Declare it")
+            .cancel("Cancel")
+            .show();
 
-        Button confirm = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-        confirm.setText("Declare it");
-        confirm.getStyleClass().addAll("button", "button-primary");
-        confirm.disableProperty().bind(form.incomplete());
-        // Enter submits, which is what someone finishing a short form expects,
-        // and it stays inert while the button is disabled.
-        confirm.setDefaultButton(true);
-
-        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
-        cancel.getStyleClass().addAll("button", "button-secondary");
-
-        dialog.getDialogPane().getStyleClass().add("app-dialog");
-        dialog.getDialogPane().getStylesheets()
-            .add(getClass().getResource("/css/app.css").toExternalForm());
-        AppIcons.apply((Stage) dialog.getDialogPane().getScene().getWindow());
-        // A dialog owns its own scene, so it needs its own capture hook to be
-        // reviewable at all: Windows cannot screenshot it from outside either.
-        SceneCapture.install(dialog.getDialogPane().getScene());
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        if (go) {
             submitDeclaredPayment(contract, schedule, form);
         }
     }
@@ -198,19 +190,43 @@ public class MyContractsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Payment declared successfully. An agent will confirm it shortly.");
+        Toast.done("Declared " + Format.paymentAmount(amount),
+            "An agent reviews it against your proof before it counts towards the contract.");
         loadContracts();
     }
 
+    /**
+     * Issues the receipt for a payment that has been confirmed.
+     *
+     * <p>A receipt is the one artefact a client keeps and may hand to an
+     * accountant, so it is a document rather than a message: it says what was
+     * paid, against what, who confirmed it, and what the contract still owes.
+     */
     private void showReceipt(Contract contract, Payment payment) {
-        String receipt = "OFFICIAL PAYMENT RECEIPT\n\n"
-            + "Property: " + propertyTitle(contract.getPropertyId()) + "\n"
-            + "Contract Ref: #" + contract.getId() + "\n"
-            + "Amount Paid: " + Format.paymentAmount(payment.getAmount()) + "\n"
-            + "Payment Method: " + Format.enumLabel(payment.getMethod()) + "\n"
-            + "Date Confirmed: " + Format.dateTime(payment.getPaidAt()) + "\n"
-            + "Payment Status: " + Format.enumLabel(payment.getStatus());
-        AlertUtil.showInfo(receipt);
+        Receipt.forPayment(payment.getId())
+            .amount(payment.getAmount())
+            .status(Format.enumLabel(payment.getStatus()),
+                payment.getPaidAt() == null ? null : "on " + Format.dateTime(payment.getPaidAt()),
+                payment.getStatus() == PaymentStatus.CONFIRMED)
+            .line("Property", propertyTitle(contract.getPropertyId()))
+            .line("Contract", "#" + contract.getId())
+            .line("Paid by", SessionManager.getCurrentUser().getFullName())
+            .line("Method", Format.enumLabel(payment.getMethod()))
+            .line("Reference", payment.getReference())
+            .remaining("Remaining on this contract", outstandingOn(contract))
+            .show();
+    }
+
+    /* What the whole contract still owes, which is the number a client actually
+       wants after paying one instalment of several. Never below zero: an
+       instalment recorded as overpaid is a fault in the data, and "-$622,600
+       remaining" on a receipt is not the place to report it. */
+    private BigDecimal outstandingOn(Contract contract) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (PaymentSchedule schedule : scheduleFor(contract)) {
+            total = total.add(outstanding(schedule).max(BigDecimal.ZERO));
+        }
+        return total;
     }
 
     private BigDecimal outstanding(PaymentSchedule schedule) {
@@ -288,6 +304,9 @@ public class MyContractsController {
         });
     }
 
+    /* Holds the controls and reads them back. The dialog frame, the labels and
+       the required marks belong to Dialogs.form, so this is only the fields and
+       what they mean. */
     private final class DeclareForm {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
@@ -299,57 +318,8 @@ public class MyContractsController {
             methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
             setLabelConverter(methodCombo, Format::enumLabel);
             methodCombo.getSelectionModel().select(PaymentMethod.BANK_TRANSFER);
-            methodCombo.setMaxWidth(Double.MAX_VALUE);
             proofPathField.setPromptText("Transfer slip number, or a path to the file");
             referenceField.setPromptText("Bank or cheque reference");
-        }
-
-        /** True while a required field is empty, which is what disables the button. */
-        private BooleanBinding incomplete() {
-            return Bindings.createBooleanBinding(
-                () -> amountField.getText() == null || amountField.getText().isBlank()
-                    || proofPathField.getText() == null || proofPathField.getText().isBlank(),
-                amountField.textProperty(), proofPathField.textProperty());
-        }
-
-        private VBox layout(Contract contract, PaymentSchedule schedule) {
-            Label eyebrow = new Label(("Instalment " + schedule.getInstallmentNo()
-                + " · " + propertyTitle(contract.getPropertyId())).toUpperCase());
-            eyebrow.getStyleClass().add("eyebrow");
-
-            Label heading = new Label(Format.paymentAmount(outstanding(schedule)) + " outstanding");
-            heading.getStyleClass().add("price-display");
-
-            Label note = new Label("An agent checks this against the proof you give before it "
-                + "counts towards the contract.");
-            note.getStyleClass().add("hint");
-            note.setWrapText(true);
-            note.setMaxWidth(360);
-
-            VBox form = new VBox(14,
-                field(new RequiredLabel(), "Amount", amountField),
-                field(new Label(), "How you paid", methodCombo),
-                field(new Label(), "Reference", referenceField),
-                field(new RequiredLabel(), "Proof", proofPathField));
-
-            VBox content = new VBox(16, new VBox(3, eyebrow, heading), note, form);
-            content.setPadding(new Insets(4, 4, 8, 4));
-            content.setPrefWidth(380);
-            return content;
-        }
-
-        /* One field: its label, and the control under it. RequiredLabel carries
-           the asterisk, so which fields are mandatory is visible rather than
-           discovered by pressing the button. */
-        private VBox field(Label label, String text, javafx.scene.Node control) {
-            label.setText(text);
-            if (!(label instanceof RequiredLabel)) {
-                label.getStyleClass().add("label-soft");
-            }
-            if (control instanceof Region region) {
-                region.setMaxWidth(Double.MAX_VALUE);
-            }
-            return new VBox(5, label, control);
         }
 
         private BigDecimal readAmount() {

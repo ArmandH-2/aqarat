@@ -572,7 +572,8 @@ public class SubmitPropertyController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your submission is now awaiting review by our agents.");
+        AlertUtil.showInfo("Submitted for review",
+            "An agent checks the details and the valuation before it is listed. You will find it under Portfolio.");
         Router.show(Panel.MY_PROPERTIES);
     }
 

@@ -51,6 +51,6 @@
         </VBox>
     </left>
     <center>
-        <StackPane fx:id="contentPane" styleClass="content"/>
+        <StackPane fx:id="contentPane" styleClass="shell-content"/>
     </center>
 </BorderPane>

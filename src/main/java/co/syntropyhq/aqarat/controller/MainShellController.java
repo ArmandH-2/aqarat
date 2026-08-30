@@ -166,7 +166,8 @@ public class MainShellController {
             AppIcons.apply(stage);
             stage.show();
         } catch (IOException e) {
-            AlertUtil.showError("Could not open the sign-in window.");
+            AlertUtil.showError("The sign-in window could not open",
+                "You are still signed out. Close Aqarat and start it again.");
             return;
         }
         ((Stage) userNameLabel.getScene().getWindow()).close();

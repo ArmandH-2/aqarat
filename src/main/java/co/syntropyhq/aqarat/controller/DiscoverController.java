@@ -22,6 +22,7 @@ import co.syntropyhq.aqarat.service.AssistantService;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
@@ -419,7 +420,12 @@ public class DiscoverController {
                     + (catalogueSize == 1 ? " LISTING" : " LISTINGS") + " ACROSS LEBANON");
             }
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load listings. Check that SQL Server is running.");
+            // In the grid rather than over it: once a message is dismissed an
+            // empty catalogue looks like a catalogue with nothing in it.
+            resultsGrid.getChildren().setAll(Banner.failure("Listings could not be loaded",
+                "The database did not answer. Nothing you have saved or requested is affected.",
+                () -> runSearch(offset)));
+            resultsCountLabel.setText("");
             return;
         }
         currentOffset = offset;

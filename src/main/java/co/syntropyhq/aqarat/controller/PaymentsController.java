@@ -25,33 +25,33 @@ import co.syntropyhq.aqarat.service.ContractService;
 import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Dialogs;
+import co.syntropyhq.aqarat.util.Receipt;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
+import java.time.LocalDate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -157,7 +157,10 @@ public class PaymentsController {
             Integer agentId = user.getRole() == Role.ADMIN ? null : user.getId();
             results = paymentService.findDeclaredAwaitingConfirmation(agentId);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not reach the database. Try again.");
+            declaredList.getItems().clear();
+            declaredList.setPlaceholder(Banner.failure("The confirmation queue could not be loaded",
+                "The database did not answer. No payment has been confirmed or rejected.",
+                this::loadDeclaredPayments));
             return;
         }
         declaredList.setItems(FXCollections.observableArrayList(results));
@@ -223,19 +226,39 @@ public class PaymentsController {
         int agentId = SessionManager.getCurrentUser().getId();
         try {
             paymentService.confirm(payment.getId(), agentId);
-        } catch (PaymentService.InvalidPaymentStateException e) {
+        } catch (PaymentService.InvalidPaymentStateException
+                | PaymentService.InvalidPaymentTargetException e) {
             AlertUtil.showError(e.getMessage());
             return;
         } catch (SQLException e) {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo(receiptText(payment, "Confirmed"));
         loadDeclaredPayments();
+        Receipt.forPayment(payment.getId())
+            .amount(payment.getAmount())
+            .status("Confirmed", "by " + SessionManager.getCurrentUser().getFullName()
+                + " on " + Format.date(LocalDate.now()), true)
+            .line("For", payment.getScheduleId() != null
+                ? "Contract instalment" : "Reservation deposit")
+            .line("Declared by", userName(payment.getDeclaredBy()))
+            .line("Method", Format.enumLabel(payment.getMethod()))
+            .line("Reference", payment.getReference())
+            .line("Proof", payment.getProofPath())
+            .show();
     }
 
     private void handleReject(Payment payment) {
-        if (!AlertUtil.confirm("Reject this declared payment?")) {
+        boolean go = Dialogs.ask("Reject this declared payment?")
+            .about(Format.paymentAmount(payment.getAmount()) + " declared by "
+                + userName(payment.getDeclaredBy()))
+            .because("The instalment stays outstanding and the client can declare again. Reject "
+                + "when the proof does not match the amount or cannot be verified.")
+            .confirm("Reject it")
+            .cancel("Go back")
+            .destructive()
+            .show();
+        if (!go) {
             return;
         }
         int agentId = SessionManager.getCurrentUser().getId();
@@ -248,18 +271,35 @@ public class PaymentsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The payment has been rejected.");
+        AlertUtil.showUndone("Payment rejected",
+            "The instalment stays outstanding and the client can declare it again with better proof.");
         loadDeclaredPayments();
     }
 
+    /**
+     * Records a payment an agent has taken directly, in cash or at the counter.
+     *
+     * <p>Unlike a client's declaration this needs no confirmation step, so the
+     * copy says whose word it is being taken on: the agent's own.
+     */
     private void openRecordDialog(PaymentSchedule schedule) {
         RecordForm form = new RecordForm(outstanding(schedule));
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Record Direct Payment");
-        dialog.getDialogPane().setContent(form.layout());
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+
+        boolean go = Dialogs.form("Record a payment")
+            .about("Instalment " + schedule.getInstallmentNo() + " - "
+                + propertyTitle(loadedContract.getPropertyId()))
+            .figure(Format.paymentAmount(outstanding(schedule)) + " outstanding")
+            .note("This is confirmed on your authority the moment it is saved, and the client "
+                + "is issued a receipt for it.")
+            .required("Amount", form.amountField)
+            .optional("How it was paid", form.methodCombo)
+            .optional("Reference", form.referenceField)
+            .optional("Proof", form.proofPathField)
+            .confirm("Record it")
+            .cancel("Cancel")
+            .show();
+
+        if (go) {
             submitRecordedPayment(schedule, form);
         }
     }
@@ -271,8 +311,9 @@ public class PaymentsController {
             return;
         }
         int agentId = SessionManager.getCurrentUser().getId();
+        int paymentId;
         try {
-            paymentService.recordConfirmedPayment(schedule.getId(), null, amount,
+            paymentId = paymentService.recordConfirmedPayment(schedule.getId(), null, amount,
                 form.method(), form.reference(), form.proofPath(), agentId);
         } catch (PaymentService.InvalidPaymentTargetException | PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
@@ -281,34 +322,29 @@ public class PaymentsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo(receiptText(schedule, amount, form.method(), "Confirmed"));
         loadSchedule(loadedContract.getId());
+        Receipt.forPayment(paymentId)
+            .amount(amount)
+            .status("Confirmed", "by " + SessionManager.getCurrentUser().getFullName()
+                + " on " + Format.date(LocalDate.now()), true)
+            .line("Property", propertyTitle(loadedContract.getPropertyId()))
+            .line("Contract", "#" + loadedContract.getId())
+            .line("Instalment", String.valueOf(schedule.getInstallmentNo()))
+            .line("Paid by", userName(loadedContract.getClientId()))
+            .line("Method", Format.enumLabel(form.method()))
+            .line("Reference", form.reference())
+            .footNote("Recorded at the counter and confirmed on the agent\u2019s authority. "
+                + "Kept in the audit trail.")
+            .show();
     }
 
     private BigDecimal outstanding(PaymentSchedule schedule) {
         return schedule.getAmountDue().subtract(schedule.getAmountPaid());
     }
 
-    private String receiptText(PaymentSchedule schedule, BigDecimal amount, PaymentMethod method,
-            String status) {
-        return "OFFICIAL RECEIPT\n\n"
-            + "Property: " + propertyTitle(loadedContract.getPropertyId()) + "\n"
-            + "Contract Ref: #" + loadedContract.getId() + " - Installment #" + schedule.getInstallmentNo() + "\n"
-            + "Amount Paid: " + Format.paymentAmount(amount) + "\n"
-            + "Payment Method: " + Format.enumLabel(method) + "\n"
-            + "Status: " + status;
-    }
 
-    private String receiptText(Payment payment, String status) {
-        String target = payment.getScheduleId() != null
-            ? "Installment Payment" : "Reservation Deposit";
-        return "OFFICIAL RECEIPT\n\n"
-            + "Payment Type: " + target + "\n"
-            + "Amount Paid: " + Format.paymentAmount(payment.getAmount()) + "\n"
-            + "Payment Method: " + Format.enumLabel(payment.getMethod()) + "\n"
-            + "Declared By: " + userName(payment.getDeclaredBy()) + "\n"
-            + "Status: " + status;
-    }
+
+
 
     private Integer parsePositiveInt(String text) {
         String trimmed = text == null ? "" : text.trim();
@@ -383,6 +419,7 @@ public class PaymentsController {
         });
     }
 
+    /* Holds the controls and reads them back; Dialogs.form owns the frame. */
     private final class RecordForm {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
@@ -396,17 +433,7 @@ public class PaymentsController {
             methodCombo.getSelectionModel().select(PaymentMethod.CASH);
         }
 
-        private GridPane layout() {
-            GridPane grid = new GridPane();
-            grid.setHgap(12);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(16));
-            grid.addRow(0, new Label("Payment Amount ($)"), amountField);
-            grid.addRow(1, new Label("Payment Method"), methodCombo);
-            grid.addRow(2, new Label("Reference Ref"), referenceField);
-            grid.addRow(3, new Label("Proof Ref / File"), proofPathField);
-            return grid;
-        }
+
 
         private BigDecimal readAmount() {
             try {

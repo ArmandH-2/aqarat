@@ -23,9 +23,11 @@ import co.syntropyhq.aqarat.service.ContractService;
 import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReservationService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
@@ -196,7 +198,10 @@ public class ContractsController {
         try {
             results = contractService.findByAgent(SessionManager.getCurrentUser().getId());
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load contracts. Check that SQL Server is running.");
+            contractList.getItems().clear();
+            contractList.setPlaceholder(Banner.failure("Contracts could not be loaded",
+                "The database did not answer. Nothing has been lost - this panel only reads.",
+                this::loadContracts));
             return;
         }
         contractList.setItems(FXCollections.observableArrayList(results));
@@ -380,14 +385,22 @@ public class ContractsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The contract has been drafted. Activate it from the contracts list.");
+        AlertUtil.showInfo("Contract drafted",
+            "Nothing is committed yet. Activating it is what moves the property under contract and starts the payment schedule.");
         clearDraftForm();
         selectContractsTab();
     }
 
     private void handleActivate(Contract contract) {
-        if (!AlertUtil.confirm(
-                "Activate this contract? The property moves under contract and this cannot be undone.")) {
+        boolean go = Dialogs.ask("Activate this contract?")
+            .about("Contract #" + contract.getId())
+            .because("The property moves under contract and comes off the market, and the payment "
+                + "schedule starts running. A contract cannot be returned to draft.")
+            .confirm("Activate it")
+            .cancel("Not yet")
+            .destructive()
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -401,12 +414,20 @@ public class ContractsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The contract is now active.");
+        AlertUtil.showInfo("Contract active",
+            "The property is under contract and off the market. The payment schedule is now running.");
         loadContracts();
     }
 
     private void handleClose(Contract contract) {
-        if (!AlertUtil.confirm("Close this contract?")) {
+        boolean go = Dialogs.ask("Close this contract?")
+            .about("Contract #" + contract.getId())
+            .because("Closing records the contract as completed. Do this once every instalment "
+                + "has been paid - the schedule stays on the record either way.")
+            .confirm("Close it")
+            .cancel("Keep it open")
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -419,12 +440,21 @@ public class ContractsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The contract is closed.");
+        AlertUtil.showInfo("Contract closed",
+            "Recorded as completed. The schedule and every payment against it stay on the record.");
         loadContracts();
     }
 
     private void handleTerminate(Contract contract) {
-        if (!AlertUtil.confirm("Terminate this contract? The property returns to the market.")) {
+        boolean go = Dialogs.ask("Terminate this contract?")
+            .about("Contract #" + contract.getId())
+            .because("The property returns to the market and the instalments still scheduled are "
+                + "cancelled. Everything already paid stays on the record. This cannot be undone.")
+            .confirm("Terminate the contract")
+            .cancel("Keep it")
+            .destructive()
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -437,7 +467,8 @@ public class ContractsController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The contract is terminated.");
+        AlertUtil.showUndone("Contract terminated",
+            "The property is back on the market and the remaining instalments are cancelled. What was paid stays on the record.");
         loadContracts();
     }
 

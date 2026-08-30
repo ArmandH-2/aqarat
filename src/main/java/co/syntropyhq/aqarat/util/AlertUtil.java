@@ -1,49 +1,60 @@
 package co.syntropyhq.aqarat.util;
 
-import java.util.Optional;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.stage.Stage;
-
+/**
+ * Where the application used to open a window to say something.
+ *
+ * <p>It opened 155 of them. Most were not decisions: they announced that
+ * something had worked, or that a field was empty, and each one dimmed the
+ * screen and demanded a click before the person could carry on. That is the
+ * opposite of a considered product, and it is a problem of count rather than of
+ * appearance — restyling 155 modal windows still leaves 155 doors.
+ *
+ * <p>So the calls stayed and the surface changed. An outcome is now reported by
+ * a {@link Toast} in the corner, which takes no focus and leaves on its own. The
+ * two things still worth stopping someone for — a decision and a form — moved to
+ * {@link Dialogs}. A panel that could not load what it exists to show says so
+ * with a {@link Banner} in the space the list would have filled, and a
+ * {@link Receipt} is a document rather than a message.
+ *
+ * <p>This class is kept as the plain way to report an outcome from a controller;
+ * where the message deserves a banner or a receipt, the controller reaches for
+ * those directly.
+ */
 public final class AlertUtil {
 
     private AlertUtil() {
     }
 
+    /** Something worked. Green, four seconds, no click. */
     public static void showInfo(String message) {
-        show(new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK));
+        Toast.done(message);
     }
 
-    public static void showError(String message) {
-        show(new Alert(Alert.AlertType.ERROR, message, ButtonType.OK));
-    }
-
-    public static boolean confirm(String message) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText(null);
-        brand(alert);
-        Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == ButtonType.YES;
-    }
-
-    private static void show(Alert alert) {
-        alert.setHeaderText(null);
-        brand(alert);
-        alert.showAndWait();
+    /** Something worked, with a second line of consequence. */
+    public static void showInfo(String message, String detail) {
+        Toast.done(message, detail);
     }
 
     /**
-     * Gives a dialog the application's icon and stylesheet.
+     * Something did not work.
      *
-     * <p>A JavaFX Alert opens its own stage, which starts with the toolkit's
-     * default icon and none of the application's styling — so an error message
-     * arrived looking like it came from a different program than the one that
-     * raised it.
+     * <p>Red, and it stays until it is dismissed. A message telling someone
+     * their work did not save must not disappear on a timer.
      */
-    private static void brand(Alert alert) {
-        Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
-        AppIcons.apply(stage);
-        alert.getDialogPane().getStylesheets()
-            .add(AlertUtil.class.getResource("/css/app.css").toExternalForm());
+    public static void showError(String message) {
+        Toast.failed(message);
+    }
+
+    public static void showError(String message, String detail) {
+        Toast.failed(message, detail);
+    }
+
+    /** Something was cancelled, withdrawn or sent back. Brass, seven seconds. */
+    public static void showUndone(String message) {
+        Toast.undone(message);
+    }
+
+    public static void showUndone(String message, String detail) {
+        Toast.undone(message, detail);
     }
 }

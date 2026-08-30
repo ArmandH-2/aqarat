@@ -196,6 +196,33 @@ public class RoleWorkflowTest {
 
         SessionManager.login(agent);
         paymentService.confirm(paymentId, agent.getId());
+
+        // Settle the instalment, then prove that a further payment against it is
+        // refused rather than added on top. Data written before that rule existed
+        // had instalments sitting at exactly twice their amount due, which
+        // surfaced as a negative balance on a client's receipt.
+        int scheduleId = schedule.get(0).getId();
+        BigDecimal remainder = schedule.get(0).getAmountDue()
+            .subtract(paymentService.findScheduleById(scheduleId).getAmountPaid());
+        if (remainder.signum() > 0) {
+            int settling = paymentService.declare(scheduleId, null, remainder,
+                PaymentMethod.BANK_TRANSFER, "ref-2", null, client.getId());
+            paymentService.confirm(settling, agent.getId());
+        }
+
+        BigDecimal settledTotal = paymentService.findScheduleById(scheduleId).getAmountPaid();
+        assertEquals(0, settledTotal.compareTo(schedule.get(0).getAmountDue()),
+            "the instalment should now be settled exactly, never over");
+
+        // Declaring against it is refused outright, which is the route a person
+        // can actually take.
+        assertThrows(PaymentService.InvalidPaymentAmountException.class,
+            () -> paymentService.declare(scheduleId, null, new BigDecimal("1000"),
+                PaymentMethod.BANK_TRANSFER, "ref-3", null, client.getId()));
+        assertEquals(0, settledTotal.compareTo(
+            paymentService.findScheduleById(scheduleId).getAmountPaid()),
+            "a refused declaration must leave the instalment untouched");
+
         contractService.close(contractId);
         assertEquals(PropertyStatus.CLOSED, propertyDao.findById(propertyId).getStatus());
     }

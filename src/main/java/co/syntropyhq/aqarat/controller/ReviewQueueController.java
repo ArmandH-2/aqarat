@@ -18,6 +18,7 @@ import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Format;
@@ -148,7 +149,10 @@ public class ReviewQueueController {
         try {
             results = propertyService.searchForStaff(searchStatuses(), searchFilters(), offset, PAGE_SIZE);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not load review queue. Check that SQL Server is running.");
+            propertyList.getItems().clear();
+            propertyList.setPlaceholder(Banner.failure("The review queue could not be loaded",
+                "The database did not answer. Nothing has been claimed or decided on.",
+                () -> runSearch(offset)));
             return;
         }
         currentOffset = offset;
@@ -186,7 +190,8 @@ public class ReviewQueueController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("You have claimed this submission.");
+        AlertUtil.showInfo("Claimed",
+            "It is assigned to you and off the other agents' queues until you decide on it.");
         runSearch(currentOffset);
     }
 

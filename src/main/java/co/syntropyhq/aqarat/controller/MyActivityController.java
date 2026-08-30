@@ -20,6 +20,7 @@ import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
@@ -141,7 +142,14 @@ public class MyActivityController {
     }
 
     private void handleCancel(Reservation reservation) {
-        if (!AlertUtil.confirm("Cancel this reservation? This cannot be undone.")) {
+        boolean go = Dialogs.ask("Cancel this reservation?")
+            .because("The property goes back on the market immediately and anyone else can "
+                + "reserve it. Your deposit is handled by the agency, not by this step.")
+            .confirm("Cancel the reservation")
+            .cancel("Keep it")
+            .destructive()
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -156,12 +164,19 @@ public class MyActivityController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The reservation has been cancelled.");
+        AlertUtil.showUndone("Reservation cancelled",
+            "The property is back on the market. Your agent handles the deposit separately.");
         loadReservations();
     }
 
     private void handleCancelViewing(Viewing viewing) {
-        if (!AlertUtil.confirm("Cancel this viewing appointment?")) {
+        boolean go = Dialogs.ask("Cancel this viewing?")
+            .because("The slot is released and the agent is told. You can request another "
+                + "viewing of the same property afterwards.")
+            .confirm("Cancel the viewing")
+            .cancel("Keep it")
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -173,7 +188,8 @@ public class MyActivityController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The viewing appointment has been cancelled.");
+        AlertUtil.showUndone("Viewing cancelled",
+            "The slot is released and the agent has been told. You can request another viewing of the same property.");
         loadViewings();
     }
 

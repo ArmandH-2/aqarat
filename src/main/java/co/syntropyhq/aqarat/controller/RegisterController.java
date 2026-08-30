@@ -68,7 +68,8 @@ public class RegisterController {
             return;
         }
 
-        AlertUtil.showInfo("Account created. Sign in to continue.");
+        AlertUtil.showInfo("Account created",
+            "Sign in with the same email and password to start browsing.");
         openLoginWindow();
     }
 
@@ -115,7 +116,8 @@ public class RegisterController {
             AppIcons.apply(stage);
             stage.show();
         } catch (IOException e) {
-            AlertUtil.showError("Could not open the window.");
+            AlertUtil.showError("The sign-in window could not open",
+                "Your account was created. Close Aqarat and start it again to sign in.");
             return;
         }
         ((Stage) fullNameField.getScene().getWindow()).close();

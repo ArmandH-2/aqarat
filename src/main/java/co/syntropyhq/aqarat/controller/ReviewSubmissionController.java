@@ -26,6 +26,7 @@ import co.syntropyhq.aqarat.service.ValuationService;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Panel;
@@ -627,14 +628,28 @@ public class ReviewSubmissionController implements NeedsId {
         if (note == null) {
             return;
         }
-        if (AlertUtil.confirm("Reject this submission? The owner will see your reason.")) {
+        boolean go = Dialogs.ask("Reject this submission?")
+            .because("The owner is shown the reason you wrote and the property is not listed. "
+                + "They can correct it and submit it again.")
+            .confirm("Reject it")
+            .cancel("Go back")
+            .destructive()
+            .show();
+        if (go) {
             submitDecision(PropertyStatus.REJECTED, note);
         }
     }
 
     @FXML
     private void handleAcceptRemoval() {
-        if (AlertUtil.confirm("Accept this removal? The listing will come off the market.")) {
+        boolean go = Dialogs.ask("Accept this removal request?")
+            .because("The listing comes off the market and stops appearing in search. The "
+                + "property and its history stay on the record.")
+            .confirm("Remove the listing")
+            .cancel("Go back")
+            .destructive()
+            .show();
+        if (go) {
             submitDecision(PropertyStatus.WITHDRAWN, null);
         }
     }
@@ -664,7 +679,8 @@ public class ReviewSubmissionController implements NeedsId {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your decision has been recorded.");
+        AlertUtil.showInfo("Decision recorded",
+            "The owner sees it on their submission, along with whatever reason you gave.");
         Router.show(Panel.REVIEW_QUEUE);
     }
 

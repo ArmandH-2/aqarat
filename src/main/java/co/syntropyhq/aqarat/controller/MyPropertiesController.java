@@ -18,8 +18,10 @@ import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
+import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
@@ -43,7 +45,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -110,7 +111,10 @@ public class MyPropertiesController {
             propertyList.setItems(FXCollections.observableArrayList(properties));
             updateKpis(properties);
         } catch (SQLException e) {
-            AlertUtil.showError("Could not reach the database. Try again.");
+            propertyList.getItems().clear();
+            propertyList.setPlaceholder(Banner.failure("Your properties could not be loaded",
+                "The database did not answer. Every submission and listing is untouched.",
+                this::loadProperties));
         }
     }
 
@@ -138,19 +142,19 @@ public class MyPropertiesController {
     }
 
     private void handleRespond(Property property) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText(null);
-        dialog.setTitle("Respond to Review Query");
-        dialog.setContentText("Your response to the reviewing agent:");
-        Optional<String> input = dialog.showAndWait();
+        Optional<String> input = Dialogs.note("Answer the reviewing agent")
+            .about(property.getTitle())
+            .explaining("Your answer goes back into the review queue with the submission, so "
+                + "the agent sees it beside the details it is about.")
+            .field("Your response")
+            .placeholder("What the agent asked for, in your own words")
+            .confirm("Send it back for review")
+            .cancel("Not now")
+            .show();
         if (input.isEmpty()) {
             return;
         }
-        String answer = input.get().trim();
-        if (answer.isEmpty()) {
-            AlertUtil.showError("An answer is required to submit back to review.");
-            return;
-        }
+        String answer = input.get();
         try {
             propertyService.respondToReview(property.getId(), answer,
                 SessionManager.getCurrentUser().getId());
@@ -161,12 +165,21 @@ public class MyPropertiesController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Your response has been sent to the agent.");
+        AlertUtil.showInfo("Sent back for review",
+            "Your answer sits beside the submission in the agent's queue.");
         loadProperties();
     }
 
     private void handleWithdraw(Property property) {
-        if (!AlertUtil.confirm("Withdraw this submission? This action cannot be undone.")) {
+        boolean go = Dialogs.ask("Withdraw this submission?")
+            .about(property.getTitle())
+            .because("It leaves the review queue and the agent stops working on it. To list the "
+                + "property later you would submit it again from the beginning.")
+            .confirm("Withdraw it")
+            .cancel("Leave it in review")
+            .destructive()
+            .show();
+        if (!go) {
             return;
         }
         try {
@@ -178,7 +191,8 @@ public class MyPropertiesController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("The submission has been withdrawn.");
+        AlertUtil.showUndone("Submission withdrawn",
+            "It has left the review queue. Listing the property later means submitting it again.");
         loadProperties();
     }
 
@@ -204,23 +218,24 @@ public class MyPropertiesController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Photos successfully attached to listing.");
+        AlertUtil.showInfo("Photos added",
+            "They appear on the listing straight away, in the order they were chosen.");
     }
 
     private void handleRequestRemoval(Property property) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setHeaderText(null);
-        dialog.setTitle("Request Listing Removal");
-        dialog.setContentText("Reason for requesting listing removal:");
-        Optional<String> input = dialog.showAndWait();
+        Optional<String> input = Dialogs.note("Ask for this listing to be removed")
+            .about(property.getTitle())
+            .explaining("An agent decides on the request. The listing stays on the market and "
+                + "keeps taking enquiries until they do.")
+            .field("Why it should come off the market")
+            .placeholder("Sold privately, taken off the market, price under review")
+            .confirm("Send the request")
+            .cancel("Keep it listed")
+            .show();
         if (input.isEmpty()) {
             return;
         }
-        String reason = input.get().trim();
-        if (reason.isEmpty()) {
-            AlertUtil.showError("A reason is required to request removal.");
-            return;
-        }
+        String reason = input.get();
         try {
             propertyService.requestWithdrawal(property.getId(), reason);
         } catch (PropertyService.InvalidTransitionException e) {
@@ -230,7 +245,8 @@ public class MyPropertiesController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
-        AlertUtil.showInfo("Removal request dispatched to reviewing agent.");
+        AlertUtil.showInfo("Removal requested",
+            "An agent decides on it. The listing stays on the market and keeps taking enquiries until they do.");
         loadProperties();
     }
 

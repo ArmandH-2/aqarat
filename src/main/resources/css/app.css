@@ -248,8 +248,13 @@
 
 /* The shell contributes no padding: a panel that wants a full-bleed band —
    Discover's search header, the sign-in photograph — has to be able to reach
-   the window edge. Panels that want the old inset carry .panel instead. */
-.content {
+   the window edge. Panels that want the old inset carry .panel instead.
+
+   Named .shell-content and not .content on purpose. JavaFX uses .content
+   internally inside DialogPane, TitledPane, ScrollPane and TextArea, so a rule
+   named .content here paints the inside of every dialog with the canvas colour
+   and leaves a cream frame around a limestone block. */
+.shell-content {
     -fx-background-color: -c-bg;
     -fx-padding: 0;
 }
@@ -1005,3 +1010,215 @@
     -fx-padding: 16 0 0 0;
     -fx-background-color: transparent;
 }
+
+/* ==========================================================================
+   REPORTING AN OUTCOME
+   Four surfaces, sorted by what the message actually is. A toast for something
+   that happened, a banner for a panel that could not load, a dialog for a
+   decision or a form, and a receipt for the one thing a client keeps.
+   ========================================================================== */
+
+/* ---- Toast -------------------------------------------------------------
+   Dark against the cream panels so it reads as an overlay rather than another
+   card, and so it stays legible over whatever is behind it. */
+
+/* The popup that carries the toasts is a window of its own, so its root picks
+   up .root and with it the canvas colour, which paints a limestone frame around
+   every toast. The layer has to be explicitly cleared. */
+.toast-layer { -fx-background-color: transparent; }
+
+.toast {
+    -fx-background-color: -c-primary-deep;
+    -fx-background-radius: 10px;
+    -fx-padding: 14 16 14 16;
+    -fx-effect: dropshadow(gaussian, rgba(4, 31, 20, 0.30), 26, 0.12, 0, 8);
+}
+
+.toast-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-on-primary;
+}
+
+.toast-detail {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -c-side-text-dim;
+}
+
+.toast-badge {
+    -fx-background-radius: 50%;
+    -fx-min-width: 22px;  -fx-pref-width: 22px;  -fx-max-width: 22px;
+    -fx-min-height: 22px; -fx-pref-height: 22px; -fx-max-height: 22px;
+}
+.toast-icon { -fx-icon-size: 13; -fx-icon-color: -c-on-primary; }
+
+.toast-done   .toast-badge { -fx-background-color: -c-good; }
+.toast-undone .toast-badge { -fx-background-color: -c-brass; }
+.toast-failed .toast-badge { -fx-background-color: -c-bad; }
+
+/* A failure keeps a red edge as well as a red badge: it is the one tone that
+   does not leave on its own, so it should not look like the others. */
+.toast-failed {
+    -fx-border-color: -c-bad;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-radius: 10px;
+}
+
+.toast-action {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -c-brass-bright;
+    -fx-cursor: hand;
+    -fx-padding: 2 4 2 4;
+}
+.toast-action:hover { -fx-underline: true; }
+
+.toast-close-hit {
+    -fx-cursor: hand;
+    -fx-padding: 2;
+    -fx-background-radius: 4px;
+}
+.toast-close-hit:hover { -fx-background-color: -c-side-hover; }
+.toast-close { -fx-icon-size: 13; -fx-icon-color: -c-side-text-dim; }
+.toast-close-hit:hover .toast-close { -fx-icon-color: -c-on-primary; }
+
+/* ---- Banner ------------------------------------------------------------
+   Sits in the space the list would have filled. */
+
+.banner-failure {
+    -fx-background-color: -c-bad-bg;
+    -fx-background-radius: 9px;
+    -fx-border-color: -c-bad-border;
+    -fx-border-radius: 9px;
+    -fx-border-width: 1px;
+    -fx-padding: 14 16 14 16;
+}
+
+.banner-icon  { -fx-icon-size: 17; -fx-icon-color: -c-bad; }
+.banner-title { -fx-font-size: 12.5px; -fx-font-weight: 600; -fx-text-fill: -c-text-primary; }
+.banner-detail { -fx-font-size: 11.5px; -fx-text-fill: -c-text-secondary; }
+
+/* ---- Dialog ------------------------------------------------------------
+   The frame around a question or a form. */
+
+/* The frame: content above, footer below, neither inset by the frame itself so
+   the footer band reaches both edges and reads as a footer rather than a strip
+   floating inside the dialog. */
+.app-dialog {
+    -fx-background-color: -c-surface;
+    -fx-padding: 0;
+}
+
+.dialog-content {
+    -fx-padding: 24 26 20 26;
+}
+
+.dialog-footer {
+    -fx-background-color: -c-surface-subtle;
+    -fx-padding: 15 26 15 26;
+    -fx-border-color: -c-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.dialog-heading {
+    -fx-font-family: "Instrument Serif", Georgia, serif;
+    -fx-font-size: 22px;
+    -fx-text-fill: -c-text-primary;
+}
+
+.dialog-body {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -c-text-secondary;
+}
+
+.dialog-badge {
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-border-width: 1px;
+    -fx-min-width: 34px;  -fx-pref-width: 34px;  -fx-max-width: 34px;
+    -fx-min-height: 34px; -fx-pref-height: 34px; -fx-max-height: 34px;
+}
+.dialog-badge-icon { -fx-icon-size: 17; }
+.dialog-badge-danger  { -fx-background-color: -c-bad-bg;  -fx-border-color: -c-bad-border; }
+.dialog-badge-danger  .dialog-badge-icon { -fx-icon-color: -c-bad; }
+.dialog-badge-neutral { -fx-background-color: -c-primary-tint; -fx-border-color: -c-border-subtle; }
+.dialog-badge-neutral .dialog-badge-icon { -fx-icon-color: -c-primary; }
+
+/* Solid rather than tinted, because it is the action rather than an option
+   among several. Reserved for the confirm button of a destructive question. */
+.button-danger-solid {
+    -fx-background-color: -c-bad;
+    -fx-text-fill: -c-on-primary;
+    -fx-border-width: 0;
+}
+.button-danger-solid:hover   { -fx-background-color: #A81B18; }
+.button-danger-solid:pressed { -fx-background-color: #8E1613; }
+
+/* ---- Receipt -----------------------------------------------------------
+   A document, not a message. */
+
+.receipt-window { -fx-background-color: -c-surface; }
+
+.receipt {
+    -fx-background-color: -c-surface;
+}
+
+.receipt-masthead {
+    -fx-background-color: -c-primary-deep;
+    -fx-padding: 20 24 20 24;
+}
+.receipt-mark {
+    -fx-font-family: "Instrument Serif", Georgia, serif;
+    -fx-font-size: 21px;
+    -fx-text-fill: -c-on-primary;
+}
+.receipt-place  { -fx-font-size: 9.5px; -fx-font-weight: 500; -fx-text-fill: -c-side-text-dim; }
+.receipt-kind   { -fx-font-size: 9.5px; -fx-font-weight: 600; -fx-text-fill: -c-brass-bright; }
+.receipt-number { -fx-font-size: 12px; -fx-text-fill: -c-on-primary; }
+
+.receipt-figure {
+    -fx-padding: 24 24 18 24;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.receipt-caption { -fx-font-size: 10.5px; -fx-font-weight: 600; -fx-text-fill: -c-text-muted; }
+/* Instrument Serif's ascenders run past the line box JavaFX measures from its
+   metrics, so at display sizes the top of the dollar sign is clipped. The
+   padding is the room the glyph actually needs. */
+.receipt-amount {
+    -fx-font-family: "Instrument Serif", Georgia, serif;
+    -fx-font-size: 38px;
+    -fx-text-fill: -c-text-primary;
+    -fx-padding: 5 0 0 0;
+}
+.receipt-status-detail { -fx-font-size: 11.5px; -fx-text-fill: -c-text-muted; }
+
+.receipt-detail { -fx-padding: 6 24 6 24; }
+.receipt-line {
+    -fx-padding: 10 0 10 0;
+    -fx-border-color: transparent transparent -c-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.receipt-line-last { -fx-border-width: 0; }
+.receipt-line-label { -fx-font-size: 11.5px; -fx-text-fill: -c-text-muted; }
+.receipt-line-value { -fx-font-size: 13px; -fx-font-weight: 500; -fx-text-fill: -c-text-primary; }
+
+.receipt-balance {
+    -fx-background-color: -c-surface-subtle;
+    -fx-padding: 15 24 15 24;
+    -fx-border-color: -c-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.receipt-balance-label { -fx-font-size: 12px; -fx-text-fill: -c-text-secondary; }
+.receipt-balance-value {
+    -fx-font-family: "Instrument Serif", Georgia, serif;
+    -fx-font-size: 21px;
+    -fx-text-fill: -c-text-primary;
+}
+
+.receipt-actions {
+    -fx-padding: 16 24 18 24;
+    -fx-border-color: -c-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.receipt-footnote { -fx-font-size: 10.5px; -fx-text-fill: -c-text-muted; }
