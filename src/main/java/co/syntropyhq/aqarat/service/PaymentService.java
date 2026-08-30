@@ -353,7 +353,18 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
-                paymentDao.updateStatus(connection, paymentId, PaymentStatus.CONFIRMED, confirmedByUserId);
+                // The transition is the lock. Reading the status a moment ago on
+                // another connection proves nothing: between that read and this
+                // write, a second agent can confirm the same payment, and two
+                // applications of one amount leave the instalment believing it
+                // received twice what it did.
+                int moved = paymentDao.updateStatusFrom(connection, paymentId,
+                    PaymentStatus.DECLARED, PaymentStatus.CONFIRMED, confirmedByUserId);
+                if (moved == 0) {
+                    connection.rollback();
+                    throw new InvalidPaymentStateException(
+                        "Someone else has already dealt with this payment. Reload the queue.");
+                }
                 auditService.record(connection, "payment", paymentId, "CONFIRM",
                     PaymentStatus.DECLARED.name(), PaymentStatus.CONFIRMED.name());
                 if (payment.getScheduleId() != null) {
@@ -373,7 +384,15 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
             try {
-                paymentDao.updateStatus(connection, paymentId, PaymentStatus.REJECTED, confirmedByUserId);
+                // Guarded for the same reason as confirm: a payment must not be
+                // rejected after another agent has already confirmed it.
+                int moved = paymentDao.updateStatusFrom(connection, paymentId,
+                    PaymentStatus.DECLARED, PaymentStatus.REJECTED, confirmedByUserId);
+                if (moved == 0) {
+                    connection.rollback();
+                    throw new InvalidPaymentStateException(
+                        "Someone else has already dealt with this payment. Reload the queue.");
+                }
                 auditService.record(connection, "payment", paymentId, "REJECT",
                     PaymentStatus.DECLARED.name(), PaymentStatus.REJECTED.name());
                 connection.commit();

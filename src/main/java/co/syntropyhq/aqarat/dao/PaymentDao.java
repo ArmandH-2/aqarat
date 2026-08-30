@@ -132,6 +132,33 @@ public class PaymentDao {
         }
     }
 
+    /**
+     * Moves a payment from one status to another, and says whether it moved.
+     *
+     * <p>The current status is part of the WHERE clause on purpose: it makes the
+     * row itself the lock. Two agents confirming the same declared payment both
+     * reach this statement, the first changes one row and the second changes
+     * none, so only one of them can go on to apply the money.
+     *
+     * @return the number of rows changed - zero when someone else got there first
+     */
+    public int updateStatusFrom(Connection connection, int id, PaymentStatus from,
+            PaymentStatus to, Integer confirmedBy) throws SQLException {
+        String sql = """
+            UPDATE payment
+               SET status = ?, confirmed_by = ?
+             WHERE id = ?
+               AND status = ?
+            """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, to.name());
+            statement.setObject(2, confirmedBy);
+            statement.setInt(3, id);
+            statement.setString(4, from.name());
+            return statement.executeUpdate();
+        }
+    }
+
     public void updateStatus(Connection connection, int id, PaymentStatus status, Integer confirmedBy)
             throws SQLException {
         String sql = "UPDATE payment SET status = ?, confirmed_by = ? WHERE id = ?";

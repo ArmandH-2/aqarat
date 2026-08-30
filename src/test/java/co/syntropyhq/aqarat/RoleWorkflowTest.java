@@ -44,7 +44,10 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -121,6 +124,50 @@ public class RoleWorkflowTest {
             throws Exception {
         AppUser user = auth.register(email, password, fullName, phone);
         return user == null ? auth.login(email, password) : user;
+    }
+
+    /* A second property, taken all the way to AVAILABLE, so a test needing its
+       own contract does not disturb the one the happy path is walking. */
+    private int listedProperty(AppUser owner, AppUser agent) throws Exception {
+        Property base = referenceProperty();
+        SessionManager.login(owner);
+        Property property = new Property();
+        property.setOwnerId(owner.getId());
+        property.setTitle("Verify race " + System.nanoTime());
+        property.setDistrictId(base.getDistrictId());
+        property.setPropertyTypeId(base.getPropertyTypeId());
+        property.setAreaSqm(new BigDecimal("100"));
+        property.setBedrooms(2);
+        property.setBathrooms(1);
+        property.setDealType(DealType.SALE);
+        property.setAskingPrice(new BigDecimal("90000"));
+        int propertyId = propertyService.submit(property);
+
+        SessionManager.login(agent);
+        propertyService.claim(propertyId, agent.getId());
+        propertyService.review(propertyId, PropertyStatus.AVAILABLE, null);
+        return propertyId;
+    }
+
+    private int activatedContract(int propertyId, AppUser client, AppUser agent, BigDecimal total)
+            throws Exception {
+        SessionManager.login(client);
+        reservationService.create(propertyId, client.getId(), new BigDecimal("100"));
+
+        Contract contract = new Contract();
+        contract.setPropertyId(propertyId);
+        contract.setClientId(client.getId());
+        contract.setAgentId(agent.getId());
+        contract.setContractType(ContractType.SALE);
+        contract.setTotalAmount(total);
+        contract.setPaymentFrequency(PaymentFrequency.MONTHLY);
+        contract.setInstallmentCount(2);
+        contract.setStartDate(LocalDate.now());
+
+        SessionManager.login(agent);
+        int contractId = contractService.draft(contract);
+        contractService.activate(contractId);
+        return contractId;
     }
 
     private Property referenceProperty() throws Exception {
@@ -222,6 +269,54 @@ public class RoleWorkflowTest {
         assertEquals(0, settledTotal.compareTo(
             paymentService.findScheduleById(scheduleId).getAmountPaid()),
             "a refused declaration must leave the instalment untouched");
+
+        twoAgentsConfirmingAtOnceApplyItOnce(owner, client, agent);
+    }
+
+    /*
+     * Two agents confirming the same declared payment at the same moment.
+     *
+     * The status was read on one connection and the money moved on another, with
+     * nothing between them, so both callers could pass the check and both apply
+     * the amount. Confirming is a guarded transition now: whoever updates the row
+     * first wins and the other is refused, so the instalment receives the payment
+     * exactly once however many people press the button.
+     */
+    private void twoAgentsConfirmingAtOnceApplyItOnce(AppUser owner, AppUser client, AppUser agent)
+            throws Exception {
+        int propertyId = listedProperty(owner, agent);
+        int contractId = activatedContract(propertyId, client, agent, new BigDecimal("900"));
+        int scheduleId = paymentService.findScheduleByContract(contractId).get(0).getId();
+
+        // A part payment, so a second application would still land under the
+        // amount due and slip past the already-settled guard.
+        int paymentId = paymentService.declare(scheduleId, null, new BigDecimal("300"),
+            PaymentMethod.CASH, "race", null, client.getId());
+
+        CountDownLatch go = new CountDownLatch(1);
+        List<Throwable> refusals = Collections.synchronizedList(new ArrayList<>());
+        List<Thread> agents = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            Thread thread = new Thread(() -> {
+                try {
+                    go.await();
+                    paymentService.confirm(paymentId, agent.getId());
+                } catch (Exception e) {
+                    refusals.add(e);
+                }
+            });
+            thread.start();
+            agents.add(thread);
+        }
+        go.countDown();
+        for (Thread thread : agents) {
+            thread.join(10_000);
+        }
+
+        assertEquals(1, refusals.size(), "exactly one of the two agents should be refused");
+        assertEquals(0, new BigDecimal("300").compareTo(
+            paymentService.findScheduleById(scheduleId).getAmountPaid()),
+            "the instalment must receive the payment once, not twice");
 
         contractService.close(contractId);
         assertEquals(PropertyStatus.CLOSED, propertyDao.findById(propertyId).getStatus());
