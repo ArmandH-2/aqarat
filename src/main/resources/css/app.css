@@ -272,6 +272,21 @@
    ImageView sized from its own parent feeds its parent's preferred size back
    into itself, and the panel grows past the window until the content below it
    is pushed off screen. A background image fills without joining the layout. */
+/* The wordmark on the photograph. Larger than the sidebar's because it is the
+   only identity on a 975px panel rather than a label above a nav list, and it
+   carries the same place-line so the lockup is one thing in both places. */
+.auth-brand-word {
+    -fx-font-family: "Instrument Serif", Georgia, serif;
+    -fx-font-size: 34px;
+    -fx-text-fill: -c-on-primary;
+}
+
+.auth-brand-place {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #C6D3CB;
+}
+
 .auth-brand {
     -fx-background-color: -c-primary-deep;
     -fx-background-image: url("../images/auth-hero.jpg");
@@ -909,10 +924,15 @@
    MISC
    ========================================================================== */
 
+/* A hairline, and it has to be told so three times. An HBox stretches its
+   children to the height of the tallest by default, and a Region's maximum is
+   unbounded, so a rule beside an 18px label became an 18px block of colour —
+   which reads as a patch over something rather than as a line. */
 .rule-h {
-    -fx-background-color: -c-border-subtle;
+    -fx-background-color: -c-border-medium;
     -fx-pref-height: 1px;
     -fx-min-height: 1px;
+    -fx-max-height: 1px;
 }
 .rule-v {
     -fx-background-color: -c-border-subtle;

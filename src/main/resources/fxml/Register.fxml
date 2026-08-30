@@ -25,7 +25,10 @@
                 <Insets top="46" right="52" bottom="46" left="52"/>
             </padding>
 
-            <Label text="Aqarat" styleClass="brand-word"/>
+            <VBox spacing="1">
+                <Label text="Aqarat" styleClass="auth-brand-word"/>
+                <Label text="BEIRUT" styleClass="auth-brand-place"/>
+            </VBox>
 
             <Region VBox.vgrow="ALWAYS"/>
 
