@@ -277,12 +277,12 @@
    carries the same place-line so the lockup is one thing in both places. */
 .auth-brand-word {
     -fx-font-family: "Instrument Serif", Georgia, serif;
-    -fx-font-size: 34px;
+    -fx-font-size: 46px;
     -fx-text-fill: -c-on-primary;
 }
 
 .auth-brand-place {
-    -fx-font-size: 10.5px;
+    -fx-font-size: 12px;
     -fx-font-weight: 600;
     -fx-text-fill: #C6D3CB;
 }

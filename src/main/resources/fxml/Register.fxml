@@ -27,8 +27,8 @@
                 <Insets top="46" right="52" bottom="46" left="52"/>
             </padding>
 
-            <HBox spacing="13" alignment="CENTER_LEFT">
-                <ImageView fitHeight="44" preserveRatio="true">
+            <HBox spacing="16" alignment="CENTER_LEFT">
+                <ImageView fitHeight="58" preserveRatio="true">
                     <Image url="@../images/mark-light-256.png"/>
                 </ImageView>
                 <VBox spacing="1">

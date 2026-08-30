@@ -210,7 +210,7 @@ second time.
 Closed at three depths: the script now skips an instalment that has a payment
 awaiting confirmation; `PaymentService` refuses to apply a payment to an
 instalment already settled in full; and a receipt cannot show a negative
-balance. `db/repair-double-counted.sql` restates the rows written before any of
+balance. `db/repair-schedules.sql` restates the rows written before any of
 that existed, and is idempotent. `RoleWorkflowTest` now settles an instalment
 and asserts that a further payment against it is refused and leaves the figure
 untouched.
