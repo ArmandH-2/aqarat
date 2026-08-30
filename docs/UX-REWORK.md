@@ -113,22 +113,47 @@ reviewing a panel's appearance without a person at the machine.
 
 ---
 
-## 5. Outstanding
+## 5. What testing found
 
-- The agent and admin panels have the design system applied but keep the old
-  generic shape. They need the same treatment as the client surface: Review
-  Submission and the Agent Dashboard first, since they are where an agent
-  spends the day.
-- `MyProperties`, `MyContracts` and `MyActivity` render inside Portfolio but
-  their internal list cells are still the pre-rework style.
-- The valuation range bar shows the estimate mark only when no asking price is
-  entered; both marks at once would read better.
-- Seed data ages: an instalment overdue by 421 days is honest but looks odd in
-  a demonstration. Consider re-basing seed dates relative to the current date.
+The flows below were driven through the interface and checked against the
+database, not read. Each one is a claim this application makes on screen, so
+each one had to be true.
 
----
+| Flow | Result |
+|---|---|
+| Customer requests a viewing | Row written, status `REQUESTED`. Stored two hours behind the chosen time, which is the documented UTC storage correct for Beirut. |
+| Agent confirms it | Status `CONFIRMED`, agent assigned. |
+| Agent confirms a second at the same hour | **Refused** by `ux_viewing_agent_slot`, exactly as the Viewings panel claims on screen. |
+| Agent approves a submission | `PENDING_REVIEW` → `AVAILABLE`, audit row `REVIEW on property`. |
+| Agent confirms a declared payment | Status moved, audit row `PAYMENT_APPLIED on payment_schedule`. |
+| Guest keyword search | Routed locally to filters, no model call, no account. |
+| Registration | Account created with role `CUSTOMER`. |
 
-## 6. Reviewing a panel yourself
+Defects it exposed, all fixed: a contract's rent rendered as "$340/mo / mo"
+(twice, in two files); the viewing form put its submit button above its own
+inputs; a date picker and a time dropdown sharing a 330px rail clipped the time
+to an ellipsis; the schedule's action column clipped "Overdue" and "Declare
+payment" on the row most needing action; a reservations list with a fixed
+height showed a customer with one reservation a two-thirds-empty card; every
+payment in the ledger displayed "02:00", a UTC-midnight artifact; every row in
+the confirmation queue was titled "Contract Installment Payment"; the audit
+log's Apply button was clipped to "Ap…"; alerts carried the toolkit's default
+icon; and a malformed FXML made a navigation click look like it did nothing.
+
+## 6. Outstanding
+
+- The agent dashboard's "Quick Navigation" row duplicates the sidebar exactly,
+  and the KPI tiles above it are already clickable. Flagged rather than removed,
+  pending a decision.
+- `MyContracts` and `MyActivity` render inside Portfolio; their remaining
+  sections are tidy but were not redesigned as thoroughly as the schedule.
+- The declare-payment dialog was verified by reading rather than by driving —
+  a modal is hard to drive reliably by coordinate. The confirmation half of the
+  same pipeline was driven and passed.
+- `docs/palette-options` holds three grounds not chosen. Clay is the one worth
+  revisiting if the interface should feel heavier.
+
+## 7. Reviewing a panel yourself
 
 The application cannot be screenshotted from outside — JavaFX composites on the
 GPU, so Windows returns a blank frame. Ask the scene to draw itself instead:
