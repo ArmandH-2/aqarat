@@ -74,7 +74,7 @@
             <!-- User Accounts Directory Card -->
             <VBox styleClass="card" spacing="12">
                 <Label text="Everyone with an account" styleClass="section-title"/>
-                <ListView fx:id="userList" minHeight="450"/>
+                <ListView fx:id="userList" styleClass="page-list"/>
             </VBox>
         </VBox>
     </VBox>

@@ -66,7 +66,7 @@
                 </VBox>
 
                 <!-- Districts List -->
-                <ListView fx:id="districtList" minHeight="450"/>
+                <ListView fx:id="districtList" styleClass="page-list"/>
             </VBox>
 
             <!-- Property Types Tab Box -->
@@ -86,12 +86,12 @@
                     </HBox>
                 </VBox>
 
-                <ListView fx:id="typeList" minHeight="450"/>
+                <ListView fx:id="typeList" styleClass="page-list"/>
             </VBox>
 
             <!-- System Settings Tab Box -->
             <VBox fx:id="settingsBox" spacing="16" managed="false" visible="false">
-                <ListView fx:id="settingList" minHeight="500"/>
+                <ListView fx:id="settingList" styleClass="page-list"/>
             </VBox>
         </VBox>
     </VBox>

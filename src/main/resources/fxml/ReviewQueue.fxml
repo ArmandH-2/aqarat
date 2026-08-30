@@ -35,7 +35,7 @@
             </HBox>
 
             <!-- Submissions List -->
-            <ListView fx:id="propertyList" minHeight="480"/>
+            <ListView fx:id="propertyList" styleClass="page-list"/>
 
             <!-- Pagination -->
             <HBox spacing="16" alignment="CENTER">

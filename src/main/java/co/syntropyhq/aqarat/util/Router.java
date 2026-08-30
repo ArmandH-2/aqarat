@@ -44,7 +44,9 @@ public final class Router {
         String path = "/fxml/" + panel.getFxml();
         FXMLLoader loader = new FXMLLoader(Router.class.getResource(path));
         try {
-            return loader.load();
+            Parent view = loader.load();
+            PageScroll.install(view);
+            return view;
         } catch (IOException e) {
             throw new PanelLoadException(panel, e);
         }
@@ -78,6 +80,9 @@ public final class Router {
         if (entry.id != null && loader.getController() instanceof NeedsId needsId) {
             needsId.receiveId(entry.id.intValue());
         }
+        // Every panel gets the same wheel behaviour, applied here rather than
+        // remembered in fourteen controllers.
+        PageScroll.install(view);
         if (contentPane != null) {
             contentPane.getChildren().setAll(view);
             // Smooth entrance animation for all panel transitions

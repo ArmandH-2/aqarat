@@ -35,7 +35,7 @@
             </HBox>
 
             <!-- Viewings List -->
-            <ListView fx:id="viewingList" minHeight="500"/>
+            <ListView fx:id="viewingList" styleClass="page-list"/>
         </VBox>
     </VBox>
 </ScrollPane>

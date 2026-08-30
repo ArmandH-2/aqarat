@@ -18,6 +18,13 @@
       fx:controller="co.syntropyhq.aqarat.controller.DiscoverController"
       styleClass="discover-root">
 
+    <!-- ================= Results ================= -->
+    <!-- The band lives inside the scroll pane, not above it. Kept outside, it
+         could never be scrolled away, and a search field the reader has already
+         used costs them two hundred pixels of results for the whole session. -->
+    <ScrollPane fx:id="resultsScroll" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+        <VBox spacing="0">
+
     <!-- ================= Search band =================
          One field instead of eight controls. What used to be a permanently
          expanded filter form now lives behind "All filters", because most
@@ -106,8 +113,6 @@
         </VBox>
     </VBox>
 
-    <!-- ================= Results ================= -->
-    <ScrollPane fx:id="resultsScroll" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
         <VBox spacing="16">
             <padding>
                 <Insets top="22" right="40" bottom="28" left="40"/>
@@ -126,6 +131,7 @@
             <VBox fx:id="statusBox" managed="false" visible="false"/>
 
             <FlowPane fx:id="resultsGrid" hgap="22" vgap="22" maxWidth="Infinity" prefWrapLength="0"/>
+        </VBox>
         </VBox>
     </ScrollPane>
 </VBox>

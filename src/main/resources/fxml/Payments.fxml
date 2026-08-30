@@ -37,7 +37,7 @@
 
             <!-- Awaiting Confirmations Tab -->
             <VBox fx:id="awaitingBox" spacing="14">
-                <ListView fx:id="declaredList" minHeight="500"/>
+                <ListView fx:id="declaredList" styleClass="page-list"/>
             </VBox>
 
             <!-- Record Contract Payment Tab -->

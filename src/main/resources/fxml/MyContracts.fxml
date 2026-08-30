@@ -19,7 +19,7 @@
 
         <VBox fx:id="contentBox" spacing="20">
             <!-- Contracts List -->
-            <ListView fx:id="contractList" minHeight="500"/>
+            <ListView fx:id="contractList" styleClass="page-list"/>
         </VBox>
     </VBox>
 </ScrollPane>

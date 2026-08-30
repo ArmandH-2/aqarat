@@ -39,7 +39,7 @@
 
             <!-- Contracts Tab Content -->
             <VBox fx:id="contractsBox" spacing="14">
-                <ListView fx:id="contractList" minHeight="500"/>
+                <ListView fx:id="contractList" styleClass="page-list"/>
             </VBox>
 
             <!-- Draft Contract Form Tab Content -->

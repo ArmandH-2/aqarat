@@ -89,7 +89,7 @@
             </VBox>
 
             <!-- Listings List -->
-            <ListView fx:id="propertyList" minHeight="500"/>
+            <ListView fx:id="propertyList" styleClass="page-list"/>
 
             <!-- Pagination Controls -->
             <HBox spacing="16" alignment="CENTER">

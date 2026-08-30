@@ -37,6 +37,6 @@
         </HBox>
 
         <!-- Properties List -->
-        <ListView fx:id="propertyList" VBox.vgrow="ALWAYS" minHeight="450"/>
+        <ListView fx:id="propertyList" VBox.vgrow="ALWAYS" styleClass="page-list"/>
     </VBox>
 </ScrollPane>
