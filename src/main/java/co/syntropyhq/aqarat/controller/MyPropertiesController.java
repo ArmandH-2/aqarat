@@ -142,32 +142,9 @@ public class MyPropertiesController {
     }
 
     private void handleRespond(Property property) {
-        Optional<String> input = Dialogs.note("Answer the reviewing agent")
-            .about(property.getTitle())
-            .explaining("Your answer goes back into the review queue with the submission, so "
-                + "the agent sees it beside the details it is about.")
-            .field("Your response")
-            .placeholder("What the agent asked for, in your own words")
-            .confirm("Send it back for review")
-            .cancel("Not now")
-            .show();
-        if (input.isEmpty()) {
-            return;
+        if (ReviewReply.ask(propertyService, property)) {
+            loadProperties();
         }
-        String answer = input.get();
-        try {
-            propertyService.respondToReview(property.getId(), answer,
-                SessionManager.getCurrentUser().getId());
-        } catch (PropertyService.InvalidTransitionException e) {
-            AlertUtil.showError("This submission can no longer be sent back for review.");
-            return;
-        } catch (SQLException e) {
-            AlertUtil.showError("Could not reach the database. Try again.");
-            return;
-        }
-        AlertUtil.showInfo("Sent back for review",
-            "Your answer sits beside the submission in the agent's queue.");
-        loadProperties();
     }
 
     private void handleWithdraw(Property property) {

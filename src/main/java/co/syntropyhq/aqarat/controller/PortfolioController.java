@@ -280,6 +280,15 @@ public class PortfolioController {
         return cards;
     }
 
+    /* Answers the agent, then rebuilds the strip and the list underneath so the
+       card that raised the question is gone and the row's status has moved. */
+    private void respondFrom(Property property) {
+        if (ReviewReply.ask(propertyService, property)) {
+            renderAttention(SessionManager.getCurrentUser().getId());
+            showProperties();
+        }
+    }
+
     private List<Attention> propertiesNeedingInfo(int userId) throws SQLException {
         List<Attention> cards = new ArrayList<>();
         for (Property property : propertyService.findByOwner(userId)) {
@@ -295,7 +304,10 @@ public class PortfolioController {
                 property.getTitle(),
                 note,
                 "Read and respond",
-                this::showProperties)));
+                // Opens the reply, rather than selecting the tab the reader is
+                // already on. This card is the only place an owner is told an
+                // agent asked them something, so its button has to be the answer.
+                () -> respondFrom(property))));
         }
         return cards;
     }

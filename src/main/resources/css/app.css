@@ -929,7 +929,8 @@
    unbounded, so a rule beside an 18px label became an 18px block of colour —
    which reads as a patch over something rather than as a line. */
 .rule-h {
-    -fx-background-color: -c-border-medium;
+    -fx-background-color: -c-primary;
+    -fx-opacity: 0.28;
     -fx-pref-height: 1px;
     -fx-min-height: 1px;
     -fx-max-height: 1px;
@@ -1243,16 +1244,23 @@
 }
 .receipt-footnote { -fx-font-size: 10.5px; -fx-text-fill: -c-text-muted; }
 
-/* Printing reports itself in the document rather than as a toast: a toast rises
-   in the corner of the window it belongs to, which on a window this small is
-   where the buttons are. */
-.receipt-print-error {
-    -fx-background-color: -c-bad-bg;
-    -fx-border-color: -c-bad-border transparent transparent transparent;
+/* Saving reports itself in the document rather than as a toast: a toast rises in
+   a corner of the window it belongs to, which on a window this small is where
+   the buttons are. */
+.receipt-save-message {
     -fx-border-width: 1 0 0 0;
     -fx-padding: 12 24 12 24;
     -fx-font-size: 11.5px;
+}
+.receipt-save-failed {
+    -fx-background-color: -c-bad-bg;
+    -fx-border-color: -c-bad-border transparent transparent transparent;
     -fx-text-fill: -c-bad;
+}
+.receipt-save-done {
+    -fx-background-color: -c-good-bg;
+    -fx-border-color: -c-good-border transparent transparent transparent;
+    -fx-text-fill: -c-good;
 }
 
 /* Rows on the dashboard's two lists. Ruled rather than carded: five separate
