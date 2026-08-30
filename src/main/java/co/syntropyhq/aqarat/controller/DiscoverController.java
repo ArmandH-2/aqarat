@@ -147,6 +147,20 @@ public class DiscoverController {
     private int totalMatches;
     private int catalogueSize;
     private Timeline promptIntro;
+    private int promptIndex;
+
+    /* Four shapes of request, not four phrasings of one. Between them they say
+       that a sentence, a place on its own, a specification and a budget are all
+       understood — which is the part a person cannot guess from an empty box. */
+    private static final String[] INVITATIONS = {
+        "I'm looking for a family home in Achrafieh under $400,000",
+        "Somewhere quiet in the mountains, three bedrooms",
+        "A shop I can rent in Hamra",
+        "Anything on the coast under $250,000"
+    };
+    private static final double TYPE_MS = 26;
+    private static final double HOLD_MS = 2200;
+    private static final double ERASE_MS = 14;
 
     @FXML
     private void initialize() {
@@ -210,14 +224,14 @@ public class DiscoverController {
      * <p>Nothing about a text box says "you may write a sentence here", and the
      * old placeholder — a comma-separated list of filters — actively suggested
      * the opposite. Where the assistant is available the prompt is written in
-     * the first person and typed out once, because the motion is what makes
-     * someone read it; where it is not, the prompt says plainly that this is a
-     * keyword search rather than promising an assistant that will not answer.
+     * the first person and typed out, because the motion is what makes someone
+     * read it; where it is not, the prompt says plainly that this is a keyword
+     * search rather than promising an assistant that will not answer.
      *
-     * <p>It types once and stops. A looping animation in the corner of the eye
-     * competes with the photographs, which are the actual content, and JavaFX
-     * offers no equivalent of prefers-reduced-motion for a viewer who needs it
-     * to stop.
+     * <p>It cycles rather than typing once. A single example reads as a hint
+     * that happened to move; four of them, in the visitor's own words, show
+     * that a whole sentence, a bare district, a specification and a budget are
+     * all things this field will take.
      */
     private void introducePrompt() {
         if (!assistantAvailable()) {
@@ -225,36 +239,55 @@ public class DiscoverController {
             searchField.setPromptText("Search by district, property type or price");
             return;
         }
-
         searchIcon.setIconLiteral("fth-message-square");
-        String invitation = "I'm looking for a family home in Achrafieh under $400,000";
-
-        promptIntro = new Timeline();
-        for (int i = 1; i <= invitation.length(); i++) {
-            String shown = invitation.substring(0, i);
-            promptIntro.getKeyFrames().add(new KeyFrame(
-                Duration.millis(26.0 * i), event -> searchField.setPromptText(shown)));
-        }
-        promptIntro.setOnFinished(event -> promptIntro = null);
-
-        // Anyone who starts typing has already understood the invitation, so it
-        // gets out of the way rather than animating underneath them.
-        searchField.textProperty().addListener((observable, was, now) -> settlePrompt(invitation));
+        searchField.textProperty().addListener((observable, was, now) -> settlePrompt());
         searchField.focusedProperty().addListener((observable, was, focused) -> {
             if (focused) {
-                settlePrompt(invitation);
+                settlePrompt();
             }
         });
+        typeNext();
+    }
 
-        searchField.setPromptText("");
+    /*
+     * Types one invitation, holds it long enough to be read, erases it and moves
+     * to the next. Built one Timeline at a time rather than as a single looping
+     * one so each example can have its own length without arithmetic.
+     */
+    private void typeNext() {
+        String invitation = INVITATIONS[promptIndex % INVITATIONS.length];
+        promptIndex++;
+
+        promptIntro = new Timeline();
+        double at = 0;
+        for (int i = 1; i <= invitation.length(); i++) {
+            String shown = invitation.substring(0, i);
+            at = TYPE_MS * i;
+            promptIntro.getKeyFrames().add(
+                new KeyFrame(Duration.millis(at), event -> searchField.setPromptText(shown)));
+        }
+        // Held, then erased a few characters at a time — slower than a backspace
+        // key repeat, quicker than the typing, which is how a person deletes a
+        // line they have decided against.
+        at += HOLD_MS;
+        for (int i = invitation.length(); i >= 0; i -= 2) {
+            String shown = invitation.substring(0, i);
+            at += ERASE_MS;
+            promptIntro.getKeyFrames().add(
+                new KeyFrame(Duration.millis(at), event -> searchField.setPromptText(shown)));
+        }
+        promptIntro.setOnFinished(event -> typeNext());
         promptIntro.play();
     }
 
-    private void settlePrompt(String invitation) {
+    /* Stops for good. Someone who has focused the field or started typing has
+       understood the invitation, and a prompt rewriting itself under a caret is
+       just movement. The last full example is left in place. */
+    private void settlePrompt() {
         if (promptIntro != null) {
             promptIntro.stop();
             promptIntro = null;
-            searchField.setPromptText(invitation);
+            searchField.setPromptText(INVITATIONS[0]);
         }
     }
 
