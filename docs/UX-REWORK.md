@@ -130,6 +130,7 @@ each one had to be true.
 | Agent confirms a declared payment | Status moved, audit row `PAYMENT_APPLIED on payment_schedule`. |
 | Guest keyword search | Routed locally to filters, no model call, no account. |
 | Registration | Account created with role `CUSTOMER`. |
+| Customer declares a payment | Row written with the proof reference and status `DECLARED`. The earlier attempt failed because proof is mandatory and was empty — the validation was correct. |
 
 Defects it exposed, all fixed: a contract's rent rendered as "$340/mo / mo"
 (twice, in two files); the viewing form put its submit button above its own
@@ -144,14 +145,13 @@ icon; and a malformed FXML made a navigation click look like it did nothing.
 
 ## 6. Outstanding
 
-- The agent dashboard's "Quick Navigation" row duplicates the sidebar exactly,
-  and the KPI tiles above it are already clickable. Flagged rather than removed,
-  pending a decision.
+- (Resolved) The agent dashboard's Quick Navigation card duplicated the sidebar
+  and the clickable KPI tiles; removed.
 - `MyContracts` and `MyActivity` render inside Portfolio; their remaining
   sections are tidy but were not redesigned as thoroughly as the schedule.
-- The declare-payment dialog was verified by reading rather than by driving —
-  a modal is hard to drive reliably by coordinate. The confirmation half of the
-  same pipeline was driven and passed.
+- (Resolved) The declare-payment dialog was raw JavaFX with no design system
+  and no marks on its two mandatory fields; rebuilt, and a declaration driven
+  through it end to end.
 - `docs/palette-options` holds three grounds not chosen. Clay is the one worth
   revisiting if the interface should feel heavier.
 
