@@ -2,6 +2,7 @@ package co.syntropyhq.aqarat.util;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
+import com.lowagie.text.BadElementException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.PageSize;
@@ -89,16 +90,44 @@ final class ReceiptPdf {
     private PdfPTable masthead(Receipt receipt) {
         Phrase brand = paragraph("Aqarat\n", serif, 21, CREAM);
         brand.add(text("BEIRUT", sansBold, 8, new Color(0x7E, 0x91, 0x87)));
-        // A two-line phrase mixing 21pt and 8pt keeps the smaller line's leading,
-        // which drops "BEIRUT" onto the edge of the band and clips it.
-        brand.setLeading(28);
 
         Phrase kind = paragraph(receipt.title + "\n", sansBold, 8, BRASS);
         kind.add(text(receipt.number, sans, 11, CREAM));
 
         PdfPTable inner = frame(new float[] {55, 45});
         inner.setTotalWidth(WIDTH - 40);
-        inner.addCell(cell(brand));
+
+        // The mark beside the wordmark, in its light cut for the dark band. A
+        // receipt is the one thing a client files, and a filed document with no
+        // mark on it is a page of numbers from nobody in particular.
+        //
+        // It gets a column of its own rather than being set inline: inline, the
+        // wordmark's second line wraps back to the left of the cell and prints
+        // "BEIRUT" straight through the mark.
+        com.lowagie.text.Image mark = markImage();
+        PdfPCell lockup;
+        if (mark == null) {
+            lockup = cell(brand);
+        } else {
+            PdfPTable pair = new PdfPTable(new float[] {30, 170});
+            pair.setTotalWidth(200);
+            pair.setLockedWidth(true);
+            PdfPCell art = new PdfPCell(mark, false);
+            art.setBorder(Rectangle.NO_BORDER);
+            art.setPaddingTop(2);
+            pair.addCell(art);
+            PdfPCell words = cell(brand);
+            words.setPaddingLeft(10);
+            // Fixed on the cell, not on the phrase: a cell in text mode uses its
+            // own leading and ignores the phrase's, so a two-line lockup mixing
+            // 21pt and 8pt printed "BEIRUT" through the descender of "Aqarat".
+            words.setLeading(17f, 0f);
+            pair.addCell(words);
+            lockup = new PdfPCell(pair);
+            lockup.setBorder(Rectangle.NO_BORDER);
+            lockup.setPadding(0);
+        }
+        inner.addCell(lockup);
         PdfPCell reference = cell(kind);
         reference.setHorizontalAlignment(Element.ALIGN_RIGHT);
         inner.addCell(reference);
@@ -111,6 +140,23 @@ final class ReceiptPdf {
         PdfPTable table = frame(new float[] {100});
         table.addCell(band);
         return table;
+    }
+
+    /* The light cut of the mark. Missing art costs the receipt its mark and
+       nothing else, so it is skipped rather than thrown. */
+    private static com.lowagie.text.Image markImage() {
+        try (InputStream in = ReceiptPdf.class.getResourceAsStream("/images/mark-light-256.png")) {
+            if (in == null) {
+                return null;
+            }
+            com.lowagie.text.Image image = com.lowagie.text.Image.getInstance(in.readAllBytes());
+            image.scaleToFit(28, 28);
+            return image;
+        } catch (IOException | BadElementException e) {
+            System.err.println("Aqarat: could not place the mark on the receipt — "
+                + e.getMessage());
+            return null;
+        }
     }
 
     /*

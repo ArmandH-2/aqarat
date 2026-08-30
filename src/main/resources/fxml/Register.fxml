@@ -8,6 +8,8 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -25,10 +27,15 @@
                 <Insets top="46" right="52" bottom="46" left="52"/>
             </padding>
 
-            <VBox spacing="1">
-                <Label text="Aqarat" styleClass="auth-brand-word"/>
-                <Label text="BEIRUT" styleClass="auth-brand-place"/>
-            </VBox>
+            <HBox spacing="13" alignment="CENTER_LEFT">
+                <ImageView fitHeight="44" preserveRatio="true">
+                    <Image url="@../images/mark-light-256.png"/>
+                </ImageView>
+                <VBox spacing="1">
+                    <Label text="Aqarat" styleClass="auth-brand-word"/>
+                    <Label text="BEIRUT" styleClass="auth-brand-place"/>
+                </VBox>
+            </HBox>
 
             <Region VBox.vgrow="ALWAYS"/>
 

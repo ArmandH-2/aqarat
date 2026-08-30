@@ -17,6 +17,12 @@ import javafx.stage.Stage;
  * alt-tab, so all four are offered rather than one scaled copy. They are loaded
  * once and shared; the images are immutable and every stage can hold the same
  * instances.
+ *
+ * <p>These are the tiled icons rather than the bare mark. A mark with strokes
+ * this fine, dropped into a 32px slot on a transparent field, is a few dark
+ * splinters — it reads as a missing icon rather than as a decision. The tile is
+ * cream and not white because a white one loses its edges against a light task
+ * bar, which is exactly where it has to survive.
  */
 public final class AppIcons {
 
@@ -34,7 +40,7 @@ public final class AppIcons {
     private static List<Image> load() {
         List<Image> icons = new ArrayList<>();
         for (int size : SIZES) {
-            String path = "/images/logo-" + size + ".png";
+            String path = "/images/icon-" + size + ".png";
             try (var stream = AppIcons.class.getResourceAsStream(path)) {
                 if (stream == null) {
                     System.err.println("Aqarat: window icon " + path + " is missing.");

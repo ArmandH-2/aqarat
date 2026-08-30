@@ -19,12 +19,17 @@
                 <Insets top="20" right="14" bottom="16" left="14"/>
             </padding>
 
-            <!-- Brand. The logo mark is drawn in brand green, which disappears
-                 against the green sidebar, so the wordmark carries it alone. -->
-            <VBox spacing="1">
-                <Label text="Aqarat" styleClass="brand-word"/>
-                <Label text="BEIRUT" styleClass="sidebar-brand-place"/>
-            </VBox>
+            <!-- Brand. The mark is the light cut, because the dark one it was
+                 drawn in disappears against this sidebar. -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <ImageView fitHeight="30" preserveRatio="true">
+                    <Image url="@../images/mark-light-256.png"/>
+                </ImageView>
+                <VBox spacing="1">
+                    <Label text="Aqarat" styleClass="brand-word"/>
+                    <Label text="BEIRUT" styleClass="sidebar-brand-place"/>
+                </VBox>
+            </HBox>
 
             <!-- Nav Items in Scrollable list to guarantee responsiveness -->
             <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS"

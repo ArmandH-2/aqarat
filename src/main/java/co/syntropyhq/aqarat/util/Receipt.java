@@ -10,6 +10,8 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -195,7 +197,9 @@ public final class Receipt {
         Label ref = new Label(number);
         ref.getStyleClass().add("receipt-number");
 
-        VBox left = new VBox(1, mark, place);
+        VBox words = new VBox(1, mark, place);
+        HBox left = new HBox(11, brandMark(30), words);
+        left.setAlignment(Pos.CENTER_LEFT);
         VBox right = new VBox(2, kind, ref);
         right.setAlignment(Pos.TOP_RIGHT);
 
@@ -206,6 +210,24 @@ public final class Receipt {
         head.getStyleClass().add("receipt-masthead");
         head.setAlignment(Pos.TOP_LEFT);
         return head;
+    }
+
+    /* The light cut of the mark, for the masthead's dark ground. Missing art
+       costs the receipt its mark and nothing else, so it is skipped rather than
+       thrown. */
+    private static Node brandMark(double height) {
+        try (var stream = Receipt.class.getResourceAsStream("/images/mark-light-256.png")) {
+            if (stream == null) {
+                return new Region();
+            }
+            ImageView view = new ImageView(new Image(stream));
+            view.setPreserveRatio(true);
+            view.setFitHeight(height);
+            return view;
+        } catch (IOException e) {
+            System.err.println("Aqarat: could not load the receipt mark — " + e.getMessage());
+            return new Region();
+        }
     }
 
     private Node figure() {
