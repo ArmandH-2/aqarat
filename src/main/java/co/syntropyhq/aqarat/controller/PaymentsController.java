@@ -446,29 +446,32 @@ public class PaymentsController {
             card.getStyleClass().addAll("card", "card-hoverable");
             card.setPadding(new Insets(16));
 
+            // Every row said "Contract Installment Payment", which is the kind of
+            // thing it is, not which one it is. Three rows of the same words tell
+            // an agent nothing about what they are confirming.
             String target = payment.getScheduleId() != null
-                ? "Contract Installment Payment" : "Property Reservation Deposit";
+                ? "Instalment payment" : "Reservation deposit";
 
             HBox header = new HBox(12);
             header.setAlignment(Pos.CENTER_LEFT);
 
             Label title = new Label(target);
-            title.getStyleClass().add("section-title");
+            title.getStyleClass().add("body-medium");
             HBox.setHgrow(title, Priority.ALWAYS);
 
             Label pill = UIHelper.createPill(Format.enumLabel(payment.getStatus()), pillClass(payment.getStatus()));
             Label amountLabel = new Label(Format.paymentAmount(payment.getAmount()));
-            amountLabel.getStyleClass().add("section-title");
-            amountLabel.setStyle("-fx-text-fill: -c-primary; -fx-font-weight: 700;");
+            amountLabel.getStyleClass().add("price-display");
 
             header.getChildren().addAll(title, pill, amountLabel);
 
-            Label meta = new Label("Method: " + Format.enumLabel(payment.getMethod()) + " • Declared by: "
-                + userName(payment.getDeclaredBy()) + " · " + Format.dateTime(payment.getCreatedAt()));
-            meta.getStyleClass().add("label-soft");
+            Label meta = new Label(userName(payment.getDeclaredBy()) + " · "
+                + Format.enumLabel(payment.getMethod()) + " · "
+                + Format.date(payment.getCreatedAt().toLocalDate()));
+            meta.getStyleClass().add("hint");
 
-            Label proof = new Label("Proof reference: "
-                + (payment.getProofPath() == null ? "None provided" : payment.getProofPath()));
+            Label proof = new Label(payment.getProofPath() == null
+                ? "No proof attached" : "Proof: " + payment.getProofPath());
             proof.getStyleClass().add("hint");
 
             card.getChildren().addAll(header, meta, proof, actions(payment));

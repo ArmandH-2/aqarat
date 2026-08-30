@@ -432,7 +432,7 @@ public class MyContractsController {
             if (withSettled) {
                 header.getChildren().add(columnLabel("PART PAID", 130, Pos.CENTER_RIGHT));
             }
-            header.getChildren().addAll(grower(), columnLabel("", 190, Pos.CENTER_RIGHT));
+            header.getChildren().addAll(grower(), columnLabel("", 238, Pos.CENTER_RIGHT));
             return header;
         }
 
@@ -478,8 +478,8 @@ public class MyContractsController {
 
             HBox trailing = new HBox(9, pill);
             trailing.setAlignment(Pos.CENTER_RIGHT);
-            trailing.setMinWidth(190);
-            trailing.setPrefWidth(190);
+            trailing.setMinWidth(238);
+            trailing.setPrefWidth(238);
 
             if (row.getStatus() != ScheduleStatus.PAID) {
                 Button declare = new Button("Declare payment");
