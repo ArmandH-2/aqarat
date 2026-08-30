@@ -44,6 +44,7 @@ public final class Receipt {
     private String statusDetail;
     private boolean settled = true;
     private BigDecimal remaining;
+    private final Label printMessage = new Label();
     private String remainingLabel = "Remaining on this contract";
     private String footNote =
         "Issued by Aqarat against the proof supplied. Recorded in the audit trail.";
@@ -133,7 +134,22 @@ public final class Receipt {
         actions.setAlignment(Pos.CENTER_LEFT);
         actions.getStyleClass().add("receipt-actions");
 
-        VBox root = new VBox(document, actions);
+        // Printing reports itself here rather than as a toast. A toast rises in
+        // the bottom-right corner of the window it belongs to, which on a window
+        // this small is exactly where these two buttons are - so the message
+        // covered the button that raised it.
+        printMessage.getStyleClass().add("receipt-print-error");
+        printMessage.setWrapText(true);
+        // Fills the width the document sets without asking for any of its own:
+        // a preferred width taken from the unwrapped text would widen the whole
+        // receipt to fit one line of an error message.
+        printMessage.setMinWidth(0);
+        printMessage.setPrefWidth(1);
+        printMessage.setMaxWidth(Double.MAX_VALUE);
+        printMessage.setVisible(false);
+        printMessage.setManaged(false);
+
+        VBox root = new VBox(document, printMessage, actions);
         root.getStyleClass().add("receipt-window");
 
         Scene scene = new Scene(root);
@@ -265,9 +281,8 @@ public final class Receipt {
         // person pressing Cancel, which would leave the button doing nothing at
         // all with nothing said about why.
         if (Printer.getDefaultPrinter() == null || Printer.getAllPrinters().isEmpty()) {
-            Toast.failed("There is no printer to send this to",
-                "Windows has no printer installed, or the print spooler is not running. "
-                    + "Microsoft Print to PDF counts as one.");
+            say("There is no printer to send this to. Windows has no printer installed, or the "
+                + "print spooler is not running - Microsoft Print to PDF counts as one.");
             return;
         }
         PrinterJob job = PrinterJob.createPrinterJob();
@@ -293,12 +308,23 @@ public final class Receipt {
 
         if (job.printPage(page, copy)) {
             job.endJob();
+            printMessage.setVisible(false);
+            printMessage.setManaged(false);
             Toast.done("Receipt " + number + " sent to the printer");
         } else {
             job.cancelJob();
-            Toast.failed("The receipt could not be printed",
-                "The printer refused the page. Try another printer, or Microsoft Print to PDF.");
+            say("The printer refused the page. Try another printer, or Microsoft Print to PDF.");
         }
+    }
+
+    /* Shows a line above the buttons and grows the window to fit it, since the
+       receipt is fixed-size and would otherwise clip its own message. */
+    private void say(String message) {
+        printMessage.setText(message);
+        printMessage.setVisible(true);
+        printMessage.setManaged(true);
+        Stage stage = (Stage) printMessage.getScene().getWindow();
+        stage.sizeToScene();
     }
 
     private static Window focusedWindow() {
