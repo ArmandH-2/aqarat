@@ -8,17 +8,25 @@ Write-Host "         Aqarat - Automated Setup System         " -ForegroundColor 
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
+$global:Jdk21Home = $null
+$global:Java21Path = $null
+
 function Refresh-ProcessEnvironment {
     $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
     $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machinePath;$userPath"
     
-    $javaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
-    if (-not $javaHome) {
-        $javaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
-    }
-    if ($javaHome) {
-        $env:JAVA_HOME = $javaHome
+    if ($global:Jdk21Home) {
+        $env:JAVA_HOME = $global:Jdk21Home
+        $env:Path = "$global:Jdk21Home\bin;$env:Path"
+    } else {
+        $javaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
+        if (-not $javaHome) {
+            $javaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", "User")
+        }
+        if ($javaHome) {
+            $env:JAVA_HOME = $javaHome
+        }
     }
 }
 
@@ -26,9 +34,6 @@ function Refresh-ProcessEnvironment {
 # 1. Java 21+ Detection & Auto-Installation
 # ==============================================================================
 Write-Host "[1/5] Checking Java 21+ installation..." -ForegroundColor Yellow
-
-$javaPath = $null
-$javaVersion = 0
 
 function Test-JavaVersion {
     param([string]$ExecutablePath)
@@ -44,74 +49,81 @@ function Test-JavaVersion {
     return 0
 }
 
-# 1.1 Check PATH
-$cmdJava = (Get-Command java -ErrorAction SilentlyContinue).Source
-if ($cmdJava) {
-    $ver = Test-JavaVersion $cmdJava
+# 1.1 Search standard install paths for JDK 21 first (overriding old Java 8/11)
+$searchPaths = @(
+    "C:\Program Files\Microsoft\jdk-21*",
+    "C:\Program Files\Eclipse Adoptium\jdk-21*",
+    "C:\Program Files\Java\jdk-21*",
+    "C:\Program Files\BellSoft\LibericaJDK-21*",
+    "C:\Program Files\Amazon Corretto\jdk21*"
+)
+$candidate = Get-ChildItem -Path $searchPaths -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($candidate) {
+    $candidateJava = Join-Path $candidate.FullName "bin\java.exe"
+    $ver = Test-JavaVersion $candidateJava
     if ($ver -ge 21) {
-        $javaPath = $cmdJava
-        $javaVersion = $ver
+        $global:Jdk21Home = $candidate.FullName
+        $global:Java21Path = $candidateJava
     }
 }
 
-# 1.2 Check JAVA_HOME
-if (-not $javaPath -and $env:JAVA_HOME) {
+# 1.2 Check JAVA_HOME if not already found
+if (-not $global:Jdk21Home -and $env:JAVA_HOME) {
     $homeJava = Join-Path $env:JAVA_HOME "bin\java.exe"
     $ver = Test-JavaVersion $homeJava
     if ($ver -ge 21) {
-        $javaPath = $homeJava
-        $javaVersion = $ver
-        $env:Path = "$($env:JAVA_HOME)\bin;$env:Path"
+        $global:Jdk21Home = $env:JAVA_HOME
+        $global:Java21Path = $homeJava
     }
 }
 
-# 1.3 Search standard install paths
-if (-not $javaPath) {
-    $searchPaths = @(
-        "C:\Program Files\Microsoft\jdk-21*",
-        "C:\Program Files\Eclipse Adoptium\jdk-21*",
-        "C:\Program Files\Java\jdk-21*",
-        "C:\Program Files\BellSoft\LibericaJDK-21*",
-        "C:\Program Files\Amazon Corretto\jdk21*"
-    )
-    $candidate = Get-ChildItem -Path $searchPaths -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($candidate) {
-        $candidateJava = Join-Path $candidate.FullName "bin\java.exe"
-        $ver = Test-JavaVersion $candidateJava
+# 1.3 Check default PATH java
+if (-not $global:Jdk21Home) {
+    $cmdJava = (Get-Command java -ErrorAction SilentlyContinue).Source
+    if ($cmdJava) {
+        $ver = Test-JavaVersion $cmdJava
         if ($ver -ge 21) {
-            $javaPath = $candidateJava
-            $javaVersion = $ver
-            $env:JAVA_HOME = $candidate.FullName
-            $env:Path = "$($candidate.FullName)\bin;$env:Path"
-            [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $candidate.FullName, "User")
+            $global:Java21Path = $cmdJava
+            # Infer home if in bin
+            if ($cmdJava -match '^(.*)\\bin\\java\.exe$') {
+                $global:Jdk21Home = $matches[1]
+            }
         }
     }
 }
 
-# 1.4 Auto-install via winget if missing
-if (-not $javaPath) {
-    Write-Host "  -> Java 21 not found. Attempting automatic installation via winget..." -ForegroundColor Yellow
+# 1.4 Auto-install via winget if missing or if only older Java was found
+if (-not $global:Jdk21Home -and -not $global:Java21Path) {
+    Write-Host "  -> Java 21 not found (or old Java version detected). Installing JDK 21 via winget..." -ForegroundColor Yellow
     try {
         winget install --id Microsoft.OpenJDK.21 --silent --accept-source-agreements --accept-package-agreements
-        Refresh-ProcessEnvironment
         
-        # Scan again after install
+        # Scan standard install path after installation
         $candidate = Get-ChildItem -Path "C:\Program Files\Microsoft\jdk-21*" -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($candidate) {
-            $javaPath = Join-Path $candidate.FullName "bin\java.exe"
-            $javaVersion = 21
-            $env:JAVA_HOME = $candidate.FullName
-            $env:Path = "$($candidate.FullName)\bin;$env:Path"
-            [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $candidate.FullName, "User")
-            Write-Host "  -> Java 21 successfully installed and configured!" -ForegroundColor Green
+            $global:Jdk21Home = $candidate.FullName
+            $global:Java21Path = Join-Path $candidate.FullName "bin\java.exe"
+            Write-Host "  -> Java 21 successfully installed!" -ForegroundColor Green
         }
     } catch {
         Write-Host "  -> winget installation encountered an error." -ForegroundColor Yellow
     }
 }
 
-if ($javaPath) {
-    Write-Host "  -> Java $javaVersion ready ($javaPath)" -ForegroundColor Green
+# Apply JDK 21 to current process and permanently in registry
+if ($global:Jdk21Home) {
+    $env:JAVA_HOME = $global:Jdk21Home
+    $env:Path = "$global:Jdk21Home\bin;$env:Path"
+    try {
+        [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $global:Jdk21Home, "User")
+        $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+        if ($userPath -notmatch [regex]::Escape("$global:Jdk21Home\bin")) {
+            [System.Environment]::SetEnvironmentVariable("Path", "$global:Jdk21Home\bin;$userPath", "User")
+        }
+    } catch {}
+    Write-Host "  -> Configured JDK 21 ($global:Jdk21Home)" -ForegroundColor Green
+} elseif ($global:Java21Path) {
+    Write-Host "  -> Java 21 ready ($global:Java21Path)" -ForegroundColor Green
 } else {
     Write-Host "  -> [WARNING] Java 21 could not be detected automatically." -ForegroundColor Red
     Write-Host "     Please install JDK 21 from: https://adoptium.net/temurin/releases/?version=21" -ForegroundColor Yellow
@@ -362,6 +374,10 @@ Write-Host "[5/5] Resolving Maven dependencies and compiling..." -ForegroundColo
 $mvnwCmd = Join-Path $PSScriptRoot "mvnw.cmd"
 
 if (Test-Path $mvnwCmd) {
+    if ($global:Jdk21Home) {
+        $env:JAVA_HOME = $global:Jdk21Home
+        $env:Path = "$global:Jdk21Home\bin;$env:Path"
+    }
     try {
         & $mvnwCmd compile -q
         Write-Host "  -> Application compiled and all dependencies cached successfully!" -ForegroundColor Green
