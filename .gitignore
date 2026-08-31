@@ -38,3 +38,7 @@ desktop.ini
 # Brand source files. The derived assets the application loads are committed
 # under src/main/resources/images.
 Artifacts/
+
+# Report build intermediates — the DOCX and its sources are committed, the rest is regenerable
+report/build/
+report/reference.docx
