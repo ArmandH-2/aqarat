@@ -42,3 +42,49 @@ SELECT email, full_name, role, status
 FROM app_user
 WHERE email LIKE '%@syntropyhq.co'
 ORDER BY role;
+
+/*
+    A portfolio worth filming.
+
+    A brand-new account owns nothing, so the Portfolio panel renders four zero
+    counters and an empty-state placeholder. That is correct behaviour and a
+    terrible thing to put in a launch film — it reads as an unfinished product
+    rather than an empty account.
+
+    So the demonstration customer is given a spread across the statuses the
+    panel counts, drawn from central Beirut districts at prices that read as
+    real. Selection is by criteria and ordered by id rather than by hardcoded
+    ids, so a reseed produces the same portfolio again.
+
+    This curates which rows are visible. It does not change what the software
+    does with them.
+*/
+
+DECLARE @customer INT = (SELECT id FROM app_user WHERE email = 'customer@syntropyhq.co');
+
+DECLARE @filmable TABLE (id INT PRIMARY KEY);
+
+INSERT INTO @filmable (id)
+SELECT id FROM (
+    SELECT p.id,
+           ROW_NUMBER() OVER (PARTITION BY p.status ORDER BY p.id) AS rank_in_status,
+           p.status
+    FROM property p
+    JOIN district d ON d.id = p.district_id
+    WHERE d.name IN ('Achrafieh', 'Ras Beirut', 'Hamra', 'Verdun',
+                     'Gemmayzeh', 'Mar Mikhael', 'Badaro', 'Sodeco')
+      AND p.asking_price BETWEEN 120000 AND 900000
+      AND p.status IN ('AVAILABLE', 'PENDING_REVIEW', 'NEEDS_INFO', 'UNDER_CONTRACT')
+) ranked
+WHERE (status = 'AVAILABLE'       AND rank_in_status <= 4)
+   OR (status = 'PENDING_REVIEW'  AND rank_in_status <= 2)
+   OR (status = 'NEEDS_INFO'      AND rank_in_status <= 1)
+   OR (status = 'UNDER_CONTRACT'  AND rank_in_status <= 1);
+
+UPDATE property SET owner_id = @customer WHERE id IN (SELECT id FROM @filmable);
+
+SELECT p.status, COUNT(*) AS owned
+FROM property p
+WHERE p.owner_id = @customer
+GROUP BY p.status
+ORDER BY p.status;
