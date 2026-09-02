@@ -42,3 +42,10 @@ Artifacts/
 # Report build intermediates — the DOCX and its sources are committed, the rest is regenerable
 report/build/
 report/reference.docx
+
+# Remotion film project
+video/node_modules/
+video/out/
+video/.remotion/
+captures/
+video/public/captures/

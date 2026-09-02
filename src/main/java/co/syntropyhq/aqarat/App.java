@@ -1,6 +1,7 @@
 package co.syntropyhq.aqarat;
 
 import co.syntropyhq.aqarat.util.AppIcons;
+import co.syntropyhq.aqarat.util.CaptureGeometry;
 import co.syntropyhq.aqarat.util.SceneCapture;
 import java.io.IOException;
 import javafx.application.Application;
@@ -28,7 +29,7 @@ public class App extends Application {
     public void start(Stage stage) throws IOException {
         loadFonts();
         Parent root = FXMLLoader.load(getClass().getResource("/fxml/Login.fxml"));
-        Scene scene = new Scene(root, 1280, 800);
+        Scene scene = new Scene(root, CaptureGeometry.sceneWidth(), CaptureGeometry.sceneHeight());
         scene.getStylesheets().add(getClass().getResource("/css/app.css").toExternalForm());
         stage.setTitle("Aqarat");
         AppIcons.apply(stage);

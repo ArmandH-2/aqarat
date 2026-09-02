@@ -32,6 +32,12 @@
              ./mvnw javafx:run -Daqarat.capture.dir=C:/tmp/shots -->
         <aqarat.capture.dir></aqarat.capture.dir>
 
+        <!-- Empty by default. Set on the command line to size the window so a
+             screen recording lands on an exact pixel size, whatever the
+             display's scale factor:
+             ./mvnw javafx:run -Daqarat.capture.size=1920x1080 -->
+        <aqarat.capture.size></aqarat.capture.size>
+
         <javafx.version>21.0.8</javafx.version>
         <mssql.version>12.10.1.jre11</mssql.version>
         <hikari.version>5.1.0</hikari.version>
@@ -168,6 +174,7 @@
                     <mainClass>${main.class}</mainClass>
                     <options>
                         <option>-Daqarat.capture.dir=${aqarat.capture.dir}</option>
+                        <option>-Daqarat.capture.size=${aqarat.capture.size}</option>
                     </options>
                 </configuration>
             </plugin>
