@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AuditDao {
@@ -108,6 +109,43 @@ public class AuditDao {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, entityType);
             statement.setInt(2, entityId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<AuditLog> entries = new ArrayList<>();
+                while (resultSet.next()) {
+                    entries.add(mapRow(resultSet));
+                }
+                return entries;
+            }
+        }
+    }
+
+    /**
+     * The trail for many rows of one entity type in a single query.
+     *
+     * <p>The dossier needs the history of a property and of everything hanging
+     * off it. Asking per row would be one query per viewing, reservation,
+     * contract and document on the page; this is one per type. The IN list is
+     * built from generated placeholders with the ids bound to them, never from
+     * the values themselves.
+     */
+    public List<AuditLog> findByEntities(Connection connection, String entityType,
+            List<Integer> entityIds) throws SQLException {
+        if (entityIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        String placeholders = String.join(",", Collections.nCopies(entityIds.size(), "?"));
+        String sql = """
+            SELECT id, user_id, entity_type, entity_id, action, old_value, new_value, created_at
+            FROM audit_log
+            WHERE entity_type = ? AND entity_id IN (%s)
+            ORDER BY created_at DESC
+            """.formatted(placeholders);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, entityType);
+            int parameter = 2;
+            for (Integer entityId : entityIds) {
+                statement.setInt(parameter++, entityId);
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<AuditLog> entries = new ArrayList<>();
                 while (resultSet.next()) {
