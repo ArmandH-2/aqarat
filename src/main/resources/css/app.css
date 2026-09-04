@@ -572,7 +572,7 @@
 .button-danger:hover { -fx-background-color: #FADFDD; }
 
 .button:focused {
-    -fx-effect: dropshadow(gaussian, rgba(0, 66, 37, 0.30), 0, 0, 0, 3);
+    -fx-effect: dropshadow(gaussian, rgba(0, 66, 37, 0.30), 6, 0.4, 0, 0);
 }
 
 .tab-pill-button {
@@ -591,6 +591,9 @@
     -fx-text-fill: -c-text-primary;
     -fx-font-weight: 600;
 }
+/* A tab has no filled ground, so the button focus glow reads as a smear
+   behind the underline. The active underline already says where you are. */
+.tab-pill-button:focused { -fx-effect: null; }
 
 /* ==========================================================================
    PILLS & CHIPS
