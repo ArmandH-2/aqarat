@@ -24,6 +24,11 @@
         <!-- Back strip -->
         <HBox styleClass="detail-backstrip" alignment="CENTER_LEFT">
             <Button text="← Back to results" styleClass="button, button-ghost" onAction="#handleBack"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <!-- Staff only, and hidden entirely otherwise: the file names the
+                 clients who asked to view this property. -->
+            <Button fx:id="dossierButton" text="Property file" styleClass="button, button-ghost"
+                    managed="false" visible="false" onAction="#handleOpenDossier"/>
         </HBox>
 
         <!-- ===================== Gallery =====================

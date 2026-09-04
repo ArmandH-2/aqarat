@@ -1,5 +1,10 @@
 package co.syntropyhq.aqarat.controller;
 
+import co.syntropyhq.aqarat.util.DocumentStore;
+import co.syntropyhq.aqarat.service.DocumentService;
+import co.syntropyhq.aqarat.model.NewDocument;
+import co.syntropyhq.aqarat.model.DocumentType;
+import co.syntropyhq.aqarat.dao.PropertyDocumentDao;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
@@ -139,6 +144,16 @@ public class SubmitPropertyController {
     @FXML
     private FlowPane photosContainer;
     @FXML
+    private FlowPane documentsContainer;
+    @FXML
+    private ComboBox<DocumentType> documentTypeCombo;
+    @FXML
+    private Label documentCountBadge;
+    @FXML
+    private Label documentListLabel;
+    @FXML
+    private Label documentError;
+    @FXML
     private Label photoCountBadge;
     @FXML
     private Label photoListLabel;
@@ -167,6 +182,9 @@ public class SubmitPropertyController {
     private VBox comparablesBox;
 
     private final List<Path> selectedPhotos = new ArrayList<>();
+    private final List<NewDocument> selectedDocuments = new ArrayList<>();
+    private final DocumentService documentService = new DocumentService(
+        new PropertyDocumentDao(), new PropertyDao(), new AuditService(new AuditDao()));
 
     private final ReferenceService referenceService =
         new ReferenceService(new DistrictDao(), new PropertyTypeDao());
@@ -192,6 +210,10 @@ public class SubmitPropertyController {
         dealTypeCombo.getSelectionModel().select(DealType.SALE);
         dealTypeCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateDealTypeUi(newValue));
         updateDealTypeUi(DealType.SALE);
+        setLabelConverter(documentTypeCombo, Format::enumLabel);
+        documentTypeCombo.setItems(FXCollections.observableArrayList(DocumentType.values()));
+        documentTypeCombo.getSelectionModel().select(DocumentType.TITLE_DEED);
+        refreshDocumentChips();
         wireLiveValuation();
     }
 
@@ -563,8 +585,9 @@ public class SubmitPropertyController {
         for (Path path : selectedPhotos) {
             photos.add(new NewPhoto(path));
         }
+        int propertyId;
         try {
-            propertyService.submit(property, photos);
+            propertyId = propertyService.submit(property, photos);
         } catch (IOException e) {
             AlertUtil.showError("One of the photos could not be read. Check the file exists and is a JPG or PNG, then try again.");
             return;
@@ -572,9 +595,99 @@ public class SubmitPropertyController {
             AlertUtil.showError("Could not reach the database. Try again.");
             return;
         }
+        if (!storeDocuments(propertyId)) {
+            return;
+        }
         AlertUtil.showInfo("Submitted for review",
             "An agent checks the details and the valuation before it is listed. You will find it under Portfolio.");
         Router.show(Panel.MY_PROPERTIES);
+    }
+
+    /**
+     * Picks one ownership document and checks it immediately.
+     *
+     * <p>Checked here rather than at submit: an owner who has chosen the wrong
+     * file should be told while they are still looking at the chooser, not
+     * after filling in the rest of the form.
+     */
+    /*
+     * The documents are written after the property, because they need its id.
+     * A failure here leaves a submitted property with no evidence attached,
+     * which the owner can put right from their portfolio - so it says exactly
+     * that rather than pretending the whole submission failed.
+     */
+    private boolean storeDocuments(int propertyId) {
+        if (selectedDocuments.isEmpty()) {
+            return true;
+        }
+        try {
+            documentService.upload(propertyId, selectedDocuments, SessionManager.getCurrentUser());
+            return true;
+        } catch (IOException | SQLException | DocumentService.NotPermittedException e) {
+            AlertUtil.showUndone("The property was submitted, but its documents were not attached.",
+                "Open it under Portfolio and attach them there.");
+            Router.show(Panel.MY_PROPERTIES);
+            return false;
+        }
+    }
+
+    @FXML
+    private void handleAddDocument() {
+        FieldError.clear(documentTypeCombo, documentError);
+        DocumentType type = documentTypeCombo.getValue();
+        if (type == null) {
+            FieldError.show(documentTypeCombo, documentError, "Say what the document is first.");
+            return;
+        }
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose a document");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+            "Documents (*.pdf, *.jpg, *.jpeg, *.png)", "*.pdf", "*.jpg", "*.jpeg", "*.png"));
+        File chosen = chooser.showOpenDialog(null);
+        if (chosen == null) {
+            return;
+        }
+        try {
+            DocumentStore.validate(chosen.toPath());
+        } catch (IOException e) {
+            FieldError.show(documentTypeCombo, documentError, e.getMessage());
+            return;
+        }
+        selectedDocuments.add(new NewDocument(chosen.toPath(), type));
+        refreshDocumentChips();
+    }
+
+    private void refreshDocumentChips() {
+        if (documentsContainer == null) {
+            return;
+        }
+        documentsContainer.getChildren().clear();
+        documentCountBadge.setText(selectedDocuments.size()
+            + (selectedDocuments.size() == 1 ? " document" : " documents"));
+        documentListLabel.setText(selectedDocuments.isEmpty()
+            ? "Nothing attached yet. A listing cannot go live until staff verify one."
+            : "Private to you and Aqarat staff.");
+
+        for (int i = 0; i < selectedDocuments.size(); i++) {
+            NewDocument document = selectedDocuments.get(i);
+            final int index = i;
+
+            Label name = new Label(Format.enumLabel(document.getDocType()) + " · "
+                + document.getPath().getFileName());
+            name.getStyleClass().add("hint");
+
+            Button remove = new Button("×");
+            remove.getStyleClass().addAll("button", "button-ghost", "button-compact");
+            remove.setOnAction(event -> {
+                selectedDocuments.remove(index);
+                refreshDocumentChips();
+            });
+
+            HBox chip = new HBox(6, name, remove);
+            chip.setAlignment(Pos.CENTER_LEFT);
+            chip.getStyleClass().add("spec-chip");
+            documentsContainer.getChildren().add(chip);
+        }
     }
 
     @FXML

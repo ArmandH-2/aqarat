@@ -78,8 +78,33 @@ public final class Format {
     // "PENDING_REVIEW" becomes "Pending review". This is the only place in
     // the project allowed to print an enum name to a user.
     public static String enumLabel(Enum<?> value) {
-        String lower = value.name().toLowerCase(Locale.ENGLISH).replace('_', ' ');
+        return constantLabel(value.name());
+    }
+
+    // The same rule for a constant that arrives as text rather than as an
+    // enum: audit_log.action is a VARCHAR verb, so it has no enum to pass.
+    public static String constantLabel(String constant) {
+        if (constant == null || constant.isBlank()) {
+            return "";
+        }
+        String lower = constant.toLowerCase(Locale.ENGLISH).replace('_', ' ');
         return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+    }
+
+    /**
+     * An audit value, which may be a constant or may be a sentence.
+     *
+     * <p>old_value and new_value carry whatever the service wrote: a status
+     * name, a count, or the reason somebody typed. Only something shaped like
+     * a constant is reworded; prose is left exactly as it was written, because
+     * lower-casing a person's explanation and re-capitalising it would be
+     * putting words in their mouth.
+     */
+    public static String valueLabel(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.matches("[A-Z][A-Z0-9_]*") ? constantLabel(value) : value;
     }
 
     private static String wholeNumber(BigDecimal value) {

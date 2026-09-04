@@ -7,33 +7,48 @@ echo                 Aqarat Launcher
 echo =================================================
 echo.
 
-:: 1. Smart Java 21 Discovery
-set "JAVA_FOUND=0"
+:: 1. Forceful Java 21 Discovery (bypasses any older Java 8/11 on system)
+set "JDK21_FOUND=0"
 
-:: 1.1 Check if java command is available
-where java >nul 2>&1
-if %ERRORLEVEL% equ 0 (
-    set "JAVA_FOUND=1"
+:: 1.1 Probe standard Windows JDK 21 installation folders first
+for /d %%D in (
+    "C:\Program Files\Microsoft\jdk-21*"
+    "C:\Program Files\Eclipse Adoptium\jdk-21*"
+    "C:\Program Files\Java\jdk-21*"
+    "C:\Program Files\BellSoft\LibericaJDK-21*"
+    "C:\Program Files\Amazon Corretto\jdk21*"
+) do (
+    if exist "%%D\bin\java.exe" (
+        set "JAVA_HOME=%%D"
+        set "PATH=%%D\bin;!PATH!"
+        set "JDK21_FOUND=1"
+        goto java_ready
+    )
 )
 
-:: 1.2 If not found in PATH, check JAVA_HOME
-if %JAVA_FOUND% equ 0 (
-    if defined JAVA_HOME (
-        if exist "%JAVA_HOME%\bin\java.exe" (
-            set "PATH=%JAVA_HOME%\bin;%PATH%"
-            set "JAVA_FOUND=1"
+:: 1.2 Check JAVA_HOME if set
+if defined JAVA_HOME (
+    if exist "%JAVA_HOME%\bin\java.exe" (
+        for /f "tokens=3" %%v in ('"%JAVA_HOME%\bin\java.exe" -version 2^>^&1 ^| findstr /i "version"') do (
+            set "VER_RAW=%%~v"
+            set "VER_MAJOR=!VER_RAW:~0,2!"
+            if !VER_MAJOR! geq 21 (
+                set "PATH=%JAVA_HOME%\bin;!PATH!"
+                set "JDK21_FOUND=1"
+                goto java_ready
+            )
         )
     )
 )
 
-:: 1.3 If still not found, probe standard Windows JDK 21 paths
-if %JAVA_FOUND% equ 0 (
-    for /d %%D in ("C:\Program Files\Microsoft\jdk-21*" "C:\Program Files\Eclipse Adoptium\jdk-21*" "C:\Program Files\Java\jdk-21*" "C:\Program Files\BellSoft\LibericaJDK-21*" "C:\Program Files\Amazon Corretto\jdk21*") do (
-        if exist "%%D\bin\java.exe" (
-            set "JAVA_HOME=%%D"
-            set "PATH=%%D\bin;!PATH!"
-            set "JAVA_FOUND=1"
-            echo [INFO] Detected Java 21 at: %%D
+:: 1.3 Check default java in PATH
+where java >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    for /f "tokens=3" %%v in ('java -version 2^>^&1 ^| findstr /i "version"') do (
+        set "VER_RAW=%%~v"
+        set "VER_MAJOR=!VER_RAW:~0,2!"
+        if !VER_MAJOR! geq 21 (
+            set "JDK21_FOUND=1"
             goto java_ready
         )
     )
@@ -41,9 +56,9 @@ if %JAVA_FOUND% equ 0 (
 
 :java_ready
 :: 1.4 If Java 21 or config is completely missing, trigger automated setup
-if %JAVA_FOUND% equ 0 (
-    echo [WARNING] Java 21 is not detected on your system.
-    echo Launching automated setup to configure requirements...
+if %JDK21_FOUND% equ 0 (
+    echo [WARNING] Java 21 is not detected or an older Java version was found.
+    echo Launching automated setup to configure JDK 21 and requirements...
     echo.
     call "%~dp0setup.bat"
     goto end

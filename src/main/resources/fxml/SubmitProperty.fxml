@@ -135,6 +135,32 @@
                         </HBox>
                     </VBox>
 
+                    <!-- Ownership evidence. Private: staff and the owner, nobody else.
+                         Kept beside the photographs because both are files the owner
+                         attaches, and deliberately separate because only one of them
+                         is ever shown to the public. -->
+                    <VBox styleClass="card" spacing="15">
+                        <HBox alignment="CENTER_LEFT" spacing="10">
+                            <Label text="Proof of ownership" styleClass="section-title"
+                                   HBox.hgrow="ALWAYS"/>
+                            <Label fx:id="documentCountBadge" styleClass="pill, pill-neutral"/>
+                        </HBox>
+                        <Label styleClass="hint" wrapText="true"
+                               text="Aqarat lists a property once a member of staff has seen proof that you are entitled to sell or let it. These files are private - only you and Aqarat staff can open them. PDF, JPG or PNG, up to 10 MB each."/>
+                        <FlowPane fx:id="documentsContainer" hgap="9" vgap="9"/>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <ComboBox fx:id="documentTypeCombo" prefWidth="210"
+                                      promptText="What is it?"/>
+                            <Button text="Attach document" styleClass="button, button-secondary"
+                                    minWidth="-Infinity" onAction="#handleAddDocument"/>
+                        </HBox>
+                        <!-- On its own line: sharing the row with the picker and the
+                             button squeezed all three, and the button lost its label. -->
+                        <Label fx:id="documentListLabel" styleClass="hint" wrapText="true"/>
+                        <Label fx:id="documentError" styleClass="field-error" managed="false"
+                               visible="false" wrapText="true"/>
+                    </VBox>
+
                     <VBox styleClass="card" spacing="15">
                         <Label text="Price and terms" styleClass="section-title"/>
 

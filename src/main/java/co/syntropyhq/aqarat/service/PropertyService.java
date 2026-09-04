@@ -1,6 +1,7 @@
 package co.syntropyhq.aqarat.service;
 
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyDocumentDao;
 import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertySearch;
@@ -25,13 +26,26 @@ public class PropertyService {
     private final PropertyDao propertyDao;
     private final PropertyPhotoDao propertyPhotoDao;
     private final PropertyMessageDao propertyMessageDao;
+    private final PropertyDocumentDao propertyDocumentDao;
     private final AuditService auditService;
 
+    // The four-argument form predates ownership evidence and is what the
+    // screens that never publish anything still call. It supplies its own
+    // document DAO rather than making fourteen call sites name one they do
+    // not use; the DAO holds no state, so there is nothing to share.
     public PropertyService(PropertyDao propertyDao, PropertyPhotoDao propertyPhotoDao,
             PropertyMessageDao propertyMessageDao, AuditService auditService) {
+        this(propertyDao, propertyPhotoDao, propertyMessageDao, new PropertyDocumentDao(),
+            auditService);
+    }
+
+    public PropertyService(PropertyDao propertyDao, PropertyPhotoDao propertyPhotoDao,
+            PropertyMessageDao propertyMessageDao, PropertyDocumentDao propertyDocumentDao,
+            AuditService auditService) {
         this.propertyDao = propertyDao;
         this.propertyPhotoDao = propertyPhotoDao;
         this.propertyMessageDao = propertyMessageDao;
+        this.propertyDocumentDao = propertyDocumentDao;
         this.auditService = auditService;
     }
 
@@ -179,18 +193,98 @@ public class PropertyService {
      */
     public void requestWithdrawal(int propertyId, String reason)
             throws SQLException, InvalidTransitionException {
-        review(propertyId, PropertyStatus.WITHDRAWAL_REQUESTED, reason);
+        applyReview(propertyId, PropertyStatus.WITHDRAWAL_REQUESTED, reason);
     }
 
     /**
      * Records an agent's decision on a submission: the new status and the note
      * explaining it are written together, so a rejection or a request for more
-     * information can never reach the owner without its reason. Pass a null
-     * note for an approval, which needs none. The note is also appended to the
-     * property's discussion thread, so the agent's question and the owner's
-     * reply live in the same place.
+     * information can never reach the owner without its reason. The note is
+     * also appended to the property's discussion thread, so the agent's
+     * question and the owner's reply live in the same place.
+     *
+     * <p>Publishing does not come through here. It has a check of its own and
+     * an exception of its own, so it gets its own method - see
+     * {@link #publish(int, String)}. Handing AVAILABLE to this method is a
+     * programming mistake rather than something a user can do, so it fails
+     * immediately rather than quietly skipping the check.
      */
     public void review(int propertyId, PropertyStatus decision, String reviewNote)
+            throws SQLException, InvalidTransitionException {
+        if (decision == PropertyStatus.AVAILABLE) {
+            throw new IllegalArgumentException(
+                "Publishing goes through publish(), which checks ownership evidence first.");
+        }
+        applyReview(propertyId, decision, reviewNote);
+    }
+
+    /**
+     * Approving a submission and putting it on the market.
+     *
+     * <p>A listing goes live only once a member of staff has verified at least
+     * one ownership document, because everything downstream - a viewing, a
+     * deposit, a contract - assumes the person selling is entitled to sell.
+     *
+     * <p>The agent may publish anyway, and must say why. This is the same
+     * shape the valuation flag already has (DECISIONS.md 5): the system's job
+     * is to raise the objection and record what the human decided, not to
+     * overrule them. The reason is written to the audit trail and to the
+     * review thread, so an unevidenced listing can always be traced back to
+     * the person who allowed it.
+     *
+     * @param overrideReason why this listing may go live with no verified
+     *                       document, or null when one has been verified
+     */
+    public void publish(int propertyId, String overrideReason)
+            throws SQLException, InvalidTransitionException, UnverifiedOwnershipException {
+        String reason = overrideReason == null || overrideReason.isBlank()
+            ? null : overrideReason.trim();
+        try (Connection connection = Db.get()) {
+            if (propertyDocumentDao.countVerified(connection, propertyId) == 0 && reason == null) {
+                throw new UnverifiedOwnershipException(
+                    "No ownership document on this property has been verified yet. "
+                        + "Verify one, or publish anyway and record why.");
+            }
+        }
+        applyReview(propertyId, PropertyStatus.AVAILABLE, reason);
+        if (reason != null) {
+            recordOverride(propertyId, reason);
+        }
+    }
+
+    // A second, deliberately separate audit line. The status change already
+    // records that the property was published; this records that it was
+    // published without evidence, which is the entry an auditor is looking
+    // for and should not have to infer from an absence.
+    /**
+     * Refusing an owner's request to take a live listing down.
+     *
+     * <p>A separate road to AVAILABLE from {@link #publish(int, String)} and
+     * deliberately not gated: this listing was already on the market, so
+     * demanding evidence now would punish the agent for the owner having
+     * asked a question. Evidence is required to put a property on the market,
+     * not to leave it there.
+     */
+    public void declineWithdrawal(int propertyId)
+            throws SQLException, InvalidTransitionException {
+        applyReview(propertyId, PropertyStatus.AVAILABLE, null);
+    }
+
+    private void recordOverride(int propertyId, String reason) throws SQLException {
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                auditService.record(connection, "property", propertyId,
+                    "PUBLISH_WITHOUT_EVIDENCE", null, reason);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private void applyReview(int propertyId, PropertyStatus decision, String reviewNote)
             throws SQLException, InvalidTransitionException {
         try (Connection connection = Db.get()) {
             connection.setAutoCommit(false);
@@ -408,6 +502,15 @@ public class PropertyService {
     public static class InvalidTransitionException extends Exception {
 
         public InvalidTransitionException(String message) {
+            super(message);
+        }
+    }
+
+    // Refusing to publish is a business rule, not a state-machine violation:
+    // the transition is perfectly legal, the evidence for it is missing.
+    public static class UnverifiedOwnershipException extends Exception {
+
+        public UnverifiedOwnershipException(String message) {
             super(message);
         }
     }

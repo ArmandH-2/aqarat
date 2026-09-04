@@ -151,6 +151,15 @@ Loops that are part of the design and must be built: a review bouncing back as `
 a rejection with a reason, a viewing cancelled or marked no-show, a reservation lapsing when
 `expires_at` passes, and a lease reaching `end_date` and returning the property to `AVAILABLE`.
 
+**Nothing is published without evidence.** An owner attaches proof of ownership — a deed, an
+ID, an agency mandate — and a member of staff verifies it before `PENDING_REVIEW` can become
+`AVAILABLE`. An agent may publish anyway and must write a reason, which is recorded against
+their name. This is the same shape as the valuation flag: the system objects, a person decides,
+and both are recorded. Declining an owner's removal request also reaches `AVAILABLE` and is
+deliberately **not** gated — evidence is required to put a property on the market, not to leave
+it there. `PropertyService.publish` owns the gated road; `PropertyService.declineWithdrawal`
+owns the other. The reasoning is in DECISIONS.md 21.
+
 **A contract without a reservation.** A reservation is the usual road to a contract, but not
 the only one: a contract may be drafted against a property that is simply `AVAILABLE`, so
 `AVAILABLE` moves directly to `UNDER_CONTRACT` as well as through `RESERVED`. The alternative —
@@ -178,6 +187,12 @@ reassign. There is no manager approval step — that role was merged into admin.
 time, so changing the agency rate later does not rewrite history. For a sale it applies to the
 sale price. For a lease it applies to the total lease value, meaning `monthly_rent` multiplied
 by `term_months`. `commission_amount` is computed once, on activation, and stored.
+
+**Deposits are credited, not collected twice.** A reservation deposit is money the client has
+already paid the agency. When the contract activates, the generated schedule covers the contract
+total *less* any confirmed deposit that client has put down on that property, which is what
+earnest money does in a real sale. Only confirmed deposits count, and only the signing client's -
+an earlier buyer's lapsed reservation never reduces what this one owes.
 
 **Overdue payments.** A schedule row is overdue when `due_date` plus the grace period from
 `system_setting` has passed and `amount_paid < amount_due`.
@@ -236,7 +251,7 @@ property. It does, however, catch the villa listed at one dollar.
 
 ## 8. Data model
 
-Thirteen tables. Full DDL in `db/schema.sql`.
+Fourteen tables. Full DDL in `db/schema.sql`.
 
 | Table | Purpose |
 |---|---|
@@ -244,7 +259,8 @@ Thirteen tables. Full DDL in `db/schema.sql`.
 | `district` | Reference. Carries `avg_price_per_sqm`, used by the estimator and the seeder. |
 | `property_type` | Reference. |
 | `property` | The listing. Owner, agent, specs, asking price, term limits, status. |
-| `property_photo` | Many per property. |
+| `property_photo` | Many per property. The public gallery. |
+| `property_document` | Proof of ownership. Private to the owner and staff. Carries who verified it and when. |
 | `valuation` | History of estimates for a property. Estimate, bounds, flag, breakdown, comparables. |
 | `viewing` | A client's request for a visit, and its outcome. |
 | `reservation` | Deposit and expiry date. One active per property. |
@@ -281,6 +297,7 @@ constraint, the Java enum constant, and the seed data.
 | `DealType` | `SALE`, `RENT` |
 | `PropertyStatus` | `DRAFT`, `PENDING_REVIEW`, `NEEDS_INFO`, `REJECTED`, `AVAILABLE`, `RESERVED`, `UNDER_CONTRACT`, `CLOSED`, `WITHDRAWAL_REQUESTED`, `WITHDRAWN` |
 | `ValuationFlag` | `OK`, `ABOVE_MARKET`, `IMPLAUSIBLE` |
+| `DocumentType` | `TITLE_DEED`, `NATIONAL_ID`, `AGENCY_MANDATE`, `POWER_OF_ATTORNEY`, `INHERITANCE_DEED`, `OTHER` |
 | `ViewingStatus` | `REQUESTED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW` |
 | `ReservationStatus` | `ACTIVE`, `CONVERTED`, `LAPSED`, `CANCELLED` |
 | `ContractType` | `SALE`, `LEASE` |
@@ -315,6 +332,7 @@ are the only separate windows.
 | `MainShell` | Sidebar, content area, current user |
 | `BrowseListings` | Search, filters, result cards |
 | `PropertyDetails` | Gallery, specs, price. Actions vary by role |
+| `PropertyDossier` | Staff only. One property's whole file: owner, ownership evidence, valuations, viewings, reservations, contracts, audit timeline |
 | `MyProperties` | Owner's submissions, status, valuation, review note, withdraw |
 | `SubmitProperty` | Submission form |
 | `MyContracts` | Client's contracts, payment schedule, declare payment, receipts |
@@ -331,7 +349,7 @@ are the only separate windows.
 | `AuditLog` | Filterable trail, export |
 | `Reports` | Revenue and commission by period, overdue, time on market against listing premium |
 
-Twenty panels. If time runs out, the five that go first are `MyActivity`, `AuditLog`,
+Twenty-one panels. If time runs out, the five that go first are `MyActivity`, `AuditLog`,
 `Reports`, `Reference` and `Viewings`. The demo still works end to end without them.
 
 Disproportionate polish goes to `ReviewSubmission`, `PropertyDetails` and `MyContracts`.
@@ -384,13 +402,13 @@ service         business rules, owns transactions   ->   valuation
     |
 dao             prepared statements only
     |
-SQL Server      13 tables
+SQL Server      14 tables
 ```
 
 `model` and `util` are shared by every layer.
 
-Roughly seventy-five classes: thirteen models, thirteen DAOs, nine services, twenty
-controllers, three valuation classes, six utilities. Almost all the thinking is concentrated in
+Roughly eighty-five classes: sixteen models, fourteen DAOs, eleven services, twenty-one
+controllers, three valuation classes, eight utilities. Almost all the thinking is concentrated in
 the services and the estimator. The rest is typing.
 
 Conventions and forbidden patterns are in `/CLAUDE.md` and are binding.

@@ -23,6 +23,7 @@ import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.service.ValuationService;
+import co.syntropyhq.aqarat.util.Uploads;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
@@ -60,7 +61,6 @@ import javafx.scene.shape.Rectangle;
 
 public class ReviewSubmissionController implements NeedsId {
 
-    private static final String IMAGE_ROOT = "uploads";
 
     @FXML
     private Label accessDeniedLabel;
@@ -330,7 +330,7 @@ public class ReviewSubmissionController implements NeedsId {
             thumbContainer.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 6px; -fx-border-color: -c-border-subtle; -fx-border-radius: 6px;");
             thumbContainer.setCursor(Cursor.HAND);
 
-            Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+            Path path = Uploads.resolve(photo.getFilePath());
             if (Files.exists(path)) {
                 ImageView thumbView = new ImageView(new Image(path.toUri().toString(), 64, 46, false, true));
                 Rectangle clip = new Rectangle(64, 46);
@@ -350,7 +350,7 @@ public class ReviewSubmissionController implements NeedsId {
     }
 
     private void setMainPhoto(PropertyPhoto photo) {
-        Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+        Path path = Uploads.resolve(photo.getFilePath());
         if (Files.exists(path)) {
             Image img = new Image(path.toUri().toString());
             mainImageView.setImage(img);
@@ -609,9 +609,60 @@ public class ReviewSubmissionController implements NeedsId {
         loadValuation();
     }
 
+    /**
+     * Publishing. Refused while no ownership document has been verified, and
+     * the refusal offers the two ways forward rather than just saying no:
+     * open the file and verify one, or publish anyway and say why
+     * (DECISIONS.md 5 - the system objects, the person decides).
+     */
     @FXML
     private void handleApprove() {
-        submitDecision(PropertyStatus.AVAILABLE, null);
+        publish(null);
+    }
+
+    private void publish(String overrideReason) {
+        try {
+            propertyService.publish(propertyId, overrideReason);
+        } catch (PropertyService.UnverifiedOwnershipException e) {
+            offerOverride(e.getMessage());
+            return;
+        } catch (PropertyService.InvalidTransitionException e) {
+            AlertUtil.showError("This submission can no longer be decided on.");
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Listing published",
+            "It is now visible to everyone browsing Aqarat.");
+        Router.show(Panel.REVIEW_QUEUE);
+    }
+
+    private void offerOverride(String message) {
+        boolean anyway = Dialogs.ask("No verified ownership document")
+            .about("Publishing")
+            .because(message + " Opening the property file lets you look at what the owner "
+                + "uploaded and verify it.")
+            .confirm("Publish anyway…")
+            .cancel("Open the property file")
+            .show();
+        if (!anyway) {
+            Router.show(Panel.PROPERTY_DOSSIER, propertyId);
+            return;
+        }
+        Dialogs.note("Publish without verified ownership?")
+            .about("This is recorded against your name")
+            .field("Why is this listing going live without evidence?")
+            .placeholder("The owner is a long-standing client and the deed is on file at the office.")
+            .explaining("The reason is written to the audit trail and to the owner's thread.")
+            .confirm("Publish it")
+            .show()
+            .ifPresent(this::publish);
+    }
+
+    @FXML
+    private void handleOpenDossier() {
+        Router.show(Panel.PROPERTY_DOSSIER, propertyId);
     }
 
     @FXML
@@ -656,7 +707,18 @@ public class ReviewSubmissionController implements NeedsId {
 
     @FXML
     private void handleDeclineRemoval() {
-        submitDecision(PropertyStatus.AVAILABLE, null);
+        try {
+            propertyService.declineWithdrawal(propertyId);
+        } catch (PropertyService.InvalidTransitionException e) {
+            AlertUtil.showError("This request can no longer be decided on.");
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Listing kept on the market",
+            "The owner sees that their removal request was declined.");
+        Router.show(Panel.REVIEW_QUEUE);
     }
 
     private String requireNote(String message) {

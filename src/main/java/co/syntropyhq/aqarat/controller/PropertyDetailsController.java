@@ -20,12 +20,14 @@ import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.service.ReservationService;
 import co.syntropyhq.aqarat.service.ViewingService;
+import co.syntropyhq.aqarat.util.Uploads;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
+import co.syntropyhq.aqarat.util.Panel;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
@@ -43,6 +45,7 @@ import java.util.List;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -57,8 +60,9 @@ import javafx.scene.shape.Rectangle;
 
 public class PropertyDetailsController implements NeedsId {
 
-    private static final String IMAGE_ROOT = "uploads";
 
+    @FXML
+    private Button dossierButton;
     @FXML
     private Label titleLabel;
     @FXML
@@ -184,7 +188,18 @@ public class PropertyDetailsController implements NeedsId {
         updateActionsVisibility(property);
     }
 
+    @FXML
+    private void handleOpenDossier() {
+        if (currentProperty != null) {
+            Router.show(Panel.PROPERTY_DOSSIER, currentProperty.getId());
+        }
+    }
+
     private void updateActionsVisibility(Property property) {
+        boolean isStaff = SessionManager.isAgent() || SessionManager.isAdmin();
+        dossierButton.setVisible(isStaff);
+        dossierButton.setManaged(isStaff);
+
         boolean isCustomer = SessionManager.isCustomer();
         boolean isOwner = isCustomer && SessionManager.getCurrentUser() != null
             && SessionManager.getCurrentUser().getId() == property.getOwnerId();
@@ -235,7 +250,7 @@ public class PropertyDetailsController implements NeedsId {
             thumbContainer.getStyleClass().add("thumb");
             thumbContainer.setCursor(Cursor.HAND);
 
-            Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+            Path path = Uploads.resolve(photo.getFilePath());
             if (Files.exists(path)) {
                 ImageView thumbView = new ImageView(
                     new Image(path.toUri().toString(), 104, 72, false, true, true));
@@ -268,7 +283,7 @@ public class PropertyDetailsController implements NeedsId {
     }
 
     private void setMainPhoto(PropertyPhoto photo) {
-        Path path = Path.of(IMAGE_ROOT, photo.getFilePath());
+        Path path = Uploads.resolve(photo.getFilePath());
         if (Files.exists(path)) {
             Image img = new Image(path.toUri().toString());
             mainImageView.setImage(img);

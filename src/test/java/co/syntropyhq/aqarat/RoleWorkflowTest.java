@@ -6,6 +6,7 @@ import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PaymentDao;
 import co.syntropyhq.aqarat.dao.PaymentScheduleDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
+import co.syntropyhq.aqarat.dao.PropertyDocumentDao;
 import co.syntropyhq.aqarat.dao.PropertyMessageDao;
 import co.syntropyhq.aqarat.dao.PropertyPhotoDao;
 import co.syntropyhq.aqarat.dao.PropertySearch;
@@ -21,7 +22,11 @@ import co.syntropyhq.aqarat.model.Contract;
 import co.syntropyhq.aqarat.model.ContractType;
 import co.syntropyhq.aqarat.model.DealType;
 import co.syntropyhq.aqarat.model.District;
+import co.syntropyhq.aqarat.model.DocumentType;
+import co.syntropyhq.aqarat.model.NewDocument;
 import co.syntropyhq.aqarat.model.NewPhoto;
+import co.syntropyhq.aqarat.model.PropertyDocument;
+import co.syntropyhq.aqarat.model.PropertyDossier;
 import co.syntropyhq.aqarat.model.PaymentFrequency;
 import co.syntropyhq.aqarat.model.PaymentMethod;
 import co.syntropyhq.aqarat.model.Property;
@@ -31,6 +36,8 @@ import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.AuthService;
 import co.syntropyhq.aqarat.service.ContractService;
+import co.syntropyhq.aqarat.service.DocumentService;
+import co.syntropyhq.aqarat.service.DossierService;
 import co.syntropyhq.aqarat.service.PaymentService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReportService;
@@ -40,13 +47,16 @@ import co.syntropyhq.aqarat.service.ViewingService;
 import co.syntropyhq.aqarat.util.Db;
 import co.syntropyhq.aqarat.util.SessionManager;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +76,8 @@ public class RoleWorkflowTest {
     private ContractService contractService;
     private PaymentService paymentService;
     private ReportService reportService;
+    private DocumentService documentService;
+    private DossierService dossierService;
 
     @BeforeEach
     void before() throws Exception {
@@ -75,6 +87,11 @@ public class RoleWorkflowTest {
         PropertyPhotoDao propertyPhotoDao = new PropertyPhotoDao();
         propertyService = new PropertyService(propertyDao, propertyPhotoDao,
             new PropertyMessageDao(), new AuditService(new AuditDao()));
+        documentService = new DocumentService(new PropertyDocumentDao(), propertyDao,
+            new AuditService(new AuditDao()));
+        dossierService = new DossierService(propertyDao, new PropertyDocumentDao(),
+            propertyPhotoDao, new ValuationDao(), new ViewingDao(), new ReservationDao(),
+            new ContractDao(), new AuditDao(), userDao);
         reservationService = new ReservationService(new ReservationDao(), new SystemSettingDao(),
             propertyService, new AuditService(new AuditDao()));
         viewingService = new ViewingService(new ViewingDao(), propertyService,
@@ -143,9 +160,17 @@ public class RoleWorkflowTest {
         property.setAskingPrice(new BigDecimal("90000"));
         int propertyId = propertyService.submit(property);
 
+        // Evidence first: nothing reaches the market without it, and a helper
+        // that skipped the gate would be testing a path the application no
+        // longer has.
+        documentService.upload(propertyId,
+            List.of(new NewDocument(temporaryDeed(), DocumentType.TITLE_DEED)), owner);
+
         SessionManager.login(agent);
         propertyService.claim(propertyId, agent.getId());
-        propertyService.review(propertyId, PropertyStatus.AVAILABLE, null);
+        documentService.verify(
+            documentService.findForProperty(propertyId, agent).get(0).getId(), agent);
+        propertyService.publish(propertyId, null);
         return propertyId;
     }
 
@@ -177,6 +202,18 @@ public class RoleWorkflowTest {
 
     // The whole pipeline from the owner submitting to the agent closing,
     // with each role's action checked at the service boundary. The seed
+    /*
+     * A one-page PDF, near enough: DocumentStore checks the first four bytes
+     * against the signature rather than trusting the extension, so a file
+     * named .pdf that is not one is refused. This is one that is.
+     */
+    private Path temporaryDeed() throws Exception {
+        Path file = Files.createTempFile("aqarat-deed", ".pdf");
+        Files.write(file, "%PDF-1.4 smoke test deed".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        file.toFile().deleteOnExit();
+        return file;
+    }
+
     // database must exist - this is not a unit test.
     @Test
     void ownerToCloseHappyPath() throws Exception {
@@ -208,8 +245,36 @@ public class RoleWorkflowTest {
         propertyService.respondToReview(propertyId, "Deed uploaded.", owner.getId());
         assertEquals(PropertyStatus.PENDING_REVIEW, propertyDao.findById(propertyId).getStatus());
 
+        // Nothing is verified yet, so the listing cannot go live. This is the
+        // whole point of the ownership gate and it is checked before anything
+        // downstream - a viewing, a deposit, a contract - can exist.
         SessionManager.login(agent);
-        propertyService.review(propertyId, PropertyStatus.AVAILABLE, null);
+        assertThrows(PropertyService.UnverifiedOwnershipException.class,
+            () -> propertyService.publish(propertyId, null));
+        assertEquals(PropertyStatus.PENDING_REVIEW, propertyDao.findById(propertyId).getStatus());
+
+        // The owner attaches a deed. Uploading it is not enough on its own.
+        SessionManager.login(owner);
+        documentService.upload(propertyId,
+            List.of(new NewDocument(temporaryDeed(), DocumentType.TITLE_DEED)), owner);
+        SessionManager.login(agent);
+        assertThrows(PropertyService.UnverifiedOwnershipException.class,
+            () -> propertyService.publish(propertyId, null));
+
+        // A customer who does not own the property cannot read its documents.
+        assertThrows(DocumentService.NotPermittedException.class,
+            () -> documentService.findForProperty(propertyId, client));
+
+        List<PropertyDocument> documents = documentService.findForProperty(propertyId, agent);
+        assertEquals(1, documents.size());
+        assertFalse(documents.get(0).isVerified());
+        documentService.verify(documents.get(0).getId(), agent);
+        // Verification happens once: the second attempt changes no row.
+        assertThrows(DocumentService.AlreadyVerifiedException.class,
+            () -> documentService.verify(documents.get(0).getId(), agent));
+        assertEquals(1, documentService.countVerified(propertyId));
+
+        propertyService.publish(propertyId, null);
         assertEquals(PropertyStatus.AVAILABLE, propertyDao.findById(propertyId).getStatus());
 
         SessionManager.login(client);
@@ -219,6 +284,15 @@ public class RoleWorkflowTest {
         int reservationId = reservationService.create(propertyId, client.getId(),
             new BigDecimal("5000"));
         assertEquals(PropertyStatus.RESERVED, propertyDao.findById(propertyId).getStatus());
+
+        // Reserving records what the deposit is; paying it is a separate act.
+        // Only the confirmed payment is credited later, because a declared
+        // deposit is a claim and not money the agency has received.
+        int depositPayment = paymentService.declare(null, reservationId, new BigDecimal("5000"),
+            PaymentMethod.BANK_TRANSFER, "deposit-1", null, client.getId());
+        SessionManager.login(agent);
+        paymentService.confirm(depositPayment, agent.getId());
+        SessionManager.login(client);
 
         Contract contract = new Contract();
         contract.setPropertyId(propertyId);
@@ -237,6 +311,15 @@ public class RoleWorkflowTest {
 
         var schedule = paymentService.findScheduleByContract(contractId);
         assertFalse(schedule.isEmpty());
+
+        // The deposit is money the client already handed over, so the schedule
+        // asks for the balance and not the whole price. Getting this wrong bills
+        // them twice for the same $5,000.
+        BigDecimal scheduled = schedule.stream()
+            .map(row -> row.getAmountDue())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, new BigDecimal("245000").compareTo(scheduled),
+            "schedule should cover the price less the confirmed deposit");
         int paymentId = paymentService.declare(schedule.get(0).getId(), null,
             new BigDecimal("1000"), PaymentMethod.BANK_TRANSFER, "ref-1", null, client.getId());
         assertTrue(paymentId > 0);
@@ -269,6 +352,35 @@ public class RoleWorkflowTest {
         assertEquals(0, settledTotal.compareTo(
             paymentService.findScheduleById(scheduleId).getAmountPaid()),
             "a refused declaration must leave the instalment untouched");
+
+        // The dossier, at the point where this property has one of everything.
+        // Worth asserting here rather than in isolation: it is the only read in
+        // the system that has to pull five tables together and put a name
+        // beside every id in them.
+        assertThrows(DossierService.NotPermittedException.class,
+            () -> dossierService.load(propertyId, client));
+        PropertyDossier dossier = dossierService.load(propertyId, agent);
+        assertEquals(propertyId, dossier.getProperty().getId());
+        assertEquals(1, dossier.getDocuments().size());
+        assertTrue(dossier.getDocuments().get(0).isVerified());
+        assertFalse(dossier.getViewings().isEmpty(), "the viewing requested above");
+        assertFalse(dossier.getReservations().isEmpty(), "the deposit taken above");
+        assertFalse(dossier.getContracts().isEmpty(), "the contract activated above");
+        // No valuation is asserted: submitting does not value a property, an
+        // agent asks for one from the review screen. The list is empty here and
+        // the panel shows its empty state, which is correct.
+        assertEquals("Smoke Owner", dossier.nameOf(dossier.getProperty().getOwnerId()));
+
+        // audit_log keys on (entity_type, entity_id): a timeline that asked only
+        // for "property" would miss the contract and the viewing entirely, which
+        // is the bug this assertion exists to catch.
+        Set<String> entityTypes = new HashSet<>();
+        dossier.getTimeline().forEach(entry -> entityTypes.add(entry.getEntityType()));
+        assertTrue(entityTypes.contains("property"), entityTypes.toString());
+        assertTrue(entityTypes.contains("contract"), entityTypes.toString());
+        assertTrue(entityTypes.contains("viewing"), entityTypes.toString());
+        assertTrue(entityTypes.contains("property_document"), entityTypes.toString());
+        assertTrue(entityTypes.contains("reservation"), entityTypes.toString());
 
         twoAgentsConfirmingAtOnceApplyItOnce(owner, client, agent);
     }

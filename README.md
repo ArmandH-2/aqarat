@@ -70,8 +70,11 @@ maximum. Activation runs as a single transaction: property status, generated pay
 commission, and audit entry, all or nothing.
 
 **Payments** — an instalment schedule per contract, overdue detection, client-declared payments
-with proof, agent confirmation, and a receipt that saves as a PDF. A schedule sums to exactly the
-contract total; the rounding remainder goes on the last row rather than quietly disappearing.
+with proof, agent confirmation, and a receipt that saves as a PDF. A schedule sums to exactly what
+is left to pay — the contract total less any deposit the client already put down to reserve the
+property — and the rounding remainder goes on the last row rather than quietly disappearing. A
+deposit is earnest money, credited at closing the way it is in a real transaction; billing the
+full price after taking one asks for the same money twice.
 
 One invariant holds the money together: **an instalment's `amount_paid` is the sum of the
 confirmed payments against it.** Any other figure is a number with nothing behind it.

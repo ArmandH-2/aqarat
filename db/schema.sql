@@ -28,6 +28,7 @@ DROP TABLE IF EXISTS dbo.contract;
 DROP TABLE IF EXISTS dbo.reservation;
 DROP TABLE IF EXISTS dbo.viewing;
 DROP TABLE IF EXISTS dbo.valuation;
+DROP TABLE IF EXISTS dbo.property_document;
 DROP TABLE IF EXISTS dbo.property_photo;
 DROP TABLE IF EXISTS dbo.property;
 DROP TABLE IF EXISTS dbo.property_type;
@@ -153,6 +154,45 @@ CREATE TABLE dbo.property_photo (
     CONSTRAINT pk_property_photo PRIMARY KEY (id),
     CONSTRAINT fk_photo_property FOREIGN KEY (property_id)
         REFERENCES dbo.property(id) ON DELETE CASCADE
+);
+
+/* --------------------------------------------------------------------------
+   Ownership evidence
+
+   Proof that the person listing a property is entitled to list it: the title
+   deed, the owner's ID, the agency's written mandate. These are private. The
+   public gallery is property_photo; this table is never read by a guest or a
+   client screen, only by the owner who uploaded it and by staff.
+
+   verified_by and verified_at are the point of the table rather than an
+   extra. A document proves nothing on its own - what the agency relies on
+   later is that a named member of staff looked at it on a given day, and
+   that record has to outlive any decision to remove the file itself.
+   -------------------------------------------------------------------------- */
+
+CREATE TABLE dbo.property_document (
+    id            INT IDENTITY(1,1) NOT NULL,
+    property_id   INT          NOT NULL,
+    doc_type      VARCHAR(20)  NOT NULL,
+    file_path     VARCHAR(300) NOT NULL,
+    original_name VARCHAR(200) NOT NULL,
+    uploaded_by   INT          NOT NULL,
+    uploaded_at   DATETIME2(0) NOT NULL CONSTRAINT df_document_uploaded DEFAULT SYSUTCDATETIME(),
+    verified_by   INT          NULL,
+    verified_at   DATETIME2(0) NULL,
+
+    CONSTRAINT pk_property_document  PRIMARY KEY (id),
+    CONSTRAINT fk_document_property  FOREIGN KEY (property_id)
+        REFERENCES dbo.property(id) ON DELETE CASCADE,
+    CONSTRAINT fk_document_uploader  FOREIGN KEY (uploaded_by) REFERENCES dbo.app_user(id),
+    CONSTRAINT fk_document_verifier  FOREIGN KEY (verified_by) REFERENCES dbo.app_user(id),
+    CONSTRAINT ck_document_type CHECK (doc_type IN
+        ('TITLE_DEED','NATIONAL_ID','AGENCY_MANDATE','POWER_OF_ATTORNEY',
+         'INHERITANCE_DEED','OTHER')),
+    /* Verified is one fact in two columns; neither is meaningful alone. */
+    CONSTRAINT ck_document_verified CHECK (
+        (verified_by IS NULL AND verified_at IS NULL)
+     OR (verified_by IS NOT NULL AND verified_at IS NOT NULL))
 );
 
 /* --------------------------------------------------------------------------
@@ -396,6 +436,7 @@ CREATE INDEX ix_property_status     ON dbo.property(status);
 CREATE INDEX ix_property_search     ON dbo.property(district_id, property_type_id, deal_type);
 CREATE INDEX ix_property_owner      ON dbo.property(owner_id);
 CREATE INDEX ix_property_agent      ON dbo.property(agent_id);
+CREATE INDEX ix_document_property   ON dbo.property_document(property_id);
 CREATE INDEX ix_valuation_property  ON dbo.valuation(property_id, created_at DESC);
 CREATE INDEX ix_viewing_client      ON dbo.viewing(client_id);
 CREATE INDEX ix_reservation_client  ON dbo.reservation(client_id);
