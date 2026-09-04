@@ -290,3 +290,73 @@ viewing slots.
 handling, and a translation layer, none of which is what this project is being marked on.
 Switching later means changing the column types and adding a resource bundle, which is a
 contained change.
+
+---
+
+### 21. Ownership evidence is required to publish, and an agent may override it
+
+**Chosen:** An owner attaches proof of ownership — a title deed, their ID, an agency mandate —
+when they submit a property or afterwards from their portfolio. The files are private: only the
+owner and Aqarat staff can ever read them. A listing goes live only once a member of staff has
+verified at least one document, and the agent may publish without one by writing a reason, which
+is recorded against their name in the audit trail.
+
+**Rejected:** Requiring nothing, as most portals do; a hard requirement with no override; a
+per-listing permit number verified against a government register.
+
+**Why:** Aqarat is an agency, not an advertising portal. A portal can afford to verify nothing
+because it never touches the transaction — Zillow's own terms disclaim being a broker, an escrow
+agent or a payment processor. The moment a system takes a deposit and drafts a contract against a
+property, it is asserting that the person selling is entitled to sell, and it had better have
+looked. The real-world artifact for this is the signed listing mandate an agency takes before it
+markets anything, and the deed behind it.
+
+The override exists for the same reason the valuation flag is advisory (decision 5): the system's
+job is to raise the objection and record what the person decided, not to overrule them. An agency
+with a long-standing client and the deed already on file at the office should not be blocked by
+software; it should be asked to say so, once, in writing.
+
+A hard requirement was rejected because it would also block the *reverse* of a removal request —
+an already-published listing being kept on the market — which is why declining a withdrawal has
+its own method that is deliberately not gated. Evidence is required to put a property on the
+market, not to leave it there.
+
+A permit number was rejected because Lebanon has no equivalent of Dubai's Trakheesi register to
+check one against, so it would be a text field pretending to be a verification.
+
+**What this does not do, stated plainly.** The files sit in `uploads/proofs/` and the database
+stores a path. **A path in a database is not an access control.** The application will not show a
+document to anyone but the owner and staff; anyone who can open the folder can read all of them.
+Encrypting them, or storing them as `VARBINARY(MAX)`, was rejected for a single-machine teaching
+project — SQL Server's own guidance puts FILESTREAM above roughly 1 MB average and it needs
+Configuration Manager setup that `schema.sql` cannot do, which would break the two-minute install
+decision 12 exists to protect. Deleting a property removes its document rows by cascade and
+leaves the files behind, exactly as it already does for photos. Both are limitations to say out
+loud rather than to half-fix.
+
+---
+
+### 22. The dossier is a read, not a table
+
+**Chosen:** A staff-only "property file" screen showing one property's whole record — owner,
+evidence, valuations, viewings, reservations, contracts and the audit timeline. It is assembled
+per request by one service method on one connection. No table stores it.
+
+**Rejected:** A table linking the related rows together.
+
+**Why:** Everything on the page already keys on `property_id` somewhere else. A second copy would
+be a set of facts with two owners and no rule about which one is right, and it would be stale the
+first time anything changed. This is the same reasoning that kept `property` and `listing` as one
+table (decision 10), pointed the other way: do not add structure to hold something a query already
+answers.
+
+The audit timeline is the part worth knowing about. `audit_log` keys on
+`(entity_type, entity_id)`, so a dossier that asked only for `"property"` would show about a third
+of the story — the contract activation, the viewing outcomes and the document verifications all
+file themselves under their own type. The service collects the related ids first and asks once per
+type.
+
+**Staff only, including the owner's own property.** The page names the clients who asked to view a
+property and who put a deposit down. Showing it to an owner would hand one customer another
+customer's identity. The owner sees their own submission, their own documents and their own review
+thread on their own screens.
