@@ -4,6 +4,7 @@ import co.syntropyhq.aqarat.model.Payment;
 import co.syntropyhq.aqarat.model.PaymentMethod;
 import co.syntropyhq.aqarat.model.PaymentStatus;
 import co.syntropyhq.aqarat.util.Db;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,6 +22,33 @@ public class PaymentDao {
 
     // confirmed_by starts NULL: nobody has confirmed a payment the moment it
     // is declared, agent-recorded or not - updateStatus is what sets it.
+    /**
+     * Deposit money this client has actually handed over on this property.
+     *
+     * <p>Confirmed payments only - a declared but unconfirmed deposit is a
+     * claim, not a receipt, and crediting it against a contract would let a
+     * client reduce what they owe by typing a number. Scoped to the client as
+     * well as the property so an earlier buyer's lapsed deposit is never
+     * credited to whoever signs in the end.
+     */
+    public BigDecimal sumConfirmedDeposit(Connection connection, int propertyId, int clientId)
+            throws SQLException {
+        String sql = """
+            SELECT COALESCE(SUM(p.amount), 0) AS deposit_total
+            FROM payment p
+            JOIN reservation r ON r.id = p.reservation_id
+            WHERE r.property_id = ? AND r.client_id = ? AND p.status = 'CONFIRMED'
+            """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, propertyId);
+            statement.setInt(2, clientId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getBigDecimal("deposit_total");
+            }
+        }
+    }
+
     public int insert(Connection connection, Payment payment) throws SQLException {
         String sql = """
             INSERT INTO payment (schedule_id, reservation_id, amount, paid_at, method, reference,

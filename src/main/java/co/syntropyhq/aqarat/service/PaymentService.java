@@ -48,17 +48,45 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         this.auditService = auditService;
     }
 
+    /**
+     * Builds the instalment schedule for a contract as it activates.
+     *
+     * <p>The schedule covers what is <em>left</em> to pay, not the whole price.
+     * A client who put down a deposit to reserve the property has already paid
+     * that money to the agency; generating the schedule for the full amount
+     * would ask them for it a second time, and the balance on their contract
+     * screen would be wrong by exactly the deposit. Earnest money is credited
+     * at closing in every real transaction, and this is that credit.
+     *
+     * <p>Only confirmed deposits count, and only this client's on this
+     * property - the query in {@code PaymentDao} is scoped so that an earlier
+     * buyer's lapsed reservation cannot reduce what this one owes.
+     *
+     * <p>A deposit that covers the whole price leaves no schedule at all,
+     * because there is nothing further to ask for.
+     */
     @Override
     public void generate(Connection connection, Contract activatedContract) throws SQLException {
+        BigDecimal deposit = paymentDao.sumConfirmedDeposit(connection,
+            activatedContract.getPropertyId(), activatedContract.getClientId());
+        BigDecimal balance = activatedContract.getTotalAmount().subtract(deposit);
+
+        if (balance.signum() <= 0) {
+            auditService.record(connection, "contract", activatedContract.getId(),
+                "SCHEDULE_GENERATED", null, "settled in full by deposit");
+            return;
+        }
+
         List<PaymentSchedule> schedule = buildSchedule(activatedContract.getPaymentFrequency(),
-            activatedContract.getInstallmentCount(), activatedContract.getTotalAmount(),
+            activatedContract.getInstallmentCount(), balance,
             activatedContract.getStartDate());
         for (PaymentSchedule row : schedule) {
             row.setContractId(activatedContract.getId());
         }
         paymentScheduleDao.insertAll(connection, schedule);
         auditService.record(connection, "contract", activatedContract.getId(), "SCHEDULE_GENERATED",
-            null, schedule.size() + " installment(s)");
+            null, schedule.size() + " installment(s)"
+                + (deposit.signum() > 0 ? ", deposit of " + deposit + " credited" : ""));
     }
 
     /**
