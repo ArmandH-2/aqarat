@@ -1,5 +1,11 @@
 package co.syntropyhq.aqarat.controller;
 
+import co.syntropyhq.aqarat.util.DocumentStore;
+import co.syntropyhq.aqarat.service.DocumentService;
+import co.syntropyhq.aqarat.model.PropertyDocument;
+import co.syntropyhq.aqarat.model.NewDocument;
+import co.syntropyhq.aqarat.model.DocumentType;
+import co.syntropyhq.aqarat.dao.PropertyDocumentDao;
 import co.syntropyhq.aqarat.dao.AuditDao;
 import co.syntropyhq.aqarat.dao.DistrictDao;
 import co.syntropyhq.aqarat.dao.PropertyDao;
@@ -18,6 +24,7 @@ import co.syntropyhq.aqarat.model.PropertyType;
 import co.syntropyhq.aqarat.service.AuditService;
 import co.syntropyhq.aqarat.service.PropertyService;
 import co.syntropyhq.aqarat.service.ReferenceService;
+import co.syntropyhq.aqarat.util.Uploads;
 import co.syntropyhq.aqarat.util.Banner;
 import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
@@ -39,7 +46,9 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
@@ -90,6 +99,9 @@ public class MyPropertiesController {
         propertyList.setPlaceholder(UIHelper.createEmptyState("Access Restricted", "Only registered customer accounts can manage owner properties."));
         propertyList.setItems(FXCollections.observableArrayList());
     }
+
+    private final DocumentService documentService = new DocumentService(
+        new PropertyDocumentDao(), new PropertyDao(), new AuditService(new AuditDao()));
 
     private void loadReferenceData() {
         try {
@@ -199,6 +211,57 @@ public class MyPropertiesController {
             "They appear on the listing straight away, in the order they were chosen.");
     }
 
+    /**
+     * Attaching proof of ownership to a property that already exists.
+     *
+     * <p>The file is picked first and its kind asked afterwards, because the
+     * owner knows which file they mean before they know what Aqarat calls it.
+     * This is the road out of NEEDS_INFO when the agent's question was "we
+     * need to see the deed".
+     */
+    private void handleAddDocument(Property property) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose a document for " + property.getTitle());
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+            "Documents (*.pdf, *.jpg, *.jpeg, *.png)", "*.pdf", "*.jpg", "*.jpeg", "*.png"));
+        File chosen = chooser.showOpenDialog(null);
+        if (chosen == null) {
+            return;
+        }
+        try {
+            DocumentStore.validate(chosen.toPath());
+        } catch (IOException e) {
+            AlertUtil.showUndone("That file cannot be attached.", e.getMessage());
+            return;
+        }
+        ComboBox<DocumentType> typeCombo = new ComboBox<>();
+        typeCombo.setItems(FXCollections.observableArrayList(DocumentType.values()));
+        typeCombo.getSelectionModel().select(DocumentType.TITLE_DEED);
+        boolean go = Dialogs.form("Attach " + chosen.getName())
+            .about(property.getTitle())
+            .note("Only you and Aqarat staff can open it.")
+            .required("What is this document?", typeCombo)
+            .confirm("Attach it")
+            .show();
+        if (!go) {
+            return;
+        }
+        try {
+            documentService.upload(property.getId(),
+                List.of(new NewDocument(chosen.toPath(), typeCombo.getValue())),
+                SessionManager.getCurrentUser());
+        } catch (IOException | DocumentService.NotPermittedException e) {
+            AlertUtil.showUndone("That document was not attached.", e.getMessage());
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Document attached",
+            "An agent reviews it. Your listing goes live once one is verified.");
+        loadProperties();
+    }
+
     private void handleRequestRemoval(Property property) {
         Optional<String> input = Dialogs.note("Ask for this listing to be removed")
             .about(property.getTitle())
@@ -267,7 +330,7 @@ public class MyPropertiesController {
             frame.setMaxSize(132, 96);
 
             String path = firstPhotoPath(property.getId());
-            File file = path == null ? null : new File("uploads/" + path);
+            File file = path == null ? null : Uploads.resolve(path).toFile();
             if (file != null && file.exists()) {
                 ImageView photo = new ImageView(
                     new Image(file.toURI().toString(), 264, 192, false, true, true));
@@ -310,6 +373,11 @@ public class MyPropertiesController {
             body.getChildren().addAll(header, meta,
                 UIHelper.createLifecycleBar(property.getStatus()));
 
+            Node evidence = buildEvidenceLine(property);
+            if (evidence != null) {
+                body.getChildren().add(evidence);
+            }
+
             VBox thread = buildThread(property);
             if (thread != null) {
                 body.getChildren().add(thread);
@@ -331,6 +399,55 @@ public class MyPropertiesController {
             } catch (SQLException e) {
                 return null;
             }
+        }
+
+        /*
+         * One line telling the owner where their proof of ownership stands,
+         * because until something here is verified their listing cannot be
+         * published and nothing else on this screen would say so.
+         */
+        private Node buildEvidenceLine(Property property) {
+            List<PropertyDocument> documents;
+            try {
+                documents = documentService.findForProperty(
+                    property.getId(), SessionManager.getCurrentUser());
+            } catch (SQLException | DocumentService.NotPermittedException e) {
+                return null;
+            }
+            long verified = documents.stream().filter(PropertyDocument::isVerified).count();
+
+            // A pill rather than a third line of grey text: the lifecycle
+            // caption sits directly above this, and two hint lines in a row
+            // read as one paragraph with no way to tell which is the status.
+            String label;
+            String tone;
+            if (documents.isEmpty()) {
+                label = "No proof of ownership";
+                tone = "pill-warn";
+            } else if (verified > 0) {
+                label = "Ownership verified";
+                tone = "pill-good";
+            } else {
+                label = "Awaiting verification";
+                tone = "pill-neutral";
+            }
+
+            HBox row = new HBox(8, UIHelper.createPill(label, tone));
+            row.setAlignment(Pos.CENTER_LEFT);
+            if (!documents.isEmpty()) {
+                StringBuilder names = new StringBuilder();
+                for (PropertyDocument document : documents) {
+                    if (names.length() > 0) {
+                        names.append(" · ");
+                    }
+                    names.append(Format.enumLabel(document.getDocType()));
+                }
+                Label detail = new Label(names.toString());
+                detail.getStyleClass().add("hint");
+                detail.setWrapText(true);
+                row.getChildren().add(detail);
+            }
+            return row;
         }
 
         private VBox buildThread(Property property) {
@@ -380,6 +497,17 @@ public class MyPropertiesController {
                 respond.getStyleClass().addAll("button", "button-primary");
                 respond.setOnAction(event -> handleRespond(property));
                 actions.getChildren().add(respond);
+            }
+            // Offered wherever the property is still live business, not only
+            // while it is in review: the card tells an owner their listing has
+            // no proof of ownership, and a warning with no way to act on it is
+            // worse than no warning at all.
+            if (status != PropertyStatus.REJECTED && status != PropertyStatus.WITHDRAWN
+                    && status != PropertyStatus.CLOSED) {
+                Button addDocument = new Button("Add document");
+                addDocument.getStyleClass().addAll("button", "button-secondary");
+                addDocument.setOnAction(event -> handleAddDocument(property));
+                actions.getChildren().add(addDocument);
             }
             if (status == PropertyStatus.NEEDS_INFO || status == PropertyStatus.PENDING_REVIEW) {
                 Button addPhotos = new Button("Add photos");

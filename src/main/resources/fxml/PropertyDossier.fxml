@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+    The property file. One property, everything the system knows about it,
+    in the order a record page is read everywhere else: who and what it is,
+    where it is in its life, the evidence behind it, then the activity it
+    has attracted, then the history.
+
+    Staff only. It names the clients who asked to view the property, so it is
+    not a screen an owner sees.
+-->
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="co.syntropyhq.aqarat.controller.PropertyDossierController"
+            fitToWidth="true" hbarPolicy="NEVER">
+
+    <StackPane>
+
+        <VBox fx:id="loadingBox" alignment="CENTER" spacing="14" minHeight="420">
+            <ProgressIndicator maxWidth="42" maxHeight="42"/>
+            <Label text="Opening the file" styleClass="hint"/>
+        </VBox>
+
+        <VBox fx:id="contentBox" spacing="0" visible="false" managed="false">
+
+            <HBox styleClass="detail-backstrip" alignment="CENTER_LEFT">
+                <Button text="← Back" styleClass="button, button-ghost" onAction="#handleBack"/>
+            </HBox>
+
+            <VBox spacing="26">
+                <padding>
+                    <Insets top="22" right="44" bottom="40" left="44"/>
+                </padding>
+
+                <!-- ============ Identity ============ -->
+                <VBox spacing="10">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label fx:id="referenceLabel" styleClass="eyebrow"/>
+                        <Label fx:id="districtLabel" styleClass="eyebrow"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <HBox fx:id="statusSlot" alignment="CENTER_RIGHT"/>
+                    </HBox>
+                    <Label fx:id="titleLabel" styleClass="display-title-lg" wrapText="true"/>
+                    <FlowPane fx:id="identityStrip" styleClass="spec-strip" hgap="34" vgap="14"/>
+                </VBox>
+
+                <!-- ============ Lifecycle ============ -->
+                <VBox fx:id="lifecycleSlot"/>
+
+                <!-- ============ At a glance ============ -->
+                <FlowPane fx:id="counterStrip" hgap="14" vgap="14"/>
+
+                <!-- ============ Ownership evidence ============
+                     A peer section rather than a footnote: on a record page,
+                     the attachments are half of why the page exists. -->
+                <VBox styleClass="card" spacing="14">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Ownership evidence" styleClass="section-title"
+                               HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="evidenceHint" styleClass="hint"/>
+                    </HBox>
+                    <VBox fx:id="documentList" spacing="10"/>
+                </VBox>
+
+                <!-- ============ Valuation ============ -->
+                <VBox styleClass="card" spacing="14">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Valuation history" styleClass="section-title"
+                               HBox.hgrow="ALWAYS"/>
+                        <Label text="Newest first" styleClass="hint"/>
+                    </HBox>
+                    <VBox fx:id="valuationList" spacing="10"/>
+                </VBox>
+
+                <!-- ============ Related records ============ -->
+                <VBox styleClass="card" spacing="14">
+                    <Label text="Viewings" styleClass="section-title"/>
+                    <VBox fx:id="viewingList" spacing="10"/>
+                </VBox>
+
+                <VBox styleClass="card" spacing="14">
+                    <Label text="Reservations and deposits" styleClass="section-title"/>
+                    <VBox fx:id="reservationList" spacing="10"/>
+                </VBox>
+
+                <VBox styleClass="card" spacing="14">
+                    <Label text="Contracts" styleClass="section-title"/>
+                    <VBox fx:id="contractList" spacing="10"/>
+                </VBox>
+
+                <!-- ============ History ============ -->
+                <VBox styleClass="card" spacing="14">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Activity" styleClass="section-title" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="timelineHint" styleClass="hint"/>
+                    </HBox>
+                    <VBox fx:id="timelineList" spacing="0"/>
+                </VBox>
+            </VBox>
+        </VBox>
+    </StackPane>
+</ScrollPane>

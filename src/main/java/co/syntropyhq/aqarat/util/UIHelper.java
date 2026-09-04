@@ -82,7 +82,7 @@ public final class UIHelper {
         frame.prefHeightProperty().bind(card.widthProperty().multiply(CARD_PHOTO_RATIO));
         frame.maxHeightProperty().bind(card.widthProperty().multiply(CARD_PHOTO_RATIO));
 
-        File file = photoPath == null ? null : new File("uploads/" + photoPath);
+        File file = photoPath == null ? null : Uploads.resolve(photoPath).toFile();
         if (file != null && file.exists()) {
             // Decoded once at a generous width; JavaFX scales it down to fit.
             ImageView photo = new ImageView(new Image(
@@ -181,7 +181,7 @@ public final class UIHelper {
         frame.setPrefSize(width, height);
         frame.setMaxSize(width, height);
 
-        File file = photoPath == null ? null : new File("uploads/" + photoPath);
+        File file = photoPath == null ? null : Uploads.resolve(photoPath).toFile();
         if (file != null && file.exists()) {
             ImageView photo = new ImageView(new Image(
                 file.toURI().toString(), width * 2, height * 2, false, true, true));
@@ -419,7 +419,7 @@ public final class UIHelper {
         container.setStyle("-fx-background-color: -c-surface-subtle; -fx-background-radius: 8px;"
             + " -fx-border-color: -c-border-subtle; -fx-border-radius: 8px;");
 
-        File file = photoPath == null ? null : new File("uploads/" + photoPath);
+        File file = photoPath == null ? null : Uploads.resolve(photoPath).toFile();
         if (file != null && file.exists()) {
             ImageView thumbnail = new ImageView(
                 new Image(file.toURI().toString(), THUMB_WIDTH, THUMB_HEIGHT, false, true));

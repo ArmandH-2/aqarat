@@ -9,6 +9,7 @@
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -26,6 +27,11 @@
             <!-- Header Bar -->
             <HBox spacing="12" alignment="CENTER_LEFT">
                 <Button text="← Back to the queue" styleClass="button, button-secondary" onAction="#handleBack"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <!-- The whole file on this property: the owner's evidence, who has
+                     asked to see it, and everything recorded so far. -->
+                <Button text="Property file" styleClass="button, button-secondary"
+                        onAction="#handleOpenDossier"/>
             </HBox>
 
             <HBox spacing="16" alignment="CENTER_LEFT">

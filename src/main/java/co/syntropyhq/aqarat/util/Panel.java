@@ -6,6 +6,8 @@ public enum Panel {
        they were two entrances to the same catalogue. */
     DISCOVER("Discover.fxml"),
     PROPERTY_DETAILS("PropertyDetails.fxml"),
+    /* The staff-only file on one property: evidence, activity and history. */
+    PROPERTY_DOSSIER("PropertyDossier.fxml"),
     /* Portfolio replaces My properties, My contracts and My activity. Those
        three split one person's own business along database table boundaries. */
     PORTFOLIO("Portfolio.fxml"),
@@ -46,6 +48,7 @@ public enum Panel {
         return switch (this) {
             case DISCOVER -> "fth-search";
             case PROPERTY_DETAILS -> "fth-home";
+            case PROPERTY_DOSSIER -> "fth-folder";
             case PORTFOLIO, MY_PROPERTIES -> "fth-briefcase";
             case SUBMIT_PROPERTY -> "fth-plus-circle";
             case MY_CONTRACTS -> "fth-file-text";
