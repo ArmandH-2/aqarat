@@ -241,6 +241,9 @@ photography, and navigation collapsed from five customer entries to three.
 - Property details leads with the photograph.
 - Portfolio replaces My properties, My contracts and My activity.
 - Submit shows the valuation live while the owner is still deciding a price.
+- Minor fix afterwards: the button focus ring was drawing itself as a hard
+  copy pushed three pixels down rather than a ring, which read as a second
+  blurred underline under the selected tab.
 
 **Done when:** a customer can sign in, search in plain English, open a listing,
 see their portfolio with what needs them on top, and watch an estimate appear as
