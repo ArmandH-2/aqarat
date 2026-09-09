@@ -309,6 +309,17 @@ public class PropertyDao {
         }
     }
 
+    public void updateCopy(Connection connection, int propertyId, String title, String description)
+            throws SQLException {
+        String sql = "UPDATE property SET title = ?, description = ? WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, title);
+            statement.setString(2, description);
+            statement.setInt(3, propertyId);
+            statement.executeUpdate();
+        }
+    }
+
     private Property mapRow(ResultSet resultSet) throws SQLException {
         Property property = new Property();
         property.setId(resultSet.getInt("id"));

@@ -83,8 +83,8 @@ Guests cannot see owner identity, internal notes, valuations, or contact details
 
 Submit a property. Attach photos. Set asking price, deal type and lease term limits. View the
 system valuation and its comparables. Track submission status. Respond to a request for more
-information. Withdraw a submission. Reprice a live listing. View own listings and their
-activity. View contracts on own property.
+information. Withdraw a submission. Correct the title and description of an own listing.
+View own listings and their activity. View contracts on own property.
 
 ### Customer, acting as client
 
@@ -98,8 +98,8 @@ table back to `schema.sql` and to section 8.
 ### Agent
 
 View review queue. Review a submission against its valuation, flag and comparables. Request
-more information. Reject with a reason. Approve and publish. Edit, unpublish or archive a
-listing. Manage own clients. Confirm or decline viewing requests. Record viewing outcomes.
+more information. Reject with a reason. Approve and publish. Correct a listing's title and
+description. Manage own clients. Confirm or decline viewing requests. Record viewing outcomes.
 Create a reservation and record its deposit. Cancel a lapsed reservation. Draft a sale or lease
 contract. Activate a contract. Record payments and confirm client-declared ones. Issue
 receipts. Run a standalone valuation. Close or terminate a contract. View own pipeline and
@@ -176,6 +176,19 @@ finding out afterwards.
 
 `property.status` is a controlled state machine. Transitions happen only through
 `PropertyService`. No screen writes the status field directly.
+
+**What can be corrected after submission.** Title and description only. The owner is offered it
+on anything not rejected, withdrawn or closed; the reviewing agent on whatever is in front of
+them. Free text carries no business meaning: no contract quotes the description and the
+estimator never reads it, so fixing a typo is not a change to what was submitted and does not
+send the listing back through review. Every edit writes its own audit row with the before and
+after text.
+
+Everything else is deliberately not editable. Price, area, bedrooms and deal type are what the
+valuation and any contract were computed against; the address is what the ownership document
+was verified against. Changing any of them is a different listing, not a correction, and would
+need a price history, a re-verification step and a freeze once a property is reserved. None of
+that is built.
 
 ### Assignment, commission, and things that expire
 
@@ -340,7 +353,7 @@ are the only separate windows.
 | `AgentDashboard` | Queue, active listings, week's viewings, overdue payments |
 | `ReviewQueue` | Submissions assigned to this agent |
 | `ReviewSubmission` | The centrepiece. Property beside asking price, estimate, range, flag, factor breakdown, comparables. Approve, request info, reject |
-| `Listings` | All listings, filter, edit, unpublish, archive |
+| `Listings` | All listings, filter |
 | `Viewings` | Confirm or decline requests, record outcomes |
 | `Contracts` | List plus draft-and-activate editor. Term validation fires here |
 | `Payments` | Schedules, declared payments awaiting confirmation, record, receipt |
