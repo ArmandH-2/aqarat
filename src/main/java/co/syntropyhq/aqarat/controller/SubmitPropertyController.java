@@ -214,6 +214,11 @@ public class SubmitPropertyController {
         documentTypeCombo.setItems(FXCollections.observableArrayList(DocumentType.values()));
         documentTypeCombo.getSelectionModel().select(DocumentType.TITLE_DEED);
         refreshDocumentChips();
+        // Photographs needs the same first paint as documents. Without it the
+        // count badge renders as an empty pill and the hint line is blank until
+        // the owner happens to pick a file - an empty state that looks broken
+        // rather than empty, on the first card of the first screen.
+        refreshPhotoChips();
         wireLiveValuation();
     }
 
