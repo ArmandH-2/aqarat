@@ -214,6 +214,11 @@ public class SubmitPropertyController {
         documentTypeCombo.setItems(FXCollections.observableArrayList(DocumentType.values()));
         documentTypeCombo.getSelectionModel().select(DocumentType.TITLE_DEED);
         refreshDocumentChips();
+        // Photographs needs the same first paint as documents. Without it the
+        // count badge renders as an empty pill and the hint line is blank until
+        // the owner happens to pick a file - an empty state that looks broken
+        // rather than empty, on the first card of the first screen.
+        refreshPhotoChips();
         wireLiveValuation();
     }
 
@@ -230,6 +235,7 @@ public class SubmitPropertyController {
         bedroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
         bathroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
         yearBuiltField.textProperty().addListener((obs, was, now) -> schedule.run());
+        floorNumberField.textProperty().addListener((obs, was, now) -> schedule.run());
         askingPriceField.textProperty().addListener((obs, was, now) -> schedule.run());
         parkingCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
         elevatorCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
@@ -285,6 +291,7 @@ public class SubmitPropertyController {
         draft.setDealType(dealTypeCombo.getValue() == null ? DealType.SALE : dealTypeCombo.getValue());
         draft.setBedrooms(parseInt(bedroomsField.getText(), 0));
         draft.setBathrooms(parseInt(bathroomsField.getText(), 0));
+        draft.setFloorNumber(parseNullableInt(floorNumberField.getText()));
         draft.setYearBuilt(parseNullableInt(yearBuiltField.getText()));
         draft.setHasParking(parkingCheck.isSelected());
         draft.setHasElevator(elevatorCheck.isSelected());

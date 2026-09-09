@@ -11,6 +11,7 @@ import co.syntropyhq.aqarat.model.Property;
 import co.syntropyhq.aqarat.model.PropertyMessage;
 import co.syntropyhq.aqarat.model.PropertyPhoto;
 import co.syntropyhq.aqarat.model.PropertyStatus;
+import co.syntropyhq.aqarat.model.Role;
 import co.syntropyhq.aqarat.util.Db;
 import co.syntropyhq.aqarat.util.PhotoStore;
 import co.syntropyhq.aqarat.util.SessionManager;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 
 public class PropertyService {
 
@@ -339,6 +341,80 @@ public class PropertyService {
         }
     }
 
+    /**
+     * Corrects a property's title or description without sending it back
+     * through review. Unlike price, area, or an address, free text carries
+     * no business meaning of its own - a contract never references the
+     * description, and the valuation engine never reads it - so a typo fix
+     * is not a change to what was submitted and does not need to touch
+     * status. Only the property's owner, or an editor who is an agent or
+     * admin, may make the change. Each field that actually changed gets its
+     * own audit row, so the property's timeline reads as a sequence of
+     * edits rather than one opaque "copy changed" entry.
+     */
+    public void editCopy(int propertyId, String title, String description, AppUser editor)
+            throws SQLException, NotPermittedException {
+        String trimmedTitle = title == null ? "" : title.trim();
+        if (trimmedTitle.isEmpty()) {
+            throw new IllegalArgumentException("A title cannot be empty.");
+        }
+        if (trimmedTitle.length() > 150) {
+            throw new IllegalArgumentException("A title cannot be longer than 150 characters.");
+        }
+        String trimmedDescription = description == null ? null : description.trim();
+        if (trimmedDescription != null && trimmedDescription.isEmpty()) {
+            trimmedDescription = null;
+        }
+        if (trimmedDescription != null && trimmedDescription.length() > 2000) {
+            throw new IllegalArgumentException(
+                "A description cannot be longer than 2000 characters.");
+        }
+        try (Connection connection = Db.get()) {
+            connection.setAutoCommit(false);
+            try {
+                Property property = requireProperty(connection, propertyId);
+                boolean isOwner = editor != null && property.getOwnerId() == editor.getId();
+                boolean isStaff = editor != null
+                    && (editor.getRole() == Role.AGENT || editor.getRole() == Role.ADMIN);
+                if (!isOwner && !isStaff) {
+                    throw new NotPermittedException(
+                        "Only the owner, an agent, or an admin may edit this listing's copy.");
+                }
+                boolean titleChanged = !Objects.equals(trimmedTitle, property.getTitle());
+                boolean descriptionChanged =
+                    !Objects.equals(trimmedDescription, property.getDescription());
+                if (!titleChanged && !descriptionChanged) {
+                    connection.rollback();
+                    return;
+                }
+                propertyDao.updateCopy(connection, propertyId, trimmedTitle, trimmedDescription);
+                if (titleChanged) {
+                    auditService.record(connection, "property", propertyId, "EDIT",
+                        "title: " + property.getTitle(), "title: " + trimmedTitle);
+                }
+                if (descriptionChanged) {
+                    // A description can run to 2000 characters and the audit
+                    // timeline renders each value inline, so both sides are
+                    // clipped to a readable length rather than blowing out the row.
+                    auditService.record(connection, "property", propertyId, "EDIT",
+                        "description: " + truncateForAudit(property.getDescription()),
+                        "description: " + truncateForAudit(trimmedDescription));
+                }
+                connection.commit();
+            } catch (SQLException | NotPermittedException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private String truncateForAudit(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.length() > 120 ? value.substring(0, 120) + "…" : value;
+    }
+
     private void insertThreadNote(Connection connection, int propertyId, String note)
             throws SQLException {
         // A message needs an author (author_id is NOT NULL), and the person
@@ -520,6 +596,16 @@ public class PropertyService {
     public static class AlreadyClaimedException extends Exception {
 
         public AlreadyClaimedException(String message) {
+            super(message);
+        }
+    }
+
+    // A distinct, checked type so a controller can tell "you are not allowed
+    // to do this" apart from a validation failure or a database error, and
+    // show the right message for each (CLAUDE.md, Errors).
+    public static class NotPermittedException extends Exception {
+
+        public NotPermittedException(String message) {
             super(message);
         }
     }

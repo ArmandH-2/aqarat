@@ -54,6 +54,8 @@ import javafx.scene.control.ListCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -259,6 +261,37 @@ public class MyPropertiesController {
         }
         AlertUtil.showInfo("Document attached",
             "An agent reviews it. Your listing goes live once one is verified.");
+        loadProperties();
+    }
+
+    private void handleEditCopy(Property property) {
+        TextField titleField = new TextField(property.getTitle());
+        TextArea descriptionArea = new TextArea(
+            property.getDescription() == null ? "" : property.getDescription());
+        descriptionArea.setWrapText(true);
+        descriptionArea.setPrefRowCount(4);
+        boolean go = Dialogs.form("Edit the listing text")
+            .about(property.getTitle())
+            .note("Only the title and description change. Price, size and address stay as submitted.")
+            .required("Title", titleField)
+            .optional("Description", descriptionArea)
+            .confirm("Save it")
+            .show();
+        if (!go) {
+            return;
+        }
+        try {
+            propertyService.editCopy(property.getId(), titleField.getText(),
+                descriptionArea.getText(), SessionManager.getCurrentUser());
+        } catch (PropertyService.NotPermittedException | IllegalArgumentException e) {
+            AlertUtil.showUndone("That listing text was not saved.", e.getMessage());
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        AlertUtil.showInfo("Listing text updated",
+            "\"" + titleField.getText() + "\" now shows the new title and description.");
         loadProperties();
     }
 
@@ -508,6 +541,13 @@ public class MyPropertiesController {
                 addDocument.getStyleClass().addAll("button", "button-secondary");
                 addDocument.setOnAction(event -> handleAddDocument(property));
                 actions.getChildren().add(addDocument);
+            }
+            if (status != PropertyStatus.REJECTED && status != PropertyStatus.WITHDRAWN
+                    && status != PropertyStatus.CLOSED) {
+                Button editCopy = new Button("Edit text");
+                editCopy.getStyleClass().addAll("button", "button-secondary");
+                editCopy.setOnAction(event -> handleEditCopy(property));
+                actions.getChildren().add(editCopy);
             }
             if (status == PropertyStatus.NEEDS_INFO || status == PropertyStatus.PENDING_REVIEW) {
                 Button addPhotos = new Button("Add photos");

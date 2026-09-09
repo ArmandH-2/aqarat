@@ -119,8 +119,11 @@ public class PropertyDossierController implements NeedsId {
             }
         };
         task.setOnSucceeded(event -> {
-            render(task.getValue());
-            showLoading(false);
+            try {
+                render(task.getValue());
+            } finally {
+                showLoading(false);
+            }
         });
         task.setOnFailed(event -> {
             showLoading(false);
@@ -307,18 +310,22 @@ public class PropertyDossierController implements NeedsId {
         }
         valuationList.getChildren().clear();
         for (Valuation valuation : dossier.getValuations()) {
+            // A null flag means the property had no asking price to judge against.
+            String flagLabel = valuation.getFlag() == null ? "—" : Format.enumLabel(valuation.getFlag());
+            String flagTone = switch (valuation.getFlag()) {
+                case null -> "pill-neutral";
+                case OK -> "pill-good";
+                case ABOVE_MARKET -> "pill-warn";
+                case IMPLAUSIBLE -> "pill-bad";
+            };
             valuationList.getChildren().add(record(
                 Format.salePrice(valuation.getEstimatedValue()),
                 Format.salePrice(valuation.getLowerBound()) + " to "
                     + Format.salePrice(valuation.getUpperBound()) + " · "
                     + Format.pricePerSqm(valuation.getPricePerSqm()) + " · "
                     + Format.dateTime(valuation.getCreatedAt()),
-                Format.enumLabel(valuation.getFlag()),
-                switch (valuation.getFlag()) {
-                    case OK -> "pill-good";
-                    case ABOVE_MARKET -> "pill-warn";
-                    case IMPLAUSIBLE -> "pill-bad";
-                }));
+                flagLabel,
+                flagTone));
         }
     }
 
