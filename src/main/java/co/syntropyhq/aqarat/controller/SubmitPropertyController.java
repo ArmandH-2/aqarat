@@ -230,6 +230,7 @@ public class SubmitPropertyController {
         bedroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
         bathroomsField.textProperty().addListener((obs, was, now) -> schedule.run());
         yearBuiltField.textProperty().addListener((obs, was, now) -> schedule.run());
+        floorNumberField.textProperty().addListener((obs, was, now) -> schedule.run());
         askingPriceField.textProperty().addListener((obs, was, now) -> schedule.run());
         parkingCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
         elevatorCheck.selectedProperty().addListener((obs, was, now) -> schedule.run());
@@ -285,6 +286,7 @@ public class SubmitPropertyController {
         draft.setDealType(dealTypeCombo.getValue() == null ? DealType.SALE : dealTypeCombo.getValue());
         draft.setBedrooms(parseInt(bedroomsField.getText(), 0));
         draft.setBathrooms(parseInt(bathroomsField.getText(), 0));
+        draft.setFloorNumber(parseNullableInt(floorNumberField.getText()));
         draft.setYearBuilt(parseNullableInt(yearBuiltField.getText()));
         draft.setHasParking(parkingCheck.isSelected());
         draft.setHasElevator(elevatorCheck.isSelected());
