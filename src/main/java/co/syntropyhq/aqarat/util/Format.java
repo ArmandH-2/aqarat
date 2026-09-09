@@ -17,6 +17,9 @@ public final class Format {
     private static final DateTimeFormatter DATE_TIME_FORMAT =
         DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH);
 
+    /** What every screen in this application shows where a value is absent. */
+    private static final String ABSENT = "—";
+
     private Format() {
     }
 
@@ -49,12 +52,26 @@ public final class Format {
     }
 
     public static String date(LocalDate date) {
-        return date.format(DATE_FORMAT);
+        return date == null ? ABSENT : date.format(DATE_FORMAT);
     }
 
-    // The database stores UTC. This is the one place a stored timestamp
-    // becomes the user's local time.
+    /**
+     * The database stores UTC. This is the one place a stored timestamp
+     * becomes the user's local time.
+     *
+     * <p>Half of the nullable timestamps in the schema are absent by design
+     * rather than by accident - {@code published_at} on anything still in
+     * review, {@code closed_at} on a live contract, {@code verified_at} on a
+     * document nobody has looked at yet. A screen showing one of those is
+     * describing a thing that has not happened, not recovering from a fault,
+     * so it renders the same em dash every other absent value in this
+     * application renders and carries on. Throwing here took the property
+     * file down for all 320 unpublished properties.
+     */
     public static String dateTime(LocalDateTime utcDateTime) {
+        if (utcDateTime == null) {
+            return ABSENT;
+        }
         LocalDateTime local = utcDateTime.atZone(ZoneOffset.UTC)
             .withZoneSameInstant(ZoneId.systemDefault())
             .toLocalDateTime();
