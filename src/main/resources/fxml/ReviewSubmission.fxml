@@ -28,6 +28,7 @@
             <HBox spacing="12" alignment="CENTER_LEFT">
                 <Button text="← Back to the queue" styleClass="button, button-secondary" onAction="#handleBack"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Edit text" styleClass="button, button-secondary" onAction="#handleEditCopy"/>
                 <!-- The whole file on this property: the owner's evidence, who has
                      asked to see it, and everything recorded so far. -->
                 <Button text="Property file" styleClass="button, button-secondary"
@@ -36,6 +37,7 @@
 
             <HBox spacing="16" alignment="CENTER_LEFT">
                 <VBox spacing="4" HBox.hgrow="ALWAYS">
+                    <Label fx:id="referenceLabel" styleClass="eyebrow"/>
                     <Label fx:id="titleLabel" styleClass="hero-title"/>
                     <HBox spacing="8" alignment="CENTER_LEFT">
                         <Label fx:id="districtSubtitle" styleClass="label-soft"/>

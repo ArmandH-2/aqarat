@@ -49,6 +49,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
@@ -66,6 +67,8 @@ public class ReviewSubmissionController implements NeedsId {
     private Label accessDeniedLabel;
     @FXML
     private VBox contentBox;
+    @FXML
+    private Label referenceLabel;
     @FXML
     private Label titleLabel;
     @FXML
@@ -205,6 +208,7 @@ public class ReviewSubmissionController implements NeedsId {
     }
 
     private void renderProperty() {
+        referenceLabel.setText("PROPERTY #" + property.getId());
         titleLabel.setText(property.getTitle());
         applyStatusPill(property.getStatus());
 
@@ -663,6 +667,38 @@ public class ReviewSubmissionController implements NeedsId {
     @FXML
     private void handleOpenDossier() {
         Router.show(Panel.PROPERTY_DOSSIER, propertyId);
+    }
+
+    @FXML
+    private void handleEditCopy() {
+        TextField titleField = new TextField(property.getTitle());
+        TextArea descriptionArea = new TextArea(
+            property.getDescription() == null ? "" : property.getDescription());
+        descriptionArea.setWrapText(true);
+        descriptionArea.setPrefRowCount(4);
+
+        boolean go = Dialogs.form("Edit the listing text")
+            .about(property.getTitle())
+            .note("Corrects the wording only. Price, size and address stay as the owner submitted them.")
+            .required("Title", titleField)
+            .optional("Description", descriptionArea)
+            .confirm("Save it")
+            .show();
+        if (!go) {
+            return;
+        }
+
+        try {
+            propertyService.editCopy(propertyId, titleField.getText(),
+                descriptionArea.getText(), SessionManager.getCurrentUser());
+        } catch (PropertyService.NotPermittedException | IllegalArgumentException e) {
+            AlertUtil.showUndone(e.getMessage());
+            return;
+        } catch (SQLException e) {
+            AlertUtil.showError("Could not reach the database. Try again.");
+            return;
+        }
+        loadProperty();
     }
 
     @FXML
