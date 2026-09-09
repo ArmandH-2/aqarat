@@ -318,7 +318,11 @@ public class MyContractsController {
             methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
             setLabelConverter(methodCombo, Format::enumLabel);
             methodCombo.getSelectionModel().select(PaymentMethod.BANK_TRANSFER);
-            proofPathField.setPromptText("Transfer slip number, or a path to the file");
+            // Not a file picker, so do not invite a file path: one typed here
+            // names a file on the client's machine that the agent's machine
+            // cannot open. What the agent can act on is a number they can look
+            // up at the bank, so that is what the field asks for.
+            proofPathField.setPromptText("Transfer slip or deposit number");
             referenceField.setPromptText("Bank or cheque reference");
         }
 
