@@ -31,12 +31,17 @@ import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.FieldError;
 import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Receipt;
+import co.syntropyhq.aqarat.util.FileOpener;
 import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.PaymentProofStore;
+import co.syntropyhq.aqarat.util.ProofField;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
 import java.time.LocalDate;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -294,7 +299,7 @@ public class PaymentsController {
             .required("Amount", form.amountField)
             .optional("How it was paid", form.methodCombo)
             .optional("Reference", form.referenceField)
-            .optional("Proof", form.proofPathField)
+            .optional("Proof", form.proofField)
             .confirm("Record it")
             .cancel("Cancel")
             .show();
@@ -311,10 +316,21 @@ public class PaymentsController {
             return;
         }
         int agentId = SessionManager.getCurrentUser().getId();
+        // Optional here, unlike a client's declaration: an agent taking cash at
+        // the counter is the proof, and their name is already on the row.
+        String proofPath = null;
+        if (form.proofFile() != null) {
+            try {
+                proofPath = PaymentProofStore.store(agentId, form.proofFile());
+            } catch (IOException e) {
+                AlertUtil.showError("The proof could not be attached.", e.getMessage());
+                return;
+            }
+        }
         int paymentId;
         try {
             paymentId = paymentService.recordConfirmedPayment(schedule.getId(), null, amount,
-                form.method(), form.reference(), form.proofPath(), agentId);
+                form.method(), form.reference(), proofPath, agentId);
         } catch (PaymentService.InvalidPaymentTargetException | PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
@@ -424,7 +440,7 @@ public class PaymentsController {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
         private final TextField referenceField = new TextField();
-        private final TextField proofPathField = new TextField();
+        private final ProofField proofField = new ProofField();
 
         private RecordForm(BigDecimal outstanding) {
             amountField.setText(outstanding.toPlainString());
@@ -453,9 +469,8 @@ public class PaymentsController {
             return text == null || text.isBlank() ? null : text.trim();
         }
 
-        private String proofPath() {
-            String text = proofPathField.getText();
-            return text == null || text.isBlank() ? null : text.trim();
+        private Path proofFile() {
+            return proofField.chosenFile();
         }
     }
 
@@ -497,13 +512,46 @@ public class PaymentsController {
                 + Format.date(payment.getCreatedAt().toLocalDate()));
             meta.getStyleClass().add("hint");
 
-            Label proof = new Label(payment.getProofPath() == null
-                ? "No proof attached" : "Proof: " + payment.getProofPath());
-            proof.getStyleClass().add("hint");
-
-            card.getChildren().addAll(header, meta, proof, actions(payment));
+            card.getChildren().addAll(header, meta, proofRow(payment), actions(payment));
             AnimationUtil.addHoverLift(card);
             return card;
+        }
+
+        /**
+         * Confirming a payment means checking it against its proof, so the
+         * proof has to be openable and not merely named. Two shapes are
+         * possible: a file the client attached, and — on rows written before
+         * there was an upload — a reference somebody typed, which is still
+         * worth reading even though there is nothing to open.
+         */
+        private HBox proofRow(Payment payment) {
+            HBox row = new HBox(8);
+            row.setAlignment(Pos.CENTER_LEFT);
+
+            if (payment.getProofPath() == null) {
+                Label none = new Label("No proof attached");
+                none.getStyleClass().add("hint");
+                row.getChildren().add(none);
+                return row;
+            }
+            if (!FileOpener.isStoredFile(payment.getProofPath())) {
+                Label reference = new Label("Proof reference: " + payment.getProofPath());
+                reference.getStyleClass().add("hint");
+                row.getChildren().add(reference);
+                return row;
+            }
+            Label attached = new Label("Proof attached");
+            attached.getStyleClass().add("hint");
+            Button open = new Button("Open proof");
+            // Bordered rather than ghost. In the property file an Open button
+            // sits in a row of pills and another button, so its context says
+            // it is one; here it stands beside a hint label and a ghost reads
+            // as more grey text.
+            open.getStyleClass().addAll("button", "button-secondary", "button-compact");
+            open.setOnAction(event ->
+                FileOpener.open(payment.getProofPath(), "this payment"));
+            row.getChildren().addAll(attached, open);
+            return row;
         }
 
         private HBox actions(Payment payment) {

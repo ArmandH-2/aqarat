@@ -32,10 +32,14 @@ import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Receipt;
 import co.syntropyhq.aqarat.util.Toast;
 import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.PaymentProofStore;
+import co.syntropyhq.aqarat.util.ProofField;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -159,7 +163,7 @@ public class MyContractsController {
             .required("Amount", form.amountField)
             .optional("How you paid", form.methodCombo)
             .optional("Reference", form.referenceField)
-            .required("Proof", form.proofPathField)
+            .required("Proof", form.proofField)
             .confirm("Declare it")
             .cancel("Cancel")
             .show();
@@ -175,14 +179,25 @@ public class MyContractsController {
             AlertUtil.showError("Enter an amount greater than zero.");
             return;
         }
-        if (form.proofPath() == null) {
-            AlertUtil.showError("Enter proof of payment - a reference or a file path.");
+        if (form.proofFile() == null) {
+            AlertUtil.showError("Attach the receipt or transfer slip for this payment.");
             return;
         }
         int clientId = SessionManager.getCurrentUser().getId();
+        // Copied in only now, so backing out of the dialog leaves nothing
+        // behind. If the insert then fails the file is orphaned rather than
+        // the payment being recorded against a proof nobody can open, which is
+        // the right way round for the two to go wrong.
+        String proofPath;
+        try {
+            proofPath = PaymentProofStore.store(clientId, form.proofFile());
+        } catch (IOException e) {
+            AlertUtil.showError("The proof could not be attached.", e.getMessage());
+            return;
+        }
         try {
             paymentService.declare(schedule.getId(), null, amount, form.method(), form.reference(),
-                form.proofPath(), clientId);
+                proofPath, clientId);
         } catch (PaymentService.InvalidPaymentTargetException | PaymentService.InvalidPaymentAmountException e) {
             AlertUtil.showError(e.getMessage());
             return;
@@ -311,18 +326,13 @@ public class MyContractsController {
         private final TextField amountField = new TextField();
         private final ComboBox<PaymentMethod> methodCombo = new ComboBox<>();
         private final TextField referenceField = new TextField();
-        private final TextField proofPathField = new TextField();
+        private final ProofField proofField = new ProofField();
 
         private DeclareForm(BigDecimal outstanding) {
             amountField.setText(outstanding.toPlainString());
             methodCombo.setItems(FXCollections.observableArrayList(PaymentMethod.values()));
             setLabelConverter(methodCombo, Format::enumLabel);
             methodCombo.getSelectionModel().select(PaymentMethod.BANK_TRANSFER);
-            // Not a file picker, so do not invite a file path: one typed here
-            // names a file on the client's machine that the agent's machine
-            // cannot open. What the agent can act on is a number they can look
-            // up at the bank, so that is what the field asks for.
-            proofPathField.setPromptText("Transfer slip or deposit number");
             referenceField.setPromptText("Bank or cheque reference");
         }
 
@@ -344,9 +354,8 @@ public class MyContractsController {
             return text == null || text.isBlank() ? null : text.trim();
         }
 
-        private String proofPath() {
-            String text = proofPathField.getText();
-            return text == null || text.isBlank() ? null : text.trim();
+        private Path proofFile() {
+            return proofField.chosenFile();
         }
     }
 

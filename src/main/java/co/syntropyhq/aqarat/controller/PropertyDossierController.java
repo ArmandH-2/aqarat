@@ -28,20 +28,16 @@ import co.syntropyhq.aqarat.service.DocumentService;
 import co.syntropyhq.aqarat.service.DossierService;
 import co.syntropyhq.aqarat.service.ReferenceService;
 import co.syntropyhq.aqarat.util.AlertUtil;
+import co.syntropyhq.aqarat.util.FileOpener;
 import co.syntropyhq.aqarat.util.Format;
 import co.syntropyhq.aqarat.util.NeedsId;
 import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.Toast;
 import co.syntropyhq.aqarat.util.UIHelper;
-import co.syntropyhq.aqarat.util.Uploads;
-import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
-import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -268,37 +264,8 @@ public class PropertyDossierController implements NeedsId {
         }
     }
 
-    /**
-     * Hands the file to whatever the operating system opens it with.
-     *
-     * <p>Off the UI thread: on Windows the first call to {@code Desktop.open}
-     * waits for the handler to start, which is long enough to freeze a window
-     * visibly.
-     */
     private void open(PropertyDocument document) {
-        Path path = Uploads.resolve(document.getFilePath());
-        File file = path.toFile();
-        if (!file.exists()) {
-            AlertUtil.showUndone("That file is no longer in the uploads folder.",
-                document.getFilePath());
-            return;
-        }
-        if (!Desktop.isDesktopSupported()) {
-            AlertUtil.showUndone("This system cannot open files from the application.",
-                file.getAbsolutePath());
-            return;
-        }
-        Thread opener = new Thread(() -> {
-            try {
-                Desktop.getDesktop().open(file);
-            } catch (IOException | UnsupportedOperationException e) {
-                Platform.runLater(() -> AlertUtil.showUndone(
-                    "Nothing on this computer is set up to open that file.",
-                    file.getAbsolutePath()));
-            }
-        }, "open-document");
-        opener.setDaemon(true);
-        opener.start();
+        FileOpener.open(document.getFilePath(), "that document");
     }
 
     private void renderValuations(PropertyDossier dossier) {
