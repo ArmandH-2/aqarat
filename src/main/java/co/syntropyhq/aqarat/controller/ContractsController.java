@@ -605,6 +605,12 @@ public class ContractsController {
             card.getStyleClass().addAll("card", "card-hoverable");
             card.setPadding(new Insets(16));
 
+            // The number every other screen identifies this contract by - the
+            // Payments lookup asks for it, and the receipt prints it - so it
+            // has to be readable somewhere rather than guessed at.
+            Label reference = new Label("CONTRACT #" + contract.getId());
+            reference.getStyleClass().add("eyebrow");
+
             HBox header = new HBox(12);
             header.setAlignment(Pos.CENTER_LEFT);
 
@@ -623,7 +629,7 @@ public class ContractsController {
                 + " • started " + Format.date(contract.getStartDate()));
             meta.getStyleClass().add("label-soft");
 
-            card.getChildren().addAll(header, meta);
+            card.getChildren().addAll(reference, header, meta);
 
             HBox actions = buildActions(contract);
             if (!actions.getChildren().isEmpty()) {

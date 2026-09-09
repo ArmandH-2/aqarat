@@ -20,6 +20,8 @@ import co.syntropyhq.aqarat.util.AlertUtil;
 import co.syntropyhq.aqarat.util.AnimationUtil;
 import co.syntropyhq.aqarat.util.Dialogs;
 import co.syntropyhq.aqarat.util.Format;
+import co.syntropyhq.aqarat.util.Panel;
+import co.syntropyhq.aqarat.util.Router;
 import co.syntropyhq.aqarat.util.SessionManager;
 import co.syntropyhq.aqarat.util.UIHelper;
 import java.sql.SQLException;
@@ -297,6 +299,13 @@ public class ViewingsController {
         private HBox buildActions(Viewing viewing) {
             HBox actions = new HBox(8);
             actions.setAlignment(Pos.CENTER_LEFT);
+
+            // An agent deciding whether to give up an afternoon for this
+            // appointment is deciding about a property, and the card carries
+            // only its title. Offered on every status: the question "which one
+            // was that?" outlives the appointment.
+            addButton(actions, "View property", "button-secondary",
+                () -> Router.show(Panel.PROPERTY_DETAILS, viewing.getPropertyId()));
 
             if (viewing.getStatus() == ViewingStatus.REQUESTED) {
                 addButton(actions, "Confirm appointment", "button-primary", () -> handleConfirm(viewing));
