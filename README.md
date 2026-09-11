@@ -5,6 +5,8 @@ payments, and an explainable price estimator.
 
 JavaFX desktop application, SQL Server, Java 21. A summer training project supervised by [Syntropy](https://syntropyhq.co).
 
+**[Watch the 60-second promo](../../releases/latest/download/aqarat-promo.mp4)** · [Technical report (Word)](../../releases/latest/download/Aqarat-Technical-Report.docx)
+
 ![The review screen](docs/screenshots/03-review-submission.png)
 
 ---
@@ -217,6 +219,7 @@ fresh seed by construction, not by fault.
 
 | | |
 |---|---|
+| [Technical report](../../releases/latest/download/Aqarat-Technical-Report.docx) | Design, valuation method, evaluation and limitations, as a Word document |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | What the system is, and why |
 | [`docs/DIAGRAMS.md`](docs/DIAGRAMS.md) | Use case, entity, class and lifecycle diagrams |
 | [`docs/BUILD-ORDER.md`](docs/BUILD-ORDER.md) | The order it was built in, phase by phase |
