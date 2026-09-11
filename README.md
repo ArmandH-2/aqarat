@@ -3,7 +3,7 @@
 Real estate management system for a Lebanese agency — properties, clients, contracts,
 payments, and an explainable price estimator.
 
-JavaFX desktop application, SQL Server, Java 21.
+JavaFX desktop application, SQL Server, Java 21. A summer training project supervised by [Syntropy](https://syntropyhq.co).
 
 ![The review screen](docs/screenshots/03-review-submission.png)
 
@@ -230,6 +230,6 @@ fresh seed by construction, not by fault.
 
 ---
 
-Built by a team of two as a summer training project.
+Built by a team of two as a summer training project, supervised by [Syntropy](https://syntropyhq.co).
 
 Released under the [MIT License](LICENSE).
