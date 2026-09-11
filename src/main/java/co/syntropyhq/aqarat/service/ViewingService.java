@@ -103,7 +103,7 @@ public class ViewingService {
      * assigns agent_id, and the one place ux_viewing_agent_slot can fire: two
      * agents cannot hold a CONFIRMED viewing at the same instant. The slot is
      * checked before the write for a clean message, and the write is still
-     * caught in case another confirmation landed in between (CLAUDE.md, the
+     * caught in case another confirmation landed in between (CONVENTIONS.md, the
      * canonical transaction shape).
      */
     public void confirm(int viewingId, int agentId)
@@ -151,7 +151,7 @@ public class ViewingService {
 
     /**
      * Either side backing out of a viewing that has not happened yet.
-     * CANCELLED is terminal, matching how CLAUDE.md's forbidden patterns rule
+     * CANCELLED is terminal, matching how CONVENTIONS.md's forbidden patterns rule
      * out inventing a DECLINED status for what the enum already covers.
      */
     public void cancel(int viewingId) throws SQLException, InvalidTransitionException {
@@ -231,7 +231,7 @@ public class ViewingService {
 
     // A distinct, checked type so a controller can tell "you asked for a
     // transition the state machine does not allow" apart from a database
-    // failure, and show the right message for each (CLAUDE.md, Errors).
+    // failure, and show the right message for each (CONVENTIONS.md, Errors).
     public static class InvalidTransitionException extends Exception {
 
         public InvalidTransitionException(String message) {

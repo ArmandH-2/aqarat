@@ -46,14 +46,14 @@ import org.junit.jupiter.api.Test;
  * pool it is compared against.
  *
  * <p>Every figure the report quotes comes from the two files this writes into
- * {@code report/evidence/}.
+ * {@code docs/evaluation/}.
  */
 class AvmEvaluation {
 
     /** Wide enough to hold every CLOSED row in one page, matching ValuationService. */
     private static final int DATASET_PAGE_SIZE = 5000;
 
-    private static final Path OUTPUT_DIR = Path.of("report", "evidence");
+    private static final Path OUTPUT_DIR = Path.of("docs", "evaluation");
 
     private final PropertyDao propertyDao = new PropertyDao();
     private final DistrictDao districtDao = new DistrictDao();

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriceEstimatorTest {
 
-    // The real system_setting values, per CLAUDE.md.
+    // The real system_setting values, per CONVENTIONS.md.
     private static final BigDecimal ABOVE_MARKET_PERCENT = BigDecimal.valueOf(20);
     private static final BigDecimal IMPLAUSIBLE_PERCENT = BigDecimal.valueOf(60);
     private static final int COMPARABLE_MIN_COUNT = 5;

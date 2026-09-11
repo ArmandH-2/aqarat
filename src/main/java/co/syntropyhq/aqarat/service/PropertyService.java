@@ -574,7 +574,7 @@ public class PropertyService {
 
     // A distinct, checked type so a controller can tell "you asked for a
     // transition the state machine does not allow" apart from a database
-    // failure, and show the right message for each (CLAUDE.md, Errors).
+    // failure, and show the right message for each (CONVENTIONS.md, Errors).
     public static class InvalidTransitionException extends Exception {
 
         public InvalidTransitionException(String message) {
@@ -602,7 +602,7 @@ public class PropertyService {
 
     // A distinct, checked type so a controller can tell "you are not allowed
     // to do this" apart from a validation failure or a database error, and
-    // show the right message for each (CLAUDE.md, Errors).
+    // show the right message for each (CONVENTIONS.md, Errors).
     public static class NotPermittedException extends Exception {
 
         public NotPermittedException(String message) {

@@ -10,7 +10,7 @@ This folder is the complete specification. Read it in this order:
 3. `DIAGRAMS.md` — use case diagram and two levels of data flow diagram.
 4. `TASKS.md` — the ordered implementation task list. This is what you build from.
 
-Before writing any code, read `/CLAUDE.md` and `docs/DESIGN.md`. The conventions in `CLAUDE.md`
+Before writing any code, read `docs/DESIGN.md`. Its conventions
 are binding and this feature does not get an exemption from any of them.
 
 ---
@@ -55,7 +55,7 @@ These are settled. Do not revisit them during implementation.
 | LLM backend | OpenAI-compatible Chat Completions with tool calling. Base URL, key and model live in `config/local.properties`, which is gitignored. |
 | Scope | Two tools: `search_properties` and `get_property_details`. Multi-turn refinement. Read-only. Published listings only. |
 | Conversation persistence | In memory, for the life of the panel. **No schema change.** `kb_document`, `kb_chunk` and `chat_message` are not built. |
-| Placement | A new `Panel.ASSISTANT` and `Assistant.fxml`, in the sidebar under `DISCOVER`. The Router contract in `CLAUDE.md` is unchanged. |
+| Placement | A new `Panel.ASSISTANT` and `Assistant.fxml`, in the sidebar under `DISCOVER`. The Router contract is unchanged. |
 | Missing filters | Extend `PropertySearch` and `PropertyDao.FILTER_CLAUSE` with bathrooms, the four amenities, and governorate. Existing columns only. |
 | JSON | Gson 2.11.0, one new dependency. HTTP is `java.net.http.HttpClient` from the JDK, so no HTTP client dependency. |
 
@@ -149,7 +149,7 @@ output reach a numeric field.
 | Zero results | The assistant says so and proposes the single filter most worth relaxing. Never an empty card list with no explanation. |
 | `SQLException` | The existing wording from `BrowseListingsController`: could not load listings, check that SQL Server is running. |
 
-No stack trace, no error code and no JSON ever reaches a bubble or a dialog. `CLAUDE.md` requires
+No stack trace, no error code and no JSON ever reaches a bubble or a dialog. The conventions require
 error messages written for the user, and this feature is where it is most tempting to break that.
 
 ---
@@ -230,7 +230,7 @@ Each of these is a later rung. None is in this phase.
   boundaries.
 - **Retrieval over policy documents** — there are no policy documents in this repository to index.
   Add it when there are.
-- **Persisted conversations** — needs a `chat_message` table, and `CLAUDE.md` is explicit that the
-  schema is a design conversation and not a migration.
+- **Persisted conversations** — needs a `chat_message` table, and a schema change is a design
+  conversation, not a migration.
 - **Streaming replies** — renders faster, changes nothing about whether the answer is correct.
 - **Arabic, and voice** — the interface is English only, per `docs/DESIGN.md` section 2.

@@ -1,12 +1,12 @@
 # Tasks — conversational property search assistant
 
 Read `README.md`, `REQUIREMENTS.md` and `DIAGRAMS.md` in this folder before starting, and read
-`/CLAUDE.md` and `docs/DESIGN.md` before writing any code.
+`docs/DESIGN.md` before writing any code.
 
 Tasks are ordered by dependency. Nothing in a task compiles against something a later task builds.
 Each is a session's work or less. Do one, verify it, commit it, then start the next.
 
-Three files in this list are shared surface under the branching rules in `CLAUDE.md` —
+Three files in this list are shared surface between the two tracks —
 `dao/PropertyDao.java`, `controller/MainShellController.java` and `src/main/resources/css/app.css`.
 Announce before touching them.
 
@@ -258,7 +258,7 @@ assistant needs.
 Do this **after** T4 renders something, so the shape of the shared method is driven by two real
 callers rather than a guess about what the second one will need.
 
-**Acceptance:** `BrowseListings` looks identical to before — compare against `screenshots/`. The
+**Acceptance:** `BrowseListings` looks identical to before — compare against `docs/screenshots/`. The
 assistant's cards match it. The card-building code exists in exactly one place.
 
 ---
@@ -276,7 +276,7 @@ assistant's cards match it. The card-building code exists in exactly one place.
 - [x] `README.md` at the repository root — a paragraph on the assistant: what it does, that it
       needs an OpenAI-compatible key, that the application runs fully without one, and that
       conversation text is sent to the configured provider.
-- [ ] One screenshot of the panel mid-conversation, committed under `screenshots/`.
+- [ ] One screenshot of the panel mid-conversation, committed under `docs/screenshots/`.
       **Outstanding.** Needs the application running with a real API key.
 - [x] Delete any scratch file or test main created along the way. Read every new file once.
       Anything you could not explain to an examiner, rewrite or remove.

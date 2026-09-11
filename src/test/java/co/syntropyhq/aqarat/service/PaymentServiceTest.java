@@ -11,7 +11,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // PaymentService.buildSchedule() takes plain values and returns a list, no
-// database involved - same reasoning as PriceEstimatorTest (CLAUDE.md,
+// database involved - same reasoning as PriceEstimatorTest (CONVENTIONS.md,
 // Tests). The DAOs it is otherwise built with are never touched here, so
 // null is fine for all of them.
 class PaymentServiceTest {

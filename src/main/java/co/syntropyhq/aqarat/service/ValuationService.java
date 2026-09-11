@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * Gathers what PriceEstimator needs, calls it, and saves what it returns.
- * CLAUDE.md layer rule 6: PriceEstimator does the maths and touches no
+ * CONVENTIONS.md layer rule 6: PriceEstimator does the maths and touches no
  * database; this class is what queries for the comparables and what saves
  * the result. There is no calculation in here - if a number is being
  * computed rather than looked up or read off a ValuationResult, it belongs
@@ -317,7 +317,7 @@ public class ValuationService {
 
     // A distinct, checked type so a controller can tell "this property
     // genuinely cannot be valued yet" apart from a database failure, and
-    // show the right message for each (CLAUDE.md, Errors).
+    // show the right message for each (CONVENTIONS.md, Errors).
     public static class CannotValueException extends Exception {
 
         public CannotValueException(String message, Throwable cause) {

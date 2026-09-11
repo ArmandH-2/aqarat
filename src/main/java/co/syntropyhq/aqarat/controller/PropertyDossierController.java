@@ -57,7 +57,7 @@ import javafx.scene.layout.VBox;
  * where a listing screen fires two, and a screen that freezes while it thinks
  * is the one thing this application has been careful not to have.
  *
- * <p>CLAUDE.md's ordering rule applies here: {@code initialize} runs before
+ * <p>CONVENTIONS.md's ordering rule applies here: {@code initialize} runs before
  * {@code receiveId}, so nothing is loaded there.
  */
 public class PropertyDossierController implements NeedsId {

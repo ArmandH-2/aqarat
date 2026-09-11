@@ -192,7 +192,7 @@ public class AuthService {
     }
 
     // A distinct, checked type so a controller can show the refusal as a
-    // message rather than a stack trace (CLAUDE.md, Errors).
+    // message rather than a stack trace (CONVENTIONS.md, Errors).
     public static class LastAdminException extends Exception {
 
         public LastAdminException(String message) {

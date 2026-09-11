@@ -13,8 +13,8 @@ file. Where a phase says "both", stop and sync before continuing.
 **One phase per session.** Not "build the app". A session should end with something that
 compiles and runs.
 
-**Point it at the design every time.** Start each session with: *read `CLAUDE.md` and
-`docs/DESIGN.md`, then build phase N as described in `docs/BUILD-ORDER.md`.* Without that it
+**Point it at the design every time.** Start each session with: *read `docs/DESIGN.md`,
+then build phase N as described in `docs/BUILD-ORDER.md`.* Without that it
 will invent its own structure and the two tracks will drift apart.
 
 **Ask for one vertical slice at a time.** "The `PropertyDao`, `PropertyService` and
@@ -22,8 +22,7 @@ will invent its own structure and the two tracks will drift apart.
 module" is not.
 
 **Read the diff before committing.** If a file contains something you could not explain to
-an examiner, delete it and ask again. This is the whole reason `CLAUDE.md` exists — and it
-only works if you actually enforce it.
+a reviewer, delete it and ask again.
 
 **Never let it touch the schema.** If it wants a column that does not exist, that is a design
 conversation, not a migration.
@@ -65,7 +64,7 @@ Nobody writes application code until this works.
 
 ### Both, at the end
 - `MainShell.fxml` — sidebar plus content area.
-- `util/Router` and the `Panel` enum, exactly as specified in `CLAUDE.md`. Build this together,
+- `util/Router` and the `Panel` enum. Build this together,
   in one sitting. It is the shared surface both tracks depend on for the next five phases.
 - Sidebar items shown or hidden by role.
 - `resources/css/app.css` — built from the skeleton at the end of `docs/UI-STYLE.md`.
@@ -199,7 +198,7 @@ This is not optional padding. It is where the marks are.
 
 - `README.md` — what it is, screenshots, how to run it, and an honest note that the dataset
   is synthetic.
-- Screenshots of the six best screens, committed under `screenshots/`.
+- Screenshots of the six best screens, committed under `docs/screenshots/`.
 - The four diagrams exported into `docs/`: use case, ER, class, and the lifecycle flow.
 - Delete every scratch file, test main, and commented-out block.
 - Read every file once. Anything you cannot explain, rewrite or remove.

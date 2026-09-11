@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * file arrives from outside and is later opened by a member of staff.
  *
  * <p>No database. {@code DocumentStore.validate} is pure file inspection,
- * which is exactly the kind of thing CLAUDE.md says is worth a test because
+ * which is exactly the kind of thing CONVENTIONS.md says is worth a test because
  * you cannot see it working by clicking.
  */
 class DocumentStoreTest {

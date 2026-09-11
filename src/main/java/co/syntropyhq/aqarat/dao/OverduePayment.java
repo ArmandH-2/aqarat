@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 // One row of ReportDao.overduePayments. ReportDao fills the raw columns;
 // ReportService fills daysOverdue, since "how many days" is arithmetic on
-// today's date, not something the DAO should know (CLAUDE.md layer rules).
+// today's date, not something the DAO should know (CONVENTIONS.md layer rules).
 public class OverduePayment {
 
     private int contractId;

@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 // One row of ReportDao.timeOnMarket. ReportDao fills the raw columns;
 // ReportService derives daysOnMarket and premiumPercent from them, since
-// both are business arithmetic, not a query concern (CLAUDE.md layer rules).
+// both are business arithmetic, not a query concern (CONVENTIONS.md layer rules).
 public class TimeOnMarketRow {
 
     private int propertyId;

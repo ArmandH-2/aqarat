@@ -37,7 +37,7 @@ class PerformanceProbe {
 
     private static final int WARMUP = 5;
     private static final int SAMPLES = 30;
-    private static final Path OUTPUT = Path.of("report", "evidence", "performance.md");
+    private static final Path OUTPUT = Path.of("docs", "evaluation", "performance.md");
 
     private final PropertyDao propertyDao = new PropertyDao();
 

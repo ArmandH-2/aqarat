@@ -38,7 +38,7 @@ public class ReportService {
     /**
      * DESIGN.md section 6: a schedule row is overdue once due_date plus the
      * grace period in system_setting has passed and it is still short. The
-     * grace period is read here, never hardcoded (CLAUDE.md).
+     * grace period is read here, never hardcoded (CONVENTIONS.md).
      */
     public List<OverduePayment> overduePayments() throws SQLException {
         return overduePayments(null);

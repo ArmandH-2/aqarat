@@ -424,8 +424,6 @@ Roughly eighty-five classes: sixteen models, fourteen DAOs, eleven services, twe
 controllers, three valuation classes, eight utilities. Almost all the thinking is concentrated in
 the services and the estimator. The rest is typing.
 
-Conventions and forbidden patterns are in `/CLAUDE.md` and are binding.
-
 ## 12. Non-goals
 
 This is a training project, not a product. It does not need to scale, does not need caching,

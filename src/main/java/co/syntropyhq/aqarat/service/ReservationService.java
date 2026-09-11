@@ -279,7 +279,7 @@ public class ReservationService {
 
     // A distinct, checked type so a controller can tell "you asked for a
     // transition the state machine does not allow" apart from a database
-    // failure, and show the right message for each (CLAUDE.md, Errors).
+    // failure, and show the right message for each (CONVENTIONS.md, Errors).
     public static class InvalidTransitionException extends Exception {
 
         public InvalidTransitionException(String message) {

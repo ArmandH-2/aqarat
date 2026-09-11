@@ -11,7 +11,7 @@ import java.util.List;
 
 // Three read-only reports (docs/DESIGN.md section 5). Every query is
 // aggregate or a projection, so ReportService never opens a transaction -
-// it just calls in and reads (CLAUDE.md: read-only aggregates need none).
+// it just calls in and reads (CONVENTIONS.md: read-only aggregates need none).
 public class ReportDao {
 
     // Grouping by month is a reporting concern, not a business rule, so the

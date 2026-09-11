@@ -5,7 +5,7 @@ payments, and an explainable price estimator.
 
 JavaFX desktop application, SQL Server, Java 21.
 
-![The review screen](screenshots/03-review-submission.png)
+![The review screen](docs/screenshots/03-review-submission.png)
 
 ---
 
@@ -32,13 +32,13 @@ does not get a veto over a real person's property.
 
 | | |
 |---|---|
-| ![Sign in](screenshots/01-login.png) | ![Discover](screenshots/02-browse-listings.png) |
+| ![Sign in](docs/screenshots/01-login.png) | ![Discover](docs/screenshots/02-browse-listings.png) |
 | Sign in, or browse without an account | Describe what you want in plain English, or filter |
-| ![Property details](screenshots/07-property-details.png) | ![Submit a property](screenshots/09-submit-valuation.png) |
+| ![Property details](docs/screenshots/07-property-details.png) | ![Submit a property](docs/screenshots/09-submit-valuation.png) |
 | Photographs, price and specification for one listing | The estimate appears while you are still deciding a price |
-| ![Portfolio](screenshots/08-portfolio.png) | ![Review queue](screenshots/04-review-queue.png) |
+| ![Portfolio](docs/screenshots/08-portfolio.png) | ![Review queue](docs/screenshots/04-review-queue.png) |
 | Everything you own, with what needs you on top | Claim submissions from the unassigned queue |
-| ![Contracts](screenshots/05-contracts.png) | ![Reports](screenshots/06-reports.png) |
+| ![Contracts](docs/screenshots/05-contracts.png) | ![Reports](docs/screenshots/06-reports.png) |
 | Draft a contract, then activate it | Revenue and commission by month |
 
 Sixteen panels behind a role-aware sidebar. A customer navigates three: Discover,
@@ -160,15 +160,6 @@ without it `schema.sql` fails partway through with a message about SET options.
 
 The seed prints its row counts at the end. You should see 2,000 properties.
 
-If you have run an older `db/rebase-arrears.sql` against this database, follow the seed with:
-
-```bash
-sqlcmd -S "localhost\SQLEXPRESS" -E -C -I -d Aqarat -i db/repair-schedules.sql
-```
-
-It restates every instalment from the payments behind it and prints how many disagreed. On a
-fresh seed the answer is zero and nothing changes.
-
 **2. Point the application at it.**
 
 ```bash
@@ -194,7 +185,8 @@ Sign in as `admin@aqarat.local` / `Password123!`, as a customer with
 mvn test
 ```
 
-Eighty tests. They cover the places where correctness is not visible by clicking: the price
+142 tests. Ten of them (`ConfigTest`, `PropertyDaoTest`, `RoleWorkflowTest`) need
+`config/local.properties` and the seeded database; the rest run with no database. They cover the places where correctness is not visible by clicking: the price
 estimator, payment schedule generation, the money paths through `PaymentService` — including two
 agents confirming the same payment at once — the assistant's query router, and every FXML file
 parsing, which catches a malformed panel at build time rather than on the click that opens it.
@@ -212,9 +204,9 @@ inside the range the design expected, but it is a model fitted to synthetic data
 read as a demonstration of the method, not as a valuation anyone should trade on. The tail is
 still long — the worst sale in the sample is out by more than a factor of two.
 
-The property photos are generated illustrations, not photographs, written into `uploads/` — which
-is gitignored, because uploaded files are runtime data rather than source. A fresh clone shows a
-caption tile in their place until they are regenerated.
+The property photographs in `uploads/images/seed/` are licensed stock images keyed by property
+type, so listings of the same type share a gallery. Everything else under `uploads/` is runtime
+data and gitignored.
 
 The seed also stops valuing properties once they are published, so the time-on-market report has
 nothing to compare against until properties are valued and closed through the application
@@ -233,8 +225,11 @@ fresh seed by construction, not by fault.
 | [`docs/UX-REWORK.md`](docs/UX-REWORK.md) | The client-surface redesign: diagnosis, requirements, what testing found |
 | [`docs/UX-BACKLOG.md`](docs/UX-BACKLOG.md) | The round after it, and the reasoning behind each change |
 | [`docs/ai-agent/`](docs/ai-agent/README.md) | The search assistant: requirements, diagrams, tasks |
-| [`CLAUDE.md`](CLAUDE.md) | Coding conventions |
+| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | Layer rules, naming, SQL, errors and money |
+| [`docs/evaluation/`](docs/evaluation/avm-evaluation.md) | The estimator measured against IAAO ratio-study statistics |
 
 ---
 
-Built as a Java training assignment. Published under Syntropy.
+Built by a team of two as a summer training project.
+
+Released under the [MIT License](LICENSE).

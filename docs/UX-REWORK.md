@@ -40,8 +40,7 @@ Derived from the diagnosis, and satisfied by the work in section 4.
 ### Ground and identity
 
 - R1. The canvas must not be neutral grey, and cards must not be pure white.
-      Beirut limestone `#E7DFCD` on cream `#FAF5E9`; three alternatives are
-      photographed in `docs/palette-options`.
+      Beirut limestone `#E7DFCD` on cream `#FAF5E9`.
 - R2. British Racing Green `#004225` is retained as brand, with a brass accent
       for eyebrows and emphasis. No new hues invented.
 - R3. Display type must have character. A serif for display sizes, a sans for
@@ -228,8 +227,6 @@ untouched.
   database to fail after sign-in, and sign-in needs the database. Its one
   reachable route today is a panel load failing while the application is
   already running.
-- `docs/palette-options` holds three grounds not chosen. Clay is the one worth
-  revisiting if the interface should feel heavier.
 
 ## 8. Reviewing a panel yourself
 

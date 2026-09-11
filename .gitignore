@@ -35,20 +35,3 @@ desktop.ini
 # Logs
 *.log
 
-# Brand source files. The derived assets the application loads are committed
-# under src/main/resources/images.
-Artifacts/
-
-# Report build intermediates — the DOCX and its sources are committed, the rest is regenerable
-report/build/
-report/reference.docx
-
-# Remotion film project
-video/node_modules/
-video/out/
-video/.remotion/
-captures/
-video/public/captures/
-video/public/vo/
-video/out/
-video/public/music/

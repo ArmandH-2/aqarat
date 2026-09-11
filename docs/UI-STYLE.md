@@ -24,7 +24,6 @@ the single highest-leverage token in this system.
 The particular stone is not arbitrary: Beirut is built from limestone, so the
 ground is the colour of the city the agency works in, and the palette is stone
 against foliage rather than two colours that happened to sit well together.
-Three alternatives are photographed side by side in `docs/palette-options`.
 
 | Token | Value | Description |
 |---|---|---|

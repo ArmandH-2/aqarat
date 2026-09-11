@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 // The regression half of PriceEstimator's blend, split into its own class
-// so PriceEstimator stays under CLAUDE.md's 300-line limit. Package-private:
+// so PriceEstimator stays under CONVENTIONS.md's 300-line limit. Package-private:
 // PriceEstimator is the only caller, the same way it is the only caller of
 // its own private methods before this split.
 final class RegressionEstimator {

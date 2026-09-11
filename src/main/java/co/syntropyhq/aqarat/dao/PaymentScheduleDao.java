@@ -36,7 +36,7 @@ public class PaymentScheduleDao {
         }
     }
 
-    // Activation writes a whole schedule in one go (CLAUDE.md scope): one
+    // Activation writes a whole schedule in one go (CONVENTIONS.md scope): one
     // PreparedStatement, re-bound per row, batched on the caller's connection.
     public void insertAll(Connection connection, List<PaymentSchedule> schedule) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(INSERT_SQL)) {

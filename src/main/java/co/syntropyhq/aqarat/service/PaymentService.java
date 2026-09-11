@@ -90,11 +90,11 @@ public class PaymentService implements ContractService.ScheduleGenerator {
     }
 
     /**
-     * Pure arithmetic, no database - the part CLAUDE.md requires tested.
+     * Pure arithmetic, no database - the part CONVENTIONS.md requires tested.
      * ONE_OFF is always a single row for the full amount. Every other
      * frequency produces installmentCount rows, spaced by 1, 3 or 12 months.
      * The rounding remainder lands on the last row so the schedule always
-     * sums exactly to totalAmount (CLAUDE.md, Tests).
+     * sums exactly to totalAmount (CONVENTIONS.md, Tests).
      */
     public List<PaymentSchedule> buildSchedule(PaymentFrequency frequency, int installmentCount,
             BigDecimal totalAmount, LocalDate startDate) {
@@ -128,7 +128,7 @@ public class PaymentService implements ContractService.ScheduleGenerator {
         return 1;
     }
 
-    // CLAUDE.md: "1000 over 3 is 333.33 + 333.33 + 333.34 - never three
+    // CONVENTIONS.md: "1000 over 3 is 333.33 + 333.33 + 333.34 - never three
     // 333.33s losing a penny." Every row but the last takes the floor of the
     // even share; the last takes whatever is left, so the sum is exact.
     private BigDecimal[] splitEvenly(BigDecimal totalAmount, int count) {
@@ -173,7 +173,7 @@ public class PaymentService implements ContractService.ScheduleGenerator {
     }
 
     // A status-only write, but it still touches two tables with the audit
-    // entry, so it gets the canonical transaction shape (CLAUDE.md).
+    // entry, so it gets the canonical transaction shape (CONVENTIONS.md).
     private void writeScheduleStatus(PaymentSchedule row, ScheduleStatus newStatus) throws SQLException {
         ScheduleStatus oldStatus = row.getStatus();
         try (Connection connection = Db.get()) {
@@ -371,7 +371,7 @@ public class PaymentService implements ContractService.ScheduleGenerator {
     /**
      * An agent confirms a payment a client declared. When it settles an
      * installment, the schedule row's amount_paid and status move together
-     * with the payment and the audit entry - one transaction (CLAUDE.md,
+     * with the payment and the audit entry - one transaction (CONVENTIONS.md,
      * canonical shape), so a confirmed payment can never be left off the
      * schedule it was meant to pay down.
      */

@@ -164,7 +164,7 @@ public class DocumentService {
 
     // A refusal to show or change something, distinct from a database failure
     // so a controller can show the reason rather than a generic error
-    // (CLAUDE.md, Errors).
+    // (CONVENTIONS.md, Errors).
     public static class NotPermittedException extends Exception {
 
         public NotPermittedException(String message) {
