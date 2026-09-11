@@ -131,8 +131,8 @@ its tests run with no connection at all.
 | PDF | OpenPDF, for the receipt |
 | Build | Maven |
 
-No Spring, no Hibernate, no Lombok, no ORM. Roughly ninety classes across `model`, `dao`,
-`service`, `controller`, `valuation` and `util`.
+No Spring, no Hibernate, no Lombok, no ORM. 139 classes across `model`, `dao`,
+`service`, `controller`, `valuation`, `ai` and `util`.
 
 ## Running it
 
@@ -187,11 +187,13 @@ Sign in as `admin@aqarat.local` / `Password123!`, as a customer with
 mvn test
 ```
 
-142 tests. Ten of them (`ConfigTest`, `PropertyDaoTest`, `RoleWorkflowTest`) need
-`config/local.properties` and the seeded database; the rest run with no database. They cover the places where correctness is not visible by clicking: the price
+142 tests. They cover the places where correctness is not visible by clicking: the price
 estimator, payment schedule generation, the money paths through `PaymentService` — including two
 agents confirming the same payment at once — the assistant's query router, and every FXML file
 parsing, which catches a malformed panel at build time rather than on the click that opens it.
+
+Ten of them (`ConfigTest`, `PropertyDaoTest`, `RoleWorkflowTest`) need `config/local.properties`
+and the seeded database; the rest run with no database.
 
 ## An honest note on the data
 
@@ -200,11 +202,11 @@ and their payment histories from scratch. The districts and their average prices
 plausible for Lebanon; everything else — the addresses, the names, the prices — is generated.
 
 That matters for the estimator. Measured against the seeded closed properties, with each subject
-excluded from its own comparables and from its own training set, the median error is about **12%**
-on sales and **12%** on rentals, with roughly four in five predictions inside 25%. That is well
+excluded from its own comparables and from its own training set, the median error is **13.9%**
+on sales and **13.8%** on rentals, with 70% of predictions inside 25%. That is well
 inside the range the design expected, but it is a model fitted to synthetic data and it should be
 read as a demonstration of the method, not as a valuation anyone should trade on. The tail is
-still long — the worst sale in the sample is out by more than a factor of two.
+still long — the worst sale in the sample is estimated at three times its price. The full ratio study is in [`docs/evaluation/`](docs/evaluation/avm-evaluation.md).
 
 The property photographs in `uploads/images/seed/` are licensed stock images keyed by property
 type, so listings of the same type share a gallery. Everything else under `uploads/` is runtime
@@ -230,6 +232,7 @@ fresh seed by construction, not by fault.
 | [`docs/ai-agent/`](docs/ai-agent/README.md) | The search assistant: requirements, diagrams, tasks |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | Layer rules, naming, SQL, errors and money |
 | [`docs/evaluation/`](docs/evaluation/avm-evaluation.md) | The estimator measured against IAAO ratio-study statistics |
+| [`docs/research/`](docs/research/) | Domain research: how property marketplaces, ownership evidence and closings work |
 
 ---
 
